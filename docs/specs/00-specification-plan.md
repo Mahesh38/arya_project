@@ -109,5 +109,6 @@ arya_project/
 | 03 Requirements (SRS) | Draft |
 | 04 Use Cases | Draft |
 | 05 Domain Model & Business Rules | Draft |
+| 06 Flow Diagrams | Draft |
 | Appendix A Seed & Demo Data | Draft |
-| 06–14 | Not started |
+| 07–14 | Not started |
