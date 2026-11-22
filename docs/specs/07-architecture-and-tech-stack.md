@@ -244,28 +244,34 @@ src/main/resources/
 │   │   ├── main.html          navbar (role menus via sec:authorize), bell + unread count,
 │   │   │                      flash messages, footer; pages use layout:decorate
 │   │   └── public.html        minimal layout for login / register / verify
-│   ├── fragments/
-│   │   ├── status-badge.html  one colour per status (NFR-21)
-│   │   ├── pagination.html
-│   │   ├── timeline.html      merged events + revisions
-│   │   ├── attachments.html   thumbnails / PDF links
-│   │   ├── complaint-actions.html  buttons shown according to allowed actions
-│   │   └── form-errors.html
+│   ├── fragments/             full catalogue with parameters: doc 10 §6
+│   │   ├── navbar.html        role menus (sec:authorize), bell, user menu
+│   │   ├── alerts.html        flash messages, verify banner
+│   │   ├── status-badge.html  one colour + icon per status (NFR-21, doc 10 §5.1)
+│   │   ├── complaint-list.html  stacked list on phones, table from md up
+│   │   ├── complaint-summary.html, complaint-actions.html (buttons from allowed actions)
+│   │   ├── timeline.html      merged events + revisions (doc 10 §7)
+│   │   ├── attachments.html   thumbnails / PDF links / picker
+│   │   ├── form.html          fields with errors, error summary (NFR-22)
+│   │   ├── pagination.html, filters.html, summary-cards.html, dashboard.html, ui.html
 │   ├── auth/       login, register, verify-mobile, change-password
 │   ├── citizen/    my-complaints, watching, complaint-form, submitted
-│   ├── complaint/  detail (shared by all roles), duplicate-confirm
+│   ├── complaint/  detail (shared by all roles), action-form (incl. duplicate confirmation)
 │   ├── officer/    queue
-│   ├── admin/      dashboard, complaints, departments, categories, areas, officers, citizens
+│   ├── admin/      dashboard, complaints, departments, department-form, categories, category-form,
+│   │               areas, area-form, officers, officer-form, citizens, reset-password
 │   ├── notification/ list
-│   └── error/      404, 403, 500 (no stack traces)
+│   └── error/      403, 404, 500, 4xx (no stack traces)
 └── static/
     ├── css/app.css
-    ├── js/app.js              file-count/size pre-check, confirm dialogs (server re-validates)
+    ├── js/app.js              progressive only (doc 10 §1.3): confirm, submit-disable, file pre-check,
+    │                          character counter, bell refresh; every flow works without it
     └── images/logo.svg
 ```
 
 - **Allowed actions** are computed once in the service (`Set<Action> allowedActions(user, complaint)`) and passed to the view, so templates never repeat business rules.
-- The unread count and current user are added to every page model by `GlobalModelAdvice`, using one indexed `COUNT(*)` query.
+- The unread count, current user and `activeMenu` are added to every page model by `GlobalModelAdvice`, using one indexed `COUNT(*)` query.
+- Dates are formatted only through the `@fmt` bean (`common.web.DisplayFormat`, `Locale.ENGLISH`, NFR-23); status labels, badge classes and icons come from `ComplaintStatus` (doc 10 §1.5, §5.1).
 
 ---
 
@@ -299,3 +305,4 @@ A throwaway test project with the exact dependency set from §2.2 was built and 
 | 2026-11-22 | Initial draft; versions verified with a test build |
 | 2026-11-22 | Admin name/mobile settings (D26) and `HousekeepingJob` (D28) from doc 08 |
 | 2026-11-22 | Doc 09 alignment: new controllers (`OfficerQueueController`, `AdminComplaintController`, `CitizenWorkflowController`), `Action` enum, `ActionLinks`, `AttachmentService`; `/verify-mobile/**`, `/error` URL rules; multipart per-file limit moved to the service (D36) |
+| 2026-11-22 | Doc 10 alignment: template list (no separate `duplicate-confirm`, singular master-data forms, `error/4xx`), fragment list, `app.js` role, `activeMenu`, `@fmt` (D49–D53) |

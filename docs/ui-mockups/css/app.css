@@ -1,0 +1,126 @@
+/*
+ * Smart Grievance - application stylesheet (reference copy for doc 10).
+ * The real file is src/main/resources/static/css/app.css; it is loaded after Bootstrap 5.3.8.
+ * Status colours: doc 10 section 5.1 (decision D47). Contrast is checked by
+ * docs/specs/verify/check-10-contrast.py (every pair >= 4.5:1, WCAG AA).
+ */
+:root {
+  /* one bg/fg pair per status (NFR-21) */
+  --status-submitted-bg: #e2e3e5;    --status-submitted-fg: #2b2f32;
+  --status-under-review-bg: #cff4fc; --status-under-review-fg: #055160;
+  --status-assigned-bg: #0a58ca;     --status-assigned-fg: #ffffff;
+  --status-in-progress-bg: #ffc107;  --status-in-progress-fg: #212529;
+  --status-reopened-bg: #fd7e14;     --status-reopened-fg: #212529;
+  --status-resolved-bg: #146c43;     --status-resolved-fg: #ffffff;
+  --status-closed-bg: #495057;       --status-closed-fg: #ffffff;
+  --status-rejected-bg: #b02a37;     --status-rejected-fg: #ffffff;
+  --status-duplicate-bg: #6f42c1;    --status-duplicate-fg: #ffffff;
+  --status-withdrawn-bg: #ffffff;    --status-withdrawn-fg: #495057;
+  /* status groups (filter chips, dashboard section headings) */
+  --status-group-pending-bg: #cff4fc;   --status-group-pending-fg: #055160;
+  --status-group-active-bg: #cfe2ff;    --status-group-active-fg: #052c65;
+  --status-group-not-final-bg: #e7f1ff; --status-group-not-final-fg: #052c65;
+  --status-group-final-bg: #e2e3e5;     --status-group-final-fg: #2b2f32;
+  --status-group-all-bg: #f8f9fa;       --status-group-all-fg: #212529;
+  /* other badges */
+  --overdue-bg: #f8d7da;  --overdue-fg: #58151c;
+  --awaiting-bg: #e9ecef; --awaiting-fg: #343a40;
+}
+
+/* ---- status badge: fragments/status-badge.html ---- */
+.badge-status {
+  display: inline-flex; align-items: center; gap: .3em;
+  font-weight: 600; font-size: .8125rem; line-height: 1.2;
+  padding: .3em .6em; border-radius: .375rem; border: 1px solid transparent;
+  white-space: nowrap;
+}
+.status-submitted    { background: var(--status-submitted-bg);    color: var(--status-submitted-fg); border-color: #c4c8cb; }
+.status-under-review { background: var(--status-under-review-bg); color: var(--status-under-review-fg); border-color: #9eeaf9; }
+.status-assigned     { background: var(--status-assigned-bg);     color: var(--status-assigned-fg); }
+.status-in-progress  { background: var(--status-in-progress-bg);  color: var(--status-in-progress-fg); }
+.status-reopened     { background: var(--status-reopened-bg);     color: var(--status-reopened-fg); }
+.status-resolved     { background: var(--status-resolved-bg);     color: var(--status-resolved-fg); }
+.status-closed       { background: var(--status-closed-bg);       color: var(--status-closed-fg); }
+.status-rejected     { background: var(--status-rejected-bg);     color: var(--status-rejected-fg); }
+.status-duplicate    { background: var(--status-duplicate-bg);    color: var(--status-duplicate-fg); }
+.status-withdrawn    { background: var(--status-withdrawn-bg);    color: var(--status-withdrawn-fg); border-color: #6c757d; border-style: dashed; }
+.status-group-pending   { background: var(--status-group-pending-bg);   color: var(--status-group-pending-fg); }
+.status-group-active    { background: var(--status-group-active-bg);    color: var(--status-group-active-fg); }
+.status-group-not-final { background: var(--status-group-not-final-bg); color: var(--status-group-not-final-fg); border-color: #9ec5fe; }
+.status-group-final     { background: var(--status-group-final-bg);     color: var(--status-group-final-fg); }
+.status-group-all       { background: var(--status-group-all-bg);       color: var(--status-group-all-fg); border-color: #dee2e6; }
+.badge-overdue  { background: var(--overdue-bg);  color: var(--overdue-fg);  border-color: #f1aeb5; }
+.badge-awaiting { background: var(--awaiting-bg); color: var(--awaiting-fg); border-color: #ced4da; }
+
+/* ---- accessibility ---- */
+.skip-link { position: absolute; left: -9999px; top: 0; z-index: 2000; }
+.skip-link:focus { left: .5rem; top: .5rem; padding: .5rem 1rem; background: #fff; border: 2px solid #0a58ca; }
+:focus-visible { outline: 3px solid #0a58ca; outline-offset: 2px; }
+.btn:focus-visible, .form-control:focus-visible, .form-select:focus-visible { outline: 3px solid #0a58ca; outline-offset: 1px; }
+
+/* ---- layout ---- */
+body { background: #f5f6f8; }
+main { min-height: 70vh; }
+.brand-mark { font-weight: 700; letter-spacing: .01em; }
+.page-header h1 { font-size: 1.5rem; margin: 0; }
+.complaint-no { white-space: nowrap; font-family: var(--bs-font-monospace); font-weight: 600; }
+.card-summary { text-decoration: none; color: inherit; display: block; height: 100%; }
+.card-summary:hover .card, .card-summary:focus-visible .card { border-color: #0a58ca; }
+.card-summary .count { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+.card-summary.card-overdue .card { border-left: .35rem solid #b02a37; }
+
+/* ---- timeline: fragments/timeline.html ---- */
+.timeline { list-style: none; padding-left: 0; margin: 0; position: relative; }
+.timeline::before { content: ""; position: absolute; left: .95rem; top: .25rem; bottom: .25rem; width: 2px; background: #dee2e6; }
+.timeline-item { position: relative; padding-left: 2.75rem; padding-bottom: 1.25rem; }
+.timeline-item:last-child { padding-bottom: 0; }
+.timeline-icon {
+  position: absolute; left: 0; top: 0; width: 2rem; height: 2rem; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; border: 2px solid #adb5bd; color: #495057;
+}
+.timeline-item.is-status .timeline-icon  { border-color: #0a58ca; color: #0a58ca; }
+.timeline-item.is-edit .timeline-icon    { border-color: #6c757d; color: #6c757d; border-style: dashed; }
+.timeline-item.is-link .timeline-icon    { border-color: #6f42c1; color: #6f42c1; }
+.timeline-item.is-system .timeline-icon  { border-color: #495057; color: #495057; background: #e9ecef; }
+.timeline-meta { font-size: .8125rem; color: #5c636a; }
+.timeline-remark { background: #fff; border: 1px solid #dee2e6; border-radius: .375rem; padding: .5rem .75rem; margin-top: .35rem; white-space: pre-line; overflow-wrap: anywhere; }
+.timeline-changes { margin: .35rem 0 0; padding-left: 1.1rem; font-size: .875rem; }
+.timeline-changes del { color: #842029; }
+.timeline-changes ins { color: #0f5132; text-decoration: none; }
+
+/* ---- attachments: fragments/attachments.html ---- */
+.thumb { width: 96px; height: 96px; object-fit: cover; border-radius: .375rem; border: 1px solid #dee2e6; background: #e9ecef; }
+.thumb-pdf { width: 96px; height: 96px; display: flex; align-items: center; justify-content: center; flex-direction: column; border-radius: .375rem; border: 1px solid #dee2e6; background: #fff; color: #b02a37; font-size: 2rem; }
+.attachment-removed { opacity: .6; }
+
+/* ---- complaint lists: stacked on phones, table from md up ---- */
+.list-stacked .list-group-item { padding: .75rem; }
+.list-stacked .title { font-weight: 600; overflow-wrap: anywhere; }
+.table-complaints td, .table-complaints th { vertical-align: middle; }
+.table-complaints .col-title { max-width: 22rem; overflow-wrap: anywhere; }
+.row-overdue { box-shadow: inset .25rem 0 0 #b02a37; }
+
+/* ---- buttons in the action bar wrap nicely on phones ---- */
+.action-bar { display: flex; flex-wrap: wrap; gap: .5rem; }
+@media (max-width: 575.98px) { .action-bar .btn { flex: 1 1 calc(50% - .5rem); } }
+
+/* ---- submit-disabled behaviour (static/js/app.js adds .is-submitting) ---- */
+form.is-submitting [type=submit] { pointer-events: none; opacity: .65; }
+
+/* ---- empty state ---- */
+.empty-state { text-align: center; padding: 2.5rem 1rem; color: #495057; }
+.empty-state .bi { font-size: 2.5rem; color: #6c757d; }
+
+/* ---- no-JavaScript fallback (also emitted inside <noscript> in layouts/main.html) ---- */
+.no-js .navbar-collapse { display: block !important; }
+.no-js .dropdown-menu { display: block; position: static; border: 0; background: transparent; padding-left: 1rem; }
+.no-js .js-only { display: none !important; }
+
+/* ---- navbar (layouts/main.html) ---- */
+.app-navbar { background: #0b3b70; }
+.app-navbar .nav-link { color: rgba(255,255,255,.85); }
+.app-navbar .nav-link:hover, .app-navbar .nav-link:focus-visible { color: #fff; }
+.app-navbar .nav-link.active { color: #fff; font-weight: 600; box-shadow: inset 0 -3px 0 #ffc107; }
+.bell-count { font-size: .7rem; position: absolute; top: .15rem; left: 1.35rem; }
+.mockup-note { font-size: .75rem; color: #5c636a; }

@@ -1,0 +1,135 @@
+<!doctype html>
+<!-- Static mock-up of SCR-40 admin/dashboard (doc 10 §4.11). Not application code.
+     Chart.js (FR-64, Could) is progressive: without JavaScript the tables below carry the same numbers. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard · Smart Grievance</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<nav class="navbar navbar-expand-md navbar-dark app-navbar" aria-label="Main">
+  <div class="container-lg">
+    <a class="navbar-brand brand-mark" href="#"><i class="bi bi-megaphone-fill" aria-hidden="true"></i> Smart Grievance</a>
+    <div class="d-flex align-items-center order-md-last gap-1">
+      <a class="nav-link position-relative px-2 text-white" href="#" aria-label="Notifications, 12 unread">
+        <i class="bi bi-bell-fill fs-5" aria-hidden="true"></i><span class="badge rounded-pill text-bg-danger bell-count">12</span>
+      </a>
+      <button class="navbar-toggler js-only" type="button" aria-label="Menu"><span class="navbar-toggler-icon"></span></button>
+    </div>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">All Complaints</a></li>
+        <li class="nav-item"><a class="nav-link dropdown-toggle" href="#">Master data</a></li>
+        <li class="nav-item"><a class="nav-link dropdown-toggle" href="#">Users</a></li>
+      </ul>
+      <ul class="navbar-nav"><li class="nav-item"><a class="nav-link dropdown-toggle" href="#"><i class="bi bi-shield-lock" aria-hidden="true"></i> System Administrator</a></li></ul>
+    </div>
+  </div>
+</nav>
+
+<main id="main" class="container-lg py-3">
+  <div class="page-header d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+    <div><h1>Dashboard</h1><div class="small text-body-secondary">As of 22-Nov-2026 03:45 PM</div></div>
+    <a class="btn btn-sm btn-outline-primary" href="#"><i class="bi bi-list-ul" aria-hidden="true"></i> All complaints</a>
+  </div>
+
+  <!-- fragments/summary-cards.html (FR-60): every card links to All Complaints with a filter -->
+  <section aria-label="Summary" class="mb-3">
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-lg-6 g-2">
+      <div class="col"><a class="card-summary" href="#"><div class="card"><div class="card-body p-2"><div class="small text-body-secondary">Total</div><div class="count">128</div></div></div></a></div>
+      <div class="col"><a class="card-summary" href="#"><div class="card"><div class="card-body p-2"><div class="small"><span class="badge-status status-group-pending">Pending</span></div><div class="count mt-1">9</div></div></div></a></div>
+      <div class="col"><a class="card-summary" href="#"><div class="card"><div class="card-body p-2"><div class="small"><span class="badge-status status-assigned">Assigned</span></div><div class="count mt-1">14</div></div></div></a></div>
+      <div class="col"><a class="card-summary" href="#"><div class="card"><div class="card-body p-2"><div class="small"><span class="badge-status status-in-progress">In Progress</span></div><div class="count mt-1">11</div></div></div></a></div>
+      <div class="col"><a class="card-summary" href="#"><div class="card"><div class="card-body p-2"><div class="small"><span class="badge-status status-reopened">Reopened</span></div><div class="count mt-1">3</div></div></div></a></div>
+      <div class="col"><a class="card-summary card-overdue" href="#"><div class="card"><div class="card-body p-2"><div class="small text-danger-emphasis fw-semibold"><i class="bi bi-alarm" aria-hidden="true"></i> Overdue</div><div class="count mt-1">7</div></div></div></a></div>
+      <div class="col"><a class="card-summary" href="#"><div class="card"><div class="card-body p-2"><div class="small"><span class="badge-status status-resolved">Resolved</span></div><div class="count mt-1">6</div></div></div></a></div>
+      <div class="col"><a class="card-summary" href="#"><div class="card"><div class="card-body p-2"><div class="small"><span class="badge-status status-closed">Closed</span></div><div class="count mt-1">61</div></div></div></a></div>
+      <div class="col"><a class="card-summary" href="#"><div class="card"><div class="card-body p-2"><div class="small"><span class="badge-status status-rejected">Rejected</span></div><div class="count mt-1">8</div></div></div></a></div>
+      <div class="col"><a class="card-summary" href="#"><div class="card"><div class="card-body p-2"><div class="small"><span class="badge-status status-duplicate">Duplicate</span></div><div class="count mt-1">10</div></div></div></a></div>
+      <div class="col"><a class="card-summary" href="#"><div class="card"><div class="card-body p-2"><div class="small"><span class="badge-status status-withdrawn">Withdrawn</span></div><div class="count mt-1">6</div></div></div></a></div>
+    </div>
+  </section>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <section class="card mb-3" aria-labelledby="h-chart">
+        <div class="card-body">
+          <h2 id="h-chart" class="h6 text-uppercase text-body-secondary">Open and closed by department</h2>
+          <div style="position:relative;height:240px"><canvas id="deptChart" role="img" aria-label="Bar chart of open and closed complaints by department. The same numbers are in the By department table."></canvas></div>
+        </div>
+      </section>
+      <section class="card mb-3" aria-labelledby="h-overdue">
+        <div class="card-body pb-1">
+          <div class="d-flex justify-content-between align-items-baseline">
+            <h2 id="h-overdue" class="h6 text-uppercase text-body-secondary">Overdue (top 10)</h2><a class="small" href="#">View all 7</a>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 table-complaints">
+            <thead class="table-light"><tr><th scope="col">Complaint</th><th scope="col" class="d-none d-sm-table-cell">Department</th><th scope="col">Status</th><th scope="col" class="text-end">Days / SLA</th></tr></thead>
+            <tbody>
+              <tr><td><a class="complaint-no" href="#">GRV-2026-000005</a><div class="small text-body-secondary">Large pothole on FC Road</div></td><td class="d-none d-sm-table-cell">Road Maintenance</td><td><span class="badge-status status-assigned">Assigned</span></td><td class="text-end"><span class="badge-status badge-overdue">15 / 10</span></td></tr>
+              <tr><td><a class="complaint-no" href="#">GRV-2026-000014</a><div class="small text-body-secondary">Contaminated water supply in Hadapsar</div></td><td class="d-none d-sm-table-cell">Water Supply</td><td><span class="badge-status status-assigned">Assigned</span></td><td class="text-end"><span class="badge-status badge-overdue">5 / 2</span></td></tr>
+              <tr><td><a class="complaint-no" href="#">GRV-2026-000018</a><div class="small text-body-secondary">Garbage dumped near Kasba Ganpati</div></td><td class="d-none d-sm-table-cell"><em>Not assigned</em></td><td><span class="badge-status status-under-review">Under Review</span></td><td class="text-end"><span class="badge-status badge-overdue">4 / 3</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    <div class="col-lg-5">
+      <!-- fragments/count-table.html (FR-61): By category / department / area -->
+      <section class="card mb-3" aria-labelledby="h-dept">
+        <div class="card-body pb-1"><h2 id="h-dept" class="h6 text-uppercase text-body-secondary">By department</h2></div>
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th scope="col">Department</th><th scope="col" class="text-end">Open</th><th scope="col" class="text-end">Closed</th></tr></thead>
+          <tbody>
+            <tr><td>Sanitation</td><td class="text-end"><a href="#">9</a></td><td class="text-end"><a href="#">21</a></td></tr>
+            <tr><td>Water Supply</td><td class="text-end"><a href="#">11</a></td><td class="text-end"><a href="#">27</a></td></tr>
+            <tr><td>Road Maintenance</td><td class="text-end"><a href="#">8</a></td><td class="text-end"><a href="#">12</a></td></tr>
+            <tr><td>Drainage</td><td class="text-end"><a href="#">5</a></td><td class="text-end"><a href="#">14</a></td></tr>
+            <tr><td>Electrical</td><td class="text-end"><a href="#">7</a></td><td class="text-end"><a href="#">11</a></td></tr>
+            <tr><td><em>Not assigned</em></td><td class="text-end"><a href="#">3</a></td><td class="text-end"><a href="#">0</a></td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="card mb-3" aria-labelledby="h-cat">
+        <div class="card-body pb-1"><h2 id="h-cat" class="h6 text-uppercase text-body-secondary">By category</h2></div>
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th scope="col">Category</th><th scope="col" class="text-end">Open</th><th scope="col" class="text-end">Closed</th></tr></thead>
+          <tbody>
+            <tr><td>Garbage</td><td class="text-end"><a href="#">10</a></td><td class="text-end"><a href="#">22</a></td></tr>
+            <tr><td>Water Leakage</td><td class="text-end"><a href="#">11</a></td><td class="text-end"><a href="#">27</a></td></tr>
+            <tr><td>Road Damage</td><td class="text-end"><a href="#">8</a></td><td class="text-end"><a href="#">12</a></td></tr>
+            <tr><td>Drainage</td><td class="text-end"><a href="#">5</a></td><td class="text-end"><a href="#">14</a></td></tr>
+            <tr><td>Streetlight</td><td class="text-end"><a href="#">7</a></td><td class="text-end"><a href="#">10</a></td></tr>
+            <tr><td>Other</td><td class="text-end"><a href="#">2</a></td><td class="text-end"><a href="#">0</a></td></tr>
+          </tbody>
+        </table>
+      </section>
+      <p class="small text-body-secondary">"Open" = not finished (includes Resolved, waiting for the citizen). "Closed" = Closed, Rejected, Duplicate or Withdrawn. The By area table follows the same layout.</p>
+    </div>
+  </div>
+</main>
+
+<!-- In the app: static/vendor/chart.umd.min.js, loaded only on this page via layout:fragment="scripts".
+     The data comes from dash.chartJson written with th:inline="javascript". -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.js"></script>
+<script>
+  const data = {"labels":["Sanitation","Water Supply","Road Maint.","Drainage","Electrical","Not assigned"],"open":[9,11,8,5,7,3],"closed":[21,27,12,14,11,0]};
+  new Chart(document.getElementById('deptChart'), {
+    type: 'bar',
+    data: { labels: data.labels, datasets: [
+      { label: 'Open', data: data.open, backgroundColor: '#0a58ca' },
+      { label: 'Closed', data: data.closed, backgroundColor: '#adb5bd' } ] },
+    options: { maintainAspectRatio: false, animation: false, responsive: true,
+      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+  });
+</script>
+</body>
+</html>

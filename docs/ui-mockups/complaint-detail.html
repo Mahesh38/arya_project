@@ -1,0 +1,190 @@
+<!doctype html>
+<!-- Static mock-up of SCR-20 complaint/detail (doc 10 §4.8), owner view of a RESOLVED complaint.
+     Not application code: the real template is templates/complaint/detail.html. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GRV-2026-000001 · Smart Grievance</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<!-- layouts/main.html :: navbar, citizen variant -->
+<nav class="navbar navbar-expand-md navbar-dark app-navbar" aria-label="Main">
+  <div class="container-lg">
+    <a class="navbar-brand brand-mark" href="#"><i class="bi bi-megaphone-fill" aria-hidden="true"></i> Smart Grievance</a>
+    <div class="d-flex align-items-center order-md-last gap-1">
+      <a class="nav-link position-relative px-2 text-white" href="#" aria-label="Notifications, 2 unread">
+        <i class="bi bi-bell-fill fs-5" aria-hidden="true"></i>
+        <span class="badge rounded-pill text-bg-danger bell-count">2</span>
+      </a>
+      <button class="navbar-toggler js-only" type="button" aria-label="Menu"><span class="navbar-toggler-icon"></span></button>
+    </div>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">My Complaints</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Watching</a></li>
+        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-plus-lg" aria-hidden="true"></i> New Complaint</a></li>
+      </ul>
+      <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#"><i class="bi bi-person-circle" aria-hidden="true"></i> Mahesh Joshi</a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#">Change password</a></li>
+            <li><form><button class="dropdown-item" type="button">Log out</button></form></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<main id="main" class="container-lg py-3">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small mb-2">
+      <li class="breadcrumb-item"><a href="#">My Complaints</a></li>
+      <li class="breadcrumb-item active" aria-current="page">GRV-2026-000001</li>
+    </ol>
+  </nav>
+
+  <!-- flash (layouts/main.html :: flash) -->
+  <div class="alert alert-success alert-dismissible py-2" role="status">
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Complaint updated
+  </div>
+
+  <!-- header -->
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+    <div>
+      <div class="text-body-secondary small"><span class="complaint-no">GRV-2026-000001</span> · Water Leakage · Kothrud</div>
+      <h1 class="h4 mb-1">Pipeline leaking on Karve Road near Kothrud Depot</h1>
+      <div class="small text-body-secondary">Submitted 20-Nov-2026 09:15 AM · Last updated 22-Nov-2026 11:40 AM</div>
+    </div>
+    <span class="badge-status status-resolved fs-6"><i class="bi bi-check2-circle" aria-hidden="true"></i> Resolved</span>
+  </div>
+
+  <!-- review-window banner (shown when c.can('CLOSE') or c.can('REOPEN')) -->
+  <div class="alert alert-success border-success-subtle" role="region" aria-label="Review this resolution">
+    <h2 class="h6 alert-heading mb-1"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Please review the resolution by 29-Nov-2026</h2>
+    <p class="mb-2 small">Water Supply Dept. marked this complaint resolved on 22-Nov-2026 11:40 AM. Close it if the problem is fixed, or reopen it if it is not. If you do nothing, it will close automatically on 29-Nov-2026.</p>
+    <!-- fragments/complaint-actions.html -->
+    <div class="action-bar">
+      <a class="btn btn-success" href="#"><i class="bi bi-check2-all" aria-hidden="true"></i> Close complaint</a>
+      <a class="btn btn-outline-primary" href="#"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Reopen</a>
+    </div>
+    <p class="small text-body-secondary mt-2 mb-0">You can reopen this complaint 2 more times.</p>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <section class="card mb-3" aria-labelledby="h-details">
+        <div class="card-body">
+          <h2 id="h-details" class="h6 text-uppercase text-body-secondary">Details</h2>
+          <p class="mb-3" style="white-space:pre-line">Water has been leaking from the main pipeline on Karve Road for two days. The footpath is flooded and traffic slows down near the depot bus stop.</p>
+          <dl class="row small mb-0">
+            <dt class="col-sm-3">Address</dt><dd class="col-sm-9">Karve Road, opposite Kothrud Depot bus stop</dd>
+            <dt class="col-sm-3">Area</dt><dd class="col-sm-9">Kothrud</dd>
+            <dt class="col-sm-3">Category</dt><dd class="col-sm-9">Water Leakage</dd>
+            <dt class="col-sm-3">Department</dt><dd class="col-sm-9">Water Supply</dd>
+          </dl>
+        </div>
+      </section>
+
+      <section class="card mb-3" aria-labelledby="h-files">
+        <div class="card-body">
+          <h2 id="h-files" class="h6 text-uppercase text-body-secondary">Attachments (3)</h2>
+          <!-- fragments/attachments.html -->
+          <ul class="list-unstyled d-flex flex-wrap gap-2 mb-0">
+            <li><a href="#" class="d-block text-decoration-none small text-center">
+              <img class="thumb" alt="Photo: leak-karve-road.jpg" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><rect width='96' height='96' fill='%236c9bd2'/><path d='M0 70 Q30 55 48 68 T96 62 V96 H0Z' fill='%23345e8a'/><circle cx='70' cy='26' r='10' fill='%23ffe08a'/></svg>">
+              <span class="d-block text-truncate" style="max-width:96px">leak-karve-road.jpg</span><span class="text-body-secondary">1.2 MB</span></a></li>
+            <li><a href="#" class="d-block text-decoration-none small text-center">
+              <img class="thumb" alt="Photo: leak-closeup.jpg" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'><rect width='96' height='96' fill='%238aa6a3'/><rect x='10' y='40' width='76' height='16' rx='8' fill='%23475f5c'/><circle cx='48' cy='70' r='6' fill='%23cfe8ff'/></svg>">
+              <span class="d-block text-truncate" style="max-width:96px">leak-closeup.jpg</span><span class="text-body-secondary">840 KB</span></a></li>
+            <li><a href="#" class="d-block text-decoration-none small text-center">
+              <span class="thumb-pdf"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i><span class="small">PDF</span></span>
+              <span class="d-block text-truncate" style="max-width:96px">water-bill.pdf</span><span class="text-body-secondary">210 KB</span></a></li>
+          </ul>
+        </div>
+      </section>
+      <section class="card mb-3" aria-labelledby="h-timeline">
+        <div class="card-body">
+          <h2 id="h-timeline" class="h6 text-uppercase text-body-secondary mb-3">History</h2>
+          <!-- fragments/timeline.html -->
+          <ol class="timeline">
+            <li class="timeline-item is-status">
+              <span class="timeline-icon"><i class="bi bi-plus-lg" aria-hidden="true"></i></span>
+              <div class="fw-semibold">Complaint submitted <span class="badge-status status-submitted ms-1"><i class="bi bi-inbox" aria-hidden="true"></i> Submitted</span></div>
+              <div class="timeline-meta">20-Nov-2026 09:15 AM · You</div>
+            </li>
+            <li class="timeline-item is-edit">
+              <span class="timeline-icon"><i class="bi bi-pencil" aria-hidden="true"></i></span>
+              <div class="fw-semibold">Complaint edited</div>
+              <div class="timeline-meta">20-Nov-2026 09:32 AM · You</div>
+              <ul class="timeline-changes">
+                <li>Title changed from <del>"Pipe leak Karve Road"</del> to <ins>"Pipeline leaking on Karve Road near Kothrud Depot"</ins></li>
+                <li>Attachment added: <ins>leak-closeup.jpg</ins></li>
+              </ul>
+              <div class="timeline-remark small">Reason: Added a clearer photo.</div>
+            </li>
+            <li class="timeline-item is-status">
+              <span class="timeline-icon"><i class="bi bi-search" aria-hidden="true"></i></span>
+              <div class="fw-semibold">Review started <span class="badge-status status-under-review ms-1"><i class="bi bi-search" aria-hidden="true"></i> Under Review</span></div>
+              <div class="timeline-meta">20-Nov-2026 10:05 AM · Grievance Cell</div>
+            </li>
+            <li class="timeline-item is-status">
+              <span class="timeline-icon"><i class="bi bi-building" aria-hidden="true"></i></span>
+              <div class="fw-semibold">Assigned to Water Supply <span class="badge-status status-assigned ms-1"><i class="bi bi-building" aria-hidden="true"></i> Assigned</span></div>
+              <div class="timeline-meta">20-Nov-2026 10:07 AM · Grievance Cell</div>
+            </li>
+            <li class="timeline-item is-status">
+              <span class="timeline-icon"><i class="bi bi-tools" aria-hidden="true"></i></span>
+              <div class="fw-semibold">Work started <span class="badge-status status-in-progress ms-1"><i class="bi bi-tools" aria-hidden="true"></i> In Progress</span></div>
+              <div class="timeline-meta">20-Nov-2026 02:30 PM · Water Supply Dept.</div>
+              <div class="timeline-remark small">Team visited. Pipe replacement scheduled for tomorrow morning.</div>
+            </li>
+            <li class="timeline-item is-link">
+              <span class="timeline-icon"><i class="bi bi-link-45deg" aria-hidden="true"></i></span>
+              <div class="fw-semibold">Another complaint about the same problem was linked to this one</div>
+              <div class="timeline-meta">21-Nov-2026 09:00 AM · Water Supply Dept.</div>
+            </li>
+            <li class="timeline-item">
+              <span class="timeline-icon"><i class="bi bi-chat-left-text" aria-hidden="true"></i></span>
+              <div class="fw-semibold">Progress update</div>
+              <div class="timeline-meta">21-Nov-2026 04:10 PM · Water Supply Dept.</div>
+              <div class="timeline-remark small">Old pipe section removed, new pipe being fitted.</div>
+            </li>
+            <li class="timeline-item is-status">
+              <span class="timeline-icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
+              <div class="fw-semibold">Resolved <span class="badge-status status-resolved ms-1"><i class="bi bi-check2-circle" aria-hidden="true"></i> Resolved</span></div>
+              <div class="timeline-meta">22-Nov-2026 11:40 AM · Water Supply Dept.</div>
+              <div class="timeline-remark small">Pipe replaced and road surface restored. Please check and close.</div>
+            </li>
+          </ol>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-lg-4">
+      <section class="card" aria-labelledby="h-about">
+        <div class="card-body small">
+          <h2 id="h-about" class="h6 text-uppercase text-body-secondary">About this page</h2>
+          <p class="mb-1">Only you, the Grievance Cell and the Water Supply department can see this complaint.</p>
+          <p class="mb-0">Citizens who reported the same problem may follow its updates, but they never see your name.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer class="border-top py-3 mt-4 small text-body-secondary">
+  <div class="container-lg d-flex flex-wrap justify-content-between gap-2">
+    <span>Smart Public Grievance and Complaint Management System</span>
+    <span>Times are shown in IST (Asia/Kolkata)</span>
+  </div>
+</footer>
+</body>
+</html>

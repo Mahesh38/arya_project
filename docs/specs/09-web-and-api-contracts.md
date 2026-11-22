@@ -311,7 +311,7 @@ Three controllers with the same shape: `DepartmentAdminController` (`/admin/depa
 | Pattern | Method & path | Input | Service call | Success | Errors |
 |---|---|---|---|---|---|
 | list | `GET /admin/{type}` | query `page`, `size`, `active` (`true`/`false`/absent = all) | `MasterDataService.list{Type}s(filter)` | view `admin/{type}`; model `page` (`PageResult<{Type}Row>`), `filter` | — |
-| new | `GET /admin/{type}/new` | — | — (categories: `activeDepartments()`) | view `admin/{type}-form`; model `form`, `mode` = `CREATE` (+ `departments` for categories) | — |
+| new | `GET /admin/{type}/new` | — | — (categories: `activeDepartments()`) | view `admin/{type}-form`, with the **singular** name: `admin/department-form`, `admin/category-form`, `admin/area-form` (D52); model `form`, `mode` = `CREATE` (+ `departments` for categories) | — |
 | create | `POST /admin/{type}` | `{Type}Form` | `MasterDataService.create{Type}(form)` | `302 /admin/{type}`, "Department saved" | V: field errors; name already used (case-insensitive, D29) → field error on `name`; inactive default department → field error |
 | edit | `GET /admin/{type}/{id}/edit` | path `id` | `MasterDataService.{type}Form(id)` | same view, `mode` = `EDIT`, `id` | 404 |
 | update | `POST /admin/{type}/{id}` | `{Type}Form` | `MasterDataService.update{Type}(id, form)` | `302 /admin/{type}`, "… saved" | V as create; 404 |
@@ -362,7 +362,7 @@ There are no routes to create, edit or deactivate **admin** accounts. The only a
 | Path | Role | Purpose |
 |---|---|---|
 | `/webjars/**`, `/css/**`, `/js/**`, `/images/**`, `/favicon.ico` | public | Static resources (ADR-12) |
-| `/error` | public | Spring Boot error dispatch; renders `error/403`, `error/404`, `error/500` (doc 12). Must be public, otherwise an error page for an anonymous user would loop to the login page. |
+| `/error` | public | Spring Boot error dispatch; renders `error/403`, `error/404`, `error/500`, and `error/4xx` for any other 4xx such as 400 and 405 (doc 10 SCR-90…93, D52; texts in doc 12). Must be public, otherwise an error page for an anonymous user would loop to the login page. |
 
 ### 3.12 Route count
 
@@ -503,6 +503,7 @@ View models are Java **records** built for one screen (doc 07 §3.1). Templates 
 | `currentUser` | `CurrentUserView` (`id`, `fullName`, `role`, `mobileVerified`, `departmentName`) or `null` | Navbar name, role menus, verify banner |
 | `unreadCount` | `long` | Bell badge (FR-71). One indexed `COUNT(*)` (doc 08 §5.11). Not added for anonymous users or on `/error` |
 | `homeUrl` | String | Role home (R-01 targets) for the logo link |
+| `activeMenu` | String | Navbar item to highlight, derived from the request path (`my`, `watching`, `new`, `queue`, `dashboard`, `complaints`, `masterdata`, `users`, `notifications`; on `/complaints/{no}` the role's list). Doc 10 §3.2, D53 |
 | `flashSuccess`, `flashError`, `flashInfo` | String | §1.3 (present only after a redirect) |
 
 **`PageResult<T>`** (`common`): `items` (List<T>), `page`, `size`, `totalItems`, `totalPages`, `hasPrevious`, `hasNext`, `firstItemNumber`, `lastItemNumber` (for "Showing 11–20 of 57").
@@ -566,7 +567,7 @@ Methods for templates: `can(String actionName)` → boolean, `isFinal()`, `isRes
 
 **`AttachmentView`**: `id`, `originalName`, `contentType`, `image` (bool → thumbnail with `<img src="/attachments/{id}">`), `sizeLabel` ("1.2 MB"), `purpose`, `uploadedAt`, `deleted`, `deletedAt`.
 
-**`TimelineEntry`**: `type` (`EventType`), `fromStatus`, `toStatus`, `actorLabel` (name or role label; "System" when null — which one a citizen sees is O2, doc 10/11), `actorRole`, `departmentName` (T03/T04), `relatedNo` (duplicate link), `remark`, `createdAt`, `changes` (`List<FieldChange>` with `field`, `oldValue`, `newValue` for `EDITED`, FR-17).
+**`TimelineEntry`**: `type` (`EventType`), `fromStatus`, `toStatus`, `actorLabel` (computed per viewer by `TimelineService`: staff see "{name} (Officer, {Department})"; citizens see "You", "The complainant", "{Department} Dept." or "Grievance Cell" — never a staff name; "System" when null. Doc 10 §7.3, D48), `actorRole`, `departmentName` (T03/T04), `relatedNo` (duplicate link), `remark`, `createdAt`, `changes` (`List<FieldChange>` with `field`, `oldValue`, `newValue` for `EDITED`, FR-17).
 
 ### 5.4 Action form page (`complaint/action-form`, R-27, R-40 … R-70)
 
@@ -721,6 +722,7 @@ The controller turns the set into links with a small web helper `complaint.web.A
 
 ```text
 record ActionLink(Action action, String label, String url, HttpMethod method, boolean confirm, String style)
+// style: primary | success | secondary | danger (mapping per action in doc 10 §5.2, D54)
 // GET for actions with a form page (url = /{prefix}/complaints/{no}/{segment}),
 // POST for START_REVIEW, UNWATCH, WATCH (rendered as a small form with _csrf and version)
 ```
@@ -978,10 +980,10 @@ Result:
 | K3 | After `POST /verify-mobile` succeeds, the principal in the session still says `mobileVerified = false` until it is refreshed. The controller replaces the `Authentication` with a refreshed `CurrentUser`. | 11 |
 | K4 | `GET /notifications/unread-count` needs its own `AuthenticationEntryPoint` (401 JSON, not a redirect). | 11 |
 | K5 | Expired-session `POST` → stale CSRF token → must go to `/login?expired`, not 403 (§1.6). | 11, 12 |
-| K6 | O2 is still open: whether a citizen sees the officer's name or only "Department officer" in `TimelineEntry.actorLabel`. The view model supports both. | 10, 11 |
+| K6 | ~~O2: officer name or role label for citizens.~~ **Decided in doc 10 §7.3 (D48):** citizens see the department / "Grievance Cell", staff see names. Doc 11 tests that no staff name reaches a citizen view. | 11 |
 | K7 | Officers learn that a complaint number exists in another department through the duplicate error message (R-54). Accepted for staff; doc 11 to confirm. | 11 |
 | K8 | Message texts in this document are the English defaults. Doc 12 decides whether they move to `messages.properties` and fixes the exact wording. | 12 |
-| K9 | Status badge colours and labels for each status and group (`statusOptions.badgeClass`). | 10 |
+| K9 | ~~Status badge colours and labels.~~ **Decided in doc 10 §5.1 (D47).** | — |
 | K10 | Admin accounts other than the bootstrap admin have no UI (D45). If the examiners ask for it, it is a new UC with routes `/admin/admins/**`. | future |
 | K11 | Every route row is one MockMvc test (happy path + each error column); workflow rows are also run as each wrong role (403) and as a user who cannot view (404). | 13 |
 | K12 | Properties introduced here: `spring.servlet.multipart.max-file-size=26MB` (D36), `server.tomcat.max-swallow-size` ≥ 26MB, CSV export limit 5,000 (`app.export.max-rows`). | 14 |
@@ -990,3 +992,4 @@ Result:
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft: 99 routes, forms, view models, allowed-actions contract, JSON endpoint, upload/download contract, traceability; decisions D30–D46; O1 decided (D34) |
+| 2026-11-22 | Doc 10 alignment: `error/4xx` view, singular master-data form view names (D52), global `activeMenu` (D53), `ActionLink.style` values (D54), `actorLabel` rule (D48); K6 and K9 resolved |

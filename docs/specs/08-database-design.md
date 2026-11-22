@@ -740,7 +740,7 @@ WHERE e.complaint_id = :complaintId
 ORDER BY e.created_at ASC, e.id ASC, r.id ASC;
 ```
 
-`TimelineService` groups consecutive rows with the same `event_id` into one `TimelineEntry` with a list of field changes. `actor_name` NULL means SYSTEM. Which actor details a citizen may see (name or only the role) is decided in doc 11. Attachments of the complaint are loaded separately with `ix_attachment_complaint`.
+`TimelineService` groups consecutive rows with the same `event_id` into one `TimelineEntry` with a list of field changes. `actor_name` NULL means SYSTEM. Which actor details a citizen may see is decided in doc 10 §7.3 (D48): the department, never a staff name. Attachments of the complaint are loaded separately with `ix_attachment_complaint`.
 
 ### 5.11 Notifications (FR-71, FR-72) [Q15, Q24]
 
@@ -911,7 +911,7 @@ The ER diagram in §2 was rendered with `@mermaid-js/mermaid-cli` without errors
 | # | Topic | For doc |
 |---|---|---|
 | O1 | ~~The Department Queue default filter.~~ **Decided in doc 09 §10 (D34):** `ASSIGNED`, `IN_PROGRESS`, `REOPENED`, `RESOLVED`, as in Q06. | — |
-| O2 | Whether citizens see the officer's **name** or only "Department officer" in the timeline. The query returns both. | 10, 11 |
+| O2 | ~~Officer name or role label for citizens.~~ **Decided in doc 10 §7.3 (D48):** citizens see the department or "Grievance Cell"; staff see names. Q14 is unchanged (it returns both). | — |
 | O3 | Anonymising personal data of long-inactive citizens is not covered (complaints are kept forever). | Future scope |
 | O4 | `HousekeepingJob` (notification and OTP purge) is a Could item; the cron (e.g. daily 02:30) is to be fixed in doc 14. | 14 |
 | O5 | MySQL connection URL options, database creation with utf8mb4, and the demo sample files for attachments. | 14 |
@@ -921,3 +921,4 @@ The ER diagram in §2 was rendered with `@mermaid-js/mermaid-cli` without errors
 |---|---|
 | 2026-11-22 | Initial draft: ER diagram, data dictionary, constraints and indexes, Flyway V1/V2, key queries, retention, sizing; verified on MySQL 8.0.46 and H2 2.5.252 (D17–D29) |
 | 2026-11-22 | Doc 09 alignment: Q07 status filter is `IN (:statuses)` for status groups, plus optional "not assigned" and overdue lines (D35); O1 decided (D34). The tested Q07 in `verify/key-queries.sql` uses the single-status form, which is the one-element case of the same fragment |
+| 2026-11-22 | O2 decided in doc 10 (D48) |

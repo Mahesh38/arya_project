@@ -117,6 +117,15 @@ arya_project/
 | D44 | Attachment response? | Stored content type, `Content-Disposition: inline` (or `attachment` with `?download=true`) with ASCII `filename` and UTF-8 `filename*`, `nosniff`, Spring Security's no-cache headers, streamed from disk. Deleted files: admins only. |
 | D45 | Admin accounts? | No UI to create or manage admins; the bootstrap admin is the only one (FR-07) and uses Change password. BR-82 stays enforced in the service. |
 | D46 | After registration? | The new citizen is logged in automatically and sent to `/verify-mobile` (UC-01 step 5). |
+| D47 | Status badge colours (K9, doc 10)? | One CSS class per status (`status-in-progress` …) with **icon + label**, never colour alone. Pending = pale (grey, light blue), active = strong (blue Assigned, yellow In Progress, orange Reopened, green Resolved), final = dark or muted (grey Closed, red Rejected, purple Duplicate, dashed outline Withdrawn). Group chips for `PENDING`/`ACTIVE`/`NOT_FINAL`/`FINAL`/`ALL`. All pairs ≥ 4.5:1 contrast (checked). Labels, classes and icons live in `ComplaintStatus`. |
+| D48 | O2 / K6: officer name or role label in the timeline? | **Citizens see the department, never a staff name:** officer actions show "{Department} Dept." (department in charge at that moment, derived by `TimelineService`), admin actions "Grievance Cell", the owner's own actions "You", and for watchers the owner is "The complainant". Officers and admins see full names. Protects staff and the owner's privacy; accountability stays with the department, and `actor_id` is still stored and shown to staff. |
+| D49 | JavaScript? | Every core flow works **without JavaScript**. `app.js` only adds confirm prompts on the three POST-only buttons, submit-disable ("Saving…"), file pre-check, character counters, bell refresh and (dashboard) Chart.js. A `no-js` class and a `<noscript>` style keep the navbar usable without JS. HTML validation uses `required`/`maxlength` only, so server messages are the ones shown. |
+| D50 | Date formatting? | One `@fmt` bean (`DisplayFormat`) with **`Locale.ENGLISH`**: `dd-MMM-yyyy hh:mm a` and `dd-MMM-yyyy`, IST (`en-IN` prints "pm" in lower case on JDK 25). Templates never format dates themselves. |
+| D51 | Complaint lists on phones? | Stacked list below `md`, table from `md` up, from the same fragment. **No action buttons in lists**: all actions are on the detail page, so the allowed-actions rules stay in one place. |
+| D52 | Template set? | 28 screen templates (doc 10 §2). No separate `complaint/duplicate-confirm` (it is step 2 of `complaint/action-form`); master-data forms use singular names (`admin/department-form` …); new `error/4xx` for other 4xx errors (400, 405). |
+| D53 | Navigation? | Navbar per role (citizen: My Complaints, Watching, New Complaint; officer: Department Queue; admin: Dashboard, All Complaints, Master data ▾, Users ▾), bell always visible next to the toggler and linking to the list (no dropdown preview), user menu with Change password and a POST Log out, breadcrumbs on pages two levels deep. New global model attribute `activeMenu` from `GlobalModelAdvice`. The verify banner is shown by the layout on every citizen page while unverified. |
+| D54 | Action button styles? | `ActionLink.style` ∈ `primary` (forward step), `success` (Close, Resolve), `secondary` (Edit, Send back, Unwatch, Watch, Mark duplicate), `danger` (Withdraw, Reject). Danger buttons are outlined on the detail page and solid only on their own confirmation page. |
+| D55 | Duplicate links in the timeline? | On the original, staff see "GRV-B linked as a duplicate" with a link; citizens see "Another complaint about the same problem was linked to this one" without the number. Long description edits are shown in a `<details>` element (works without JS). |
 
 ## Status
 
@@ -133,4 +142,5 @@ arya_project/
 | Appendix A Seed & Demo Data | Draft |
 | 08 Database Design | Draft |
 | 09 Web & API Contracts | Draft |
-| 10–14 | Not started |
+| 10 UI / Screen Spec | Draft |
+| 11–14 | Not started |
