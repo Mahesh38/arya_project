@@ -41,22 +41,11 @@ Each one builds on the ones before it. We do them one at a time.
 
 > On "API contracts" with Thymeleaf: the app is server-rendered, so most contracts are **MVC route contracts** (form POST → redirect/view), not REST/JSON. Doc 09 covers both kinds.
 
-## 3. Tech stack baseline (pinned in doc 07)
+## 3. Tech stack
 
-Latest stable releases, checked on Maven Central on 2026-11-22. Spring Boot's BOM manages the versions of the Spring libraries.
+Verified with a test build on 2026-11-22. Full details and reasoning are in **doc 07**.
 
-| Layer | Choice | Version baseline |
-|---|---|---|
-| JDK | Java (LTS) | **25** |
-| Framework | Spring Boot (Web MVC) | **4.2.x** (4.2.0 is the current GA) |
-| Security | Spring Security | 7.x (managed by Boot) |
-| View | Thymeleaf + `thymeleaf-extras-springsecurity6`, Bootstrap 5 | Thymeleaf 3.1.x (managed) |
-| Data access | **Spring `JdbcClient` / `JdbcTemplate`** with hand-written SQL | managed |
-| DB | MySQL 8.4 LTS; H2 for tests | Connector/J (managed) |
-| Migrations | Flyway | managed |
-| Validation | Jakarta Bean Validation (Hibernate Validator) | managed |
-| Build / package | Maven, **executable JAR with embedded Tomcat** | |
-| Tests | JUnit 5, Spring Boot Test, MockMvc | managed |
+JDK **25** (LTS) · Spring Boot **4.2.0** (Spring Framework 7.1, Spring Security 7.2, Tomcat 11) · Thymeleaf 3.1.7 + Layout Dialect · Spring JDBC `JdbcClient` · MySQL **8.4 LTS** · Flyway 12.11 · Bootstrap 5.3.8 (WebJars) · JUnit 6 + MockMvc + H2 · Maven · executable JAR.
 
 Note: Spring Boot has no "LTS" label in open source. Each minor release gets about 12 months of OSS support. The JDK is the LTS part.
 
@@ -110,5 +99,6 @@ arya_project/
 | 04 Use Cases | Draft |
 | 05 Domain Model & Business Rules | Draft |
 | 06 Flow Diagrams | Draft |
+| 07 Architecture & Tech Stack | Draft |
 | Appendix A Seed & Demo Data | Draft |
-| 07–14 | Not started |
+| 08–14 | Not started |
