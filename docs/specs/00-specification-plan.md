@@ -41,21 +41,24 @@ Each one builds on the ones before it. We do them one at a time.
 
 > On "API contracts" with Thymeleaf: the app is server-rendered, so most contracts are **MVC route contracts** (form POST → redirect/view), not REST/JSON. Doc 09 covers both kinds.
 
-## 3. Proposed tech stack (to confirm in doc 07)
+## 3. Tech stack baseline (pinned in doc 07)
 
-| Layer | Choice | Note |
+Latest stable releases, checked on Maven Central on 2026-11-22. Spring Boot's BOM manages the versions of the Spring libraries.
+
+| Layer | Choice | Version baseline |
 |---|---|---|
-| Language | Java 21 (LTS) | |
-| Framework | Spring Boot 3.x (Web MVC) | Allowed by the synopsis |
-| View | Thymeleaf + Layout Dialect, Bootstrap 5 | One project, no separate frontend |
-| Security | Spring Security 6 (form login, roles) | |
-| Persistence | Spring Data JPA (Hibernate) on JDBC | Alternative: `JdbcTemplate` if the guide wants plain JDBC. See Q3 |
-| DB | MySQL 8; H2 for tests | |
-| Migrations | Flyway | Schema is versioned with the code |
-| Validation | Jakarta Bean Validation | |
-| Build | Maven | |
-| Server | Embedded Tomcat (`java -jar`), or WAR on external Tomcat | Both satisfy "Apache Tomcat" |
-| Tests | JUnit 5, Spring Boot Test, MockMvc | |
+| JDK | Java (LTS) | **25** |
+| Framework | Spring Boot (Web MVC) | **4.2.x** (4.2.0 is the current GA) |
+| Security | Spring Security | 7.x (managed by Boot) |
+| View | Thymeleaf + `thymeleaf-extras-springsecurity6`, Bootstrap 5 | Thymeleaf 3.1.x (managed) |
+| Data access | **Spring `JdbcClient` / `JdbcTemplate`** with hand-written SQL | managed |
+| DB | MySQL 8.4 LTS; H2 for tests | Connector/J (managed) |
+| Migrations | Flyway | managed |
+| Validation | Jakarta Bean Validation (Hibernate Validator) | managed |
+| Build / package | Maven, **executable JAR with embedded Tomcat** | |
+| Tests | JUnit 5, Spring Boot Test, MockMvc | managed |
+
+Note: Spring Boot has no "LTS" label in open source. Each minor release gets about 12 months of OSS support. The JDK is the LTS part.
 
 ## 4. Repository layout (target)
 
@@ -75,18 +78,23 @@ arya_project/
 3. Mark it **Frozen**. Changes after that are recorded in a short change log at the bottom of the doc.
 4. Go to the next document. Code starts after 08 (DB) and 09 (contracts) are frozen, and is built one module at a time (M1 → M7), each with its tests.
 
-## 6. Open questions (needed before doc 01/02)
+## 6. Decisions log
 
-- **Q1 — Department role:** Do department officers log in to update status (3 roles: Citizen, Dept Officer, Admin), or does only the Admin update status (2 roles, as in the synopsis)?
-- **Q2 — Anonymous tracking:** Can anyone track a complaint with just its ID (public page), or only a logged-in owner?
-- **Q3 — JDBC requirement:** Is Spring Data JPA acceptable to the guide, or must the data layer visibly use JDBC (`JdbcTemplate`)?
-- **Q4 — Extra statuses:** Add `Rejected` (invalid/duplicate) and `Closed` (citizen confirms) beyond the five in the synopsis?
-- **Q5 — Location:** Free-text address plus ward/area dropdown, or also optional latitude/longitude fields (to make the future Google Maps step easier)?
-- **Q6 — Packaging:** Executable JAR with embedded Tomcat (simplest) or WAR for an external Tomcat?
+| ID | Question | Decision (2026-11-22) |
+|---|---|---|
+| D1 | Department role? | **3 roles:** Citizen, Department Officer, Admin. Officers update the status. The admin assigns complaints and monitors. |
+| D2 | Anonymous tracking? | **No.** Only the owner (and watchers, see D4) can view a complaint. Public lookup is a possible future feature. |
+| D3 | JPA or JDBC? | **Spring JDBC (`JdbcClient`/`JdbcTemplate`)**. It matches the synopsis's "JDBC" requirement, keeps the SQL explicit and easy to explain, and the schema is small. |
+| D4 | Extra statuses? | **Add `REJECTED`, `DUPLICATE`, `CLOSED`.** An officer can mark a complaint as a duplicate of another with a note. The duplicate's owner becomes a **watcher** of the original and receives its updates. |
+| D5 | Location? | **Area dropdown + free-text address.** No latitude/longitude for now, but kept easy to add later. |
+| D6 | Packaging? | **Executable JAR** with embedded Tomcat. |
+| D7 | Versions? | Latest stable versions everywhere, JDK 25 LTS, Spring Boot 4.x (see §3). |
 
 ## Status
 
 | Doc | Status |
 |---|---|
 | 00 Specification Plan | Draft |
-| 01–14 | Not started |
+| 01 Vision & Scope | Draft |
+| 02 Glossary & Actors | Draft |
+| 03–14 | Not started |
