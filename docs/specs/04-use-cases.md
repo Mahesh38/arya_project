@@ -25,6 +25,7 @@ Each use case lists the requirements (FR-xx) it implements. The allowed status c
 | UC-14 | View complaint detail & timeline | Citizen, Officer, Admin | FR-21, 23, 24, 28 |
 | UC-15 | Review resolution (close or reopen) | Citizen (owner) | FR-25–27 |
 | UC-16 | View / download attachment | Citizen, Officer, Admin | FR-21, NFR-05 |
+| UC-17 | Unwatch / watch again | Citizen (watcher) | FR-29 |
 | **Admin – complaint handling** ||||
 | UC-20 | Review new complaint | Admin | FR-30, 31 |
 | UC-21 | Assign / reassign department | Admin | FR-32, 33 |
@@ -70,6 +71,7 @@ flowchart LR
         UC14(UC-14 View detail & timeline)
         UC15(UC-15 Close / reopen)
         UC16(UC-16 View attachment)
+        UC17(UC-17 Unwatch / watch again)
         UC20(UC-20 Review new complaint)
         UC21(UC-21 Assign department)
         UC22(UC-22 Reject)
@@ -87,7 +89,7 @@ flowchart LR
     end
 
     V --- UC01
-    C --- UC02 & UC03 & UC10 & UC11 & UC12 & UC13 & UC14 & UC15 & UC16 & UC60
+    C --- UC02 & UC03 & UC10 & UC11 & UC12 & UC13 & UC14 & UC15 & UC16 & UC17 & UC60
     O --- UC02 & UC03 & UC14 & UC16 & UC22 & UC23 & UC30 & UC31 & UC32 & UC33 & UC34 & UC51 & UC60
     A --- UC02 & UC03 & UC14 & UC16 & UC20 & UC21 & UC22 & UC23 & UC4X & UC50 & UC60
     S --- UC70
@@ -183,7 +185,9 @@ Relationships (UML, for the report diagram):
   2. The system sets the status to `WITHDRAWN` and writes history (remark = reason).
   3. The system notifies all admins, and the department's officers if the complaint was assigned.
   4. The detail page shows "Withdrawn on … : <reason>".
-- **Alternate flow:** The status is already `IN_PROGRESS` or later: refused (R-STATE), with the message "Work has already started; it can no longer be withdrawn."
+- **Alternate flows:**
+  - The status is already `IN_PROGRESS` or later: refused (R-STATE), with the message "Work has already started; it can no longer be withdrawn."
+  - Other citizens' duplicates are linked to this complaint: refused with "Other citizens are following this complaint; it cannot be withdrawn." (BR-47)
 - **Postcondition:** The complaint is final (`WITHDRAWN`) and remains visible as read-only.
 
 ### UC-13 View My Complaints / Watching
@@ -223,6 +227,12 @@ Relationships (UML, for the report diagram):
 - **Main flow:** The actor clicks an attachment. The system checks R-ACCESS for the parent complaint, then streams the file with its stored content type. Images open inline; PDFs open inline or download.
 - **Alternate flows:** A missing file on disk returns 404 and an error is logged. Soft-deleted attachments can be viewed only by the Admin.
 
+### UC-17 Unwatch / watch again
+- **Actor:** Citizen
+- **Main flow (unwatch):** On a complaint they watch, the citizen clicks **Unwatch**. The system sets their watcher record to inactive, so it leaves their Watching list and their notifications stop. The page shows "You will no longer receive updates".
+- **Alternate flow (watch again):** The citizen opens their own `DUPLICATE` complaint, follows the link to the original, and clicks **Watch again**. The watcher record becomes active again.
+- **Rule:** Unwatching never removes access for the owner of a linked duplicate (BR-52).
+
 ### UC-20 Review new complaint
 - **Actor:** Admin
 - **Precondition:** The status is `SUBMITTED`.
@@ -254,7 +264,7 @@ Relationships (UML, for the report diagram):
 - **Main flow:**
   1. On complaint B, the actor clicks **Mark as Duplicate**.
   2. The actor enters the original's complaint number **A** and a note for the citizen.
-  3. The system validates: A exists; A ≠ B; A is not `DUPLICATE`, `REJECTED`, `CLOSED` or `WITHDRAWN`; and for an Officer, A must be visible to them (same department) **or** at least exist and be active. *The exact rule is in doc 05.*
+  3. The system validates the input against BR-40 to BR-46 (doc 05): A exists; A ≠ B; A is `ASSIGNED`, `IN_PROGRESS` or `REOPENED`; and for an **Officer**, both A and B belong to their department. For a cross-department match, the officer uses UC-34 (send back) and mentions GRV-A in the remark, and the Admin links them.
   4. The system shows a confirmation with A's title, area and status, so the actor can make sure it really is the same issue.
   5. On confirm, in one transaction, the system:
      - sets B's status to `DUPLICATE` and `B.original = A`, and writes history on B (remark = note);
@@ -342,7 +352,7 @@ Relationships (UML, for the report diagram):
 |---|---|---|---|---|---|
 | FR-01/02/08 | UC-01 | FR-24 | UC-14 | FR-47 | UC-30 |
 | FR-03/04/05 | UC-02 | FR-25/26 | UC-15 | FR-50/51/52/56 | UC-40–42 |
-| FR-07 | (startup, doc 14) | FR-28 | UC-14 | FR-53 | UC-43 |
+| FR-07 | (startup, doc 14) | FR-28/29 | UC-14, UC-17 | FR-53 | UC-43 |
 | FR-10–15 | UC-10 | FR-30/31 | UC-20 | FR-60–62 | UC-50 |
 | FR-16/17/19 | UC-11 | FR-32 | UC-21 | FR-70–72 | UC-60 (+ every UC that notifies) |
 | FR-18 | UC-12 | FR-34/45 | UC-22 | FR-80 | UC-30, UC-50 |
@@ -350,12 +360,13 @@ Relationships (UML, for the report diagram):
 | FR-21/23 | UC-14, UC-16 | FR-40 | UC-30 | FR-82 | UC-70 |
 | | | FR-41/42 | UC-31, UC-33 | FR-83 | R-STATE (doc 05) |
 
-## 6. Open points for doc 05
+## 6. Resolved points
 
-1. **Cross-department duplicates (UC-23 step 3):** can an Officer link to an original complaint in *another* department, or only within their own department? The Admin can always link across departments.
-2. **Watcher removal:** can a watcher stop watching a complaint themselves ("Unwatch")?
+1. Cross-department duplicates: officers link within their own department only; the Admin links across departments (D13).
+2. Unwatch is allowed, and so is watching again (D14, UC-17).
 
 ## Change log
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft |
+| 2026-11-22 | Added UC-17 Unwatch; officer duplicates limited to their department; withdraw blocked when duplicates are linked |

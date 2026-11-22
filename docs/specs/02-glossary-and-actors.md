@@ -96,6 +96,7 @@ While a complaint is `RESOLVED`, the owner has a **review window** (default 7 da
 | Reject | | own department | ✔ |
 | Mark duplicate and add watcher | | own department | ✔ |
 | Close / reopen resolved complaint | owner | | |
+| Unwatch / watch again | watcher | | |
 | Manage departments / officers / categories / areas | | | ✔ |
 | View reports and dashboard | | own-department summary | ✔ |
 | Receive notifications | ✔ | ✔ (new assignment) | ✔ (new complaint) |

@@ -37,7 +37,7 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | FR-15 | Submission notifies the owner ("Complaint GRV-… registered") and all Admins ("New complaint GRV-…"). | M |
 | FR-16 | The **owner** can **edit** the category, title, description, area and address, and can add or remove attachments (FR-11 limits apply), while the status is `SUBMITTED` or `UNDER_REVIEW`. An optional "reason for change" can be entered. | M |
 | FR-17 | Every edit creates **revision** records (field, old value, new value, editor, timestamp, reason). The timeline shows them as "Edited: Title changed from '…' to '…'". Removed attachments are soft-deleted, still listed as "removed on …", and stay viewable by the Admin. Revisions are never edited or deleted. | M |
-| FR-18 | The **owner** can **withdraw** a complaint while it is `SUBMITTED`, `UNDER_REVIEW` or `ASSIGNED`, with a mandatory reason. The status becomes `WITHDRAWN` (final). | M |
+| FR-18 | The **owner** can **withdraw** a complaint while it is `SUBMITTED`, `UNDER_REVIEW` or `ASSIGNED`, with a mandatory reason. The status becomes `WITHDRAWN` (final). A complaint that other citizens' duplicates are linked to cannot be withdrawn (BR-47). | M |
 | FR-19 | Edit and Withdraw buttons appear only when allowed. A request outside the allowed statuses is refused, even if someone posts the form directly. | M |
 
 ### M3 — Complaint Tracking (Citizen)
@@ -53,6 +53,7 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | FR-26 | **Close** sets the status to `CLOSED`. **Reopen** sets it to `REOPENED` and keeps the same department. Both are recorded in the history. | M |
 | FR-27 | A complaint can be reopened at most **2 times** (configurable). After that, only Close is offered, together with a note to contact the department. | S |
 | FR-28 | Watchers can view a complaint and its timeline, but cannot close or reopen it. | M |
+| FR-29 | A watcher can **Unwatch** a complaint, which stops its notifications and removes it from Watching. If they own a duplicate linked to it, they can still open it from there and **Watch again**. | M |
 
 ### M4 — Admin Complaint Management
 
@@ -74,7 +75,7 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | FR-41 | An Officer can move an `ASSIGNED` or `REOPENED` complaint to `IN_PROGRESS`, with a mandatory remark. | M |
 | FR-42 | An Officer can move an `IN_PROGRESS` complaint to `RESOLVED`, with a mandatory resolution remark. This starts the review window. | M |
 | FR-43 | An Officer can add a progress remark without changing the status. It appears in the timeline. | S |
-| FR-44 | An Officer can mark a complaint in their department as a **duplicate of** another complaint, entered by complaint number, with a mandatory note. Rules: the original is not the same complaint, is not itself `DUPLICATE`, and is not `REJECTED` or `CLOSED`. On success, the duplicate becomes `DUPLICATE` and is linked to the original, the duplicate's owner and its watchers become **watchers of the original**, and they are notified. | M |
+| FR-44 | An Officer can mark a complaint in their department as a **duplicate of** another complaint, entered by complaint number, with a mandatory note. Rules: see BR-40 to BR-46 in doc 05. In short, the original must be actively handled (`ASSIGNED`, `IN_PROGRESS` or `REOPENED`), and for an Officer both complaints must be in their department. On success, the duplicate becomes `DUPLICATE` and is linked to the original, the duplicate's owner and its watchers become **watchers of the original**, and they are notified. | M |
 | FR-45 | An Officer can **reject** a complaint in their department, with a mandatory reason. | M |
 | FR-46 | An Officer can **send a complaint back to the Admin** ("wrong department") with a remark. The status returns to `UNDER_REVIEW` and the department is cleared. | S |
 | FR-47 | An Officer can only act on complaints of their own department. Any other complaint returns 404. | M |
@@ -204,4 +205,5 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft |
+| 2026-11-22 | FR-29 Unwatch; duplicate and withdraw rules point to doc 05 (D13, D14) |
 | 2026-11-22 | Multiple attachments (JPG/PNG/PDF, ≤ 5 MB, max 5); edit and withdraw with revisions (FR-16 to FR-19) |

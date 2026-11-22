@@ -93,6 +93,8 @@ arya_project/
 | D10 | Authorization style? | Roles are enforced on URLs with Spring Security. Access to each complaint (owner, watcher, department, admin) is checked by one central `ComplaintAccessPolicy` in the service layer, and anyone not allowed gets **404**, never 403. |
 | D11 | Edit or withdraw after submitting? | **Allowed, with a full audit trail.** The owner can **edit** while the status is `SUBMITTED` or `UNDER_REVIEW`, and **withdraw** until work starts (`SUBMITTED`, `UNDER_REVIEW`, `ASSIGNED`). Every edit is stored as a revision (field, old value, new value, who, when) and shown in the timeline. Withdrawing sets the new final status `WITHDRAWN`. Nothing is ever hard-deleted. |
 | D12 | Attachments? | Up to **5 files per complaint**, each **≤ 5 MB**. Allowed types are **JPG, PNG and PDF**, checked by file content, not just the extension. Other types such as Office files or executables are blocked for safety. A removed attachment is soft-deleted and stays in the history. |
+| D13 | Cross-department duplicates? | An **Officer** can link duplicates only **within their own department**. Other cases are sent back to the Admin, who can link **across departments**. |
+| D14 | Unwatch? | **Yes.** A watcher can **Unwatch**, which stops notifications and removes the complaint from their Watching list. They can still open the original through their own duplicate complaint and **Watch again**. |
 | D9 | How does `RESOLVED` end? | The owner reviews it and either **closes** or **reopens** it. If there is no response within the review window (configurable, default 7 days), a scheduled job **auto-closes** it. |
 
 ## Status
@@ -104,4 +106,5 @@ arya_project/
 | 02 Glossary & Actors | Draft |
 | 03 Requirements (SRS) | Draft |
 | 04 Use Cases | Draft |
-| 05–14 | Not started |
+| 05 Domain Model & Business Rules | Draft |
+| 06–14 | Not started |
