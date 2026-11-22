@@ -25,6 +25,8 @@
 | **Watcher** | A citizen, other than the owner, who follows an original complaint. They can view it and get its notifications. A citizen becomes a watcher when their own complaint is marked as a duplicate of it. |
 | **Owner** | The citizen who created the complaint. |
 | **Notification** | An in-app message for a user, such as "Your complaint GRV-2026-000123 is now In Progress". It can be read or unread. |
+| **Review window** | The number of days after `RESOLVED` during which the owner can close or reopen the complaint. After that, the system auto-closes it. |
+| **Reopen** | The owner rejects the resolution and gives a reason. The complaint returns to its department as `REOPENED`. |
 | **Overdue** | A complaint that is not yet resolved after its category's target number of days (`sla_days`). |
 | **Dashboard** | The admin overview: counts by status, category, department and area. |
 
@@ -35,13 +37,13 @@
 - Submits complaints.
 - Views **only** the complaints they own or watch.
 - Sees the status timeline and the officers' remarks.
-- Closes their own complaint once it is `RESOLVED`.
+- Reviews their own `RESOLVED` complaint: **closes** it, or **reopens** it with a reason.
 - Receives notifications.
 
 ### 2.2 Department Officer (`ROLE_OFFICER`)
 - The account is created by the admin and linked to **one department**.
 - Sees only the complaints assigned to their department.
-- Changes the status: `ASSIGNED → IN_PROGRESS → RESOLVED`, always with a remark.
+- Changes the status: `ASSIGNED`/`REOPENED` → `IN_PROGRESS` → `RESOLVED`, always with a remark.
 - Marks a complaint in their department as a `DUPLICATE` of another complaint (with a note). This adds the duplicate's owner as a watcher of the original.
 - Can `REJECT` a complaint with a reason, e.g. it is not a public issue or is fake.
 
@@ -58,6 +60,7 @@
 - Records every status change in the history.
 - Creates notifications for the owner and the watchers.
 - Flags overdue complaints.
+- Auto-closes `RESOLVED` complaints whose review window has expired.
 
 ## 3. Complaint statuses
 
@@ -68,11 +71,12 @@
 | `ASSIGNED` | Handed to a department | Admin |
 | `IN_PROGRESS` | The department is working on it | Officer |
 | `RESOLVED` | The work is done | Officer |
-| `CLOSED` | The citizen confirmed the fix (final) | Citizen (owner) |
+| `REOPENED` | The citizen was not satisfied with the resolution and sent it back to the department | Citizen (owner) |
+| `CLOSED` | Resolution accepted by the owner, or auto-closed after the review window (final) | Citizen (owner) / System |
 | `REJECTED` | Invalid, not a public issue, or fake (final) | Admin / Officer |
 | `DUPLICATE` | Linked to an original complaint (final for this record) | Admin / Officer |
 
-The exact allowed transitions, such as whether a resolved complaint can be reopened and whether `RESOLVED` closes automatically after N days, will be defined as a state machine in **doc 05**.
+While a complaint is `RESOLVED`, the owner has a **review window** (default 7 days) to **close** it or **reopen** it with a reason. If they do neither, the system auto-closes it. The exact allowed transitions are defined as a state machine in **doc 05**.
 
 ## 4. Permission matrix (high level)
 
@@ -85,7 +89,7 @@ The exact allowed transitions, such as whether a resolved complaint can be reope
 | Update status (In Progress / Resolved) | | own department | ✔ |
 | Reject | | own department | ✔ |
 | Mark duplicate and add watcher | | own department | ✔ |
-| Close resolved complaint | owner | | |
+| Close / reopen resolved complaint | owner | | |
 | Manage departments / officers / categories / areas | | | ✔ |
 | View reports and dashboard | | own-department summary | ✔ |
 | Receive notifications | ✔ | ✔ (new assignment) | ✔ (new complaint) |
@@ -103,3 +107,4 @@ The exact allowed transitions, such as whether a resolved complaint can be reope
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft |
+| 2026-11-22 | Added `REOPENED` status, review window and auto-close (D8, D9) |

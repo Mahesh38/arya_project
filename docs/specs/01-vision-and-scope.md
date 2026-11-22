@@ -57,7 +57,8 @@ Details are in **02 Glossary & Actors**.
 | M6 Reports & Summary | Counts by status, category, department and area, plus a list of overdue complaints. |
 | M7 Notifications | In-app only: a bell icon with an unread count and a notification list. |
 | Duplicate handling | Mark complaint B as a duplicate of complaint A, with a note. B's citizen becomes a watcher of A and is notified when A changes or is resolved. |
-| Extra statuses | `REJECTED`, `DUPLICATE` and `CLOSED`, in addition to the five statuses in the synopsis. |
+| Extra statuses | `REJECTED`, `DUPLICATE`, `REOPENED` and `CLOSED`, in addition to the five statuses in the synopsis. |
+| Resolution review | The owner closes or reopens a `RESOLVED` complaint. It auto-closes after the review window. |
 
 ### 5.2 Out of scope (future, from the synopsis and these decisions)
 
@@ -93,10 +94,11 @@ Details are in **02 Glossary & Actors**.
 2. The admin assigns it to a department.
 3. The officer moves it to In Progress and then Resolved, with remarks. The citizen sees each step and a notification for it.
 4. A second citizen submits a similar complaint. The officer marks it as a duplicate, and the second citizen now sees the original complaint and its updates.
-5. The citizen closes the resolved complaint.
+5. The citizen reopens a resolved complaint, the officer resolves it again, and the citizen closes it. Another resolved complaint is auto-closed by the scheduled job.
 6. The admin dashboard shows the correct counts.
 
 ## Change log
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft |
+| 2026-11-22 | Added reopen and auto-close (D8, D9) |

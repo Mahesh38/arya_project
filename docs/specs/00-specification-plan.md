@@ -89,6 +89,8 @@ arya_project/
 | D5 | Location? | **Area dropdown + free-text address.** No latitude/longitude for now, but kept easy to add later. |
 | D6 | Packaging? | **Executable JAR** with embedded Tomcat. |
 | D7 | Versions? | Latest stable versions everywhere, JDK 25 LTS, Spring Boot 4.x (see §3). |
+| D8 | Can a citizen reopen a resolved complaint? | **Yes.** The owner can reopen a `RESOLVED` complaint with a reason during the review window. It goes back to the same department as `REOPENED`. |
+| D9 | How does `RESOLVED` end? | The owner reviews it and either **closes** or **reopens** it. If there is no response within the review window (configurable, default 7 days), a scheduled job **auto-closes** it. |
 
 ## Status
 
@@ -97,4 +99,5 @@ arya_project/
 | 00 Specification Plan | Draft |
 | 01 Vision & Scope | Draft |
 | 02 Glossary & Actors | Draft |
-| 03–14 | Not started |
+| 03 Requirements (SRS) | Draft |
+| 04–14 | Not started |
