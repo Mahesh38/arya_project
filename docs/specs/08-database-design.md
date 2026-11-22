@@ -540,13 +540,14 @@ JOIN category cat     ON cat.id = c.category_id
 JOIN area a           ON a.id = c.area_id
 LEFT JOIN department d ON d.id = c.department_id
 WHERE 1 = 1
-  AND c.status = :status
+  AND c.status IN (:statuses)             -- one status or a group (doc 09 §1.4, D35)
   AND c.category_id = :categoryId
-  AND c.department_id = :departmentId
+  AND c.department_id = :departmentId      -- or: AND c.department_id IS NULL (filter "Not assigned")
   AND c.area_id = :areaId
   AND c.created_at >= :fromDate            -- from 00:00 of the "from" day
   AND c.created_at <  :toDateExclusive     -- 00:00 of the day after "to"
   AND (c.complaint_no = :q OR LOWER(c.title) LIKE :qLike ESCAPE '!')
+  AND <OPEN> AND TIMESTAMPADD(DAY, cat.sla_days, c.created_at) < :now   -- only when overdue=true
 ORDER BY c.created_at DESC, c.id DESC
 LIMIT :limit OFFSET :offset;
 ```
@@ -909,7 +910,7 @@ The ER diagram in §2 was rendered with `@mermaid-js/mermaid-cli` without errors
 
 | # | Topic | For doc |
 |---|---|---|
-| O1 | The Department Queue default filter is proposed as `ASSIGNED`, `IN_PROGRESS`, `REOPENED`, `RESOLVED`. Confirm on the screen spec. | 09, 10 |
+| O1 | ~~The Department Queue default filter.~~ **Decided in doc 09 §10 (D34):** `ASSIGNED`, `IN_PROGRESS`, `REOPENED`, `RESOLVED`, as in Q06. | — |
 | O2 | Whether citizens see the officer's **name** or only "Department officer" in the timeline. The query returns both. | 10, 11 |
 | O3 | Anonymising personal data of long-inactive citizens is not covered (complaints are kept forever). | Future scope |
 | O4 | `HousekeepingJob` (notification and OTP purge) is a Could item; the cron (e.g. daily 02:30) is to be fixed in doc 14. | 14 |
@@ -919,3 +920,4 @@ The ER diagram in §2 was rendered with `@mermaid-js/mermaid-cli` without errors
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft: ER diagram, data dictionary, constraints and indexes, Flyway V1/V2, key queries, retention, sizing; verified on MySQL 8.0.46 and H2 2.5.252 (D17–D29) |
+| 2026-11-22 | Doc 09 alignment: Q07 status filter is `IN (:statuses)` for status groups, plus optional "not assigned" and overdue lines (D35); O1 decided (D34). The tested Q07 in `verify/key-queries.sql` uses the single-status form, which is the one-element case of the same fragment |

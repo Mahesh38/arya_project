@@ -100,6 +100,23 @@ arya_project/
 | D27 | How is demo data loaded? | By `DevDataSeeder` (Java, `dev` profile only, one transaction), not Flyway. It skips itself if any complaint exists, uses relative dates from the `Clock`, numbers complaints with the **current** year and sets `complaint_sequence` for that year to 11. |
 | D28 | Retention? | Complaints, history, attachments and users are kept forever. A daily `HousekeepingJob` (Could, FR-73) purges notifications older than 90 days and OTP rows older than 30 days. |
 | D29 | Character set and case? | Database created with `utf8mb4` / `utf8mb4_0900_ai_ci`. Services check name/email uniqueness case-insensitively so H2 (case-sensitive) behaves like MySQL; the unique keys are the final guard. |
+| D30 | URL scheme? (doc 09) | Role prefixes `/citizen`, `/officer`, `/admin`; shared `/complaints/{no}`, `/attachments/{id}`, `/notifications`, `/account`; `/verify-mobile` is CITIZEN-only. Complaints are always addressed by `complaintNo` (`{no:GRV-\d{4}-\d{6}}`, no match → 404); attachments, notifications, master data and users by numeric id, always access-checked. |
+| D31 | How are actions with input shown? | Each action with input has its own small **GET form page** (one shared template `complaint/action-form`) and a **POST**. Actions without input (start review, unwatch, watch again) are POST buttons on the detail page. No modals are required, so everything works without JavaScript. |
+| D32 | Workflow URLs for officer and admin? | `/{officer\|admin}/complaints/{no}/{action}`, both calling the same service method. The admin also gets start / remark / resolve (FR-36). Citizen close and reopen go to a new `CitizenWorkflowController`; watch / unwatch live under `/citizen/complaints/{no}/…`. |
+| D33 | Paging and sorting parameters? | `page` (1-based, default 1), `size` (default 10, clamped 1..50). No `sort` parameter: each list has a fixed order. Unconvertible filter values are ignored, not errors; a page past the end shows the last page. |
+| D34 | O1: Department Queue default filter? | `ASSIGNED`, `IN_PROGRESS`, `REOPENED` **and `RESOLVED`** (group `ACTIVE`), overdue first then oldest first. RESOLVED rows show "Awaiting citizen until …" and no buttons. Filter also offers each status and `ALL`. |
+| D35 | Status groups in filters? | The `status` parameter takes a status or a group: `PENDING`, `ACTIVE`, `NOT_FINAL` (D24 "open"), `FINAL`, `ALL`. The repository uses `c.status IN (:statuses)`. All Complaints also gets `overdue=true` and `departmentId=NONE`, so every dashboard card and count can link to a filtered list. |
+| D36 | Where is the 5 MB file limit enforced? | In `FileStorageService` (from `app.upload.max-file-size`), so the error is a normal field error. `spring.servlet.multipart.max-file-size` is raised to the request limit (26 MB); only requests above 26 MB hit the global handler (redirect + flash). |
+| D37 | JSON endpoints? | Exactly one: `GET /notifications/unread-count` → `{"unread": n}`, 401 JSON when not logged in. Fetched on `pageshow` (back-forward cache) and `visibilitychange`, **never polled**, so it cannot defeat the 30-minute idle timeout. Chart data is inlined in the dashboard page. |
+| D38 | Opening a notification? | `POST /notifications/{id}/open` marks it read and redirects to the complaint; GET requests never change data (except D41). |
+| D39 | Allowed actions? | One pure function `TransitionRules.decide(action, actor, facts, now)` drives both the buttons (`allowedActions` → `Set<Action>`) and the POST check (`require`). The web helper `ActionLinks` turns the set into buttons; templates use `c.can('…')` and never test status or role for actions. Explainable refusals (reopen limit, BR-47, review period over) are shown as notices. |
+| D40 | Error responses? | Validation and uniqueness → 200 same view with field errors; business rule, wrong status, concurrent update → 302 back (detail page or list) + `flashError`; not visible / unknown → 404; wrong role → 403; JSON → 401. |
+| D41 | When is an OTP issued? | After registration, on Resend, and on `GET /verify-mobile` only when the user has no usable OTP and the limits allow. The demo code is shown only in the response that issued it (model or `demoOtp` flash) and in the log. |
+| D42 | Deactivating a department used as a default? | Refused while it is the default department of an **active** category ("Change that category first"), so no category points to an inactive default (UC-40). |
+| D43 | CSV export (FR-65, Could)? | Same filters as All Complaints, UTF-8 with BOM, at most 5,000 rows (`app.export.max-rows`); cells starting with `=`, `+`, `-` or `@` are prefixed with `'` (CSV injection). |
+| D44 | Attachment response? | Stored content type, `Content-Disposition: inline` (or `attachment` with `?download=true`) with ASCII `filename` and UTF-8 `filename*`, `nosniff`, Spring Security's no-cache headers, streamed from disk. Deleted files: admins only. |
+| D45 | Admin accounts? | No UI to create or manage admins; the bootstrap admin is the only one (FR-07) and uses Change password. BR-82 stays enforced in the service. |
+| D46 | After registration? | The new citizen is logged in automatically and sent to `/verify-mobile` (UC-01 step 5). |
 
 ## Status
 
@@ -115,4 +132,5 @@ arya_project/
 | 07 Architecture & Tech Stack | Draft |
 | Appendix A Seed & Demo Data | Draft |
 | 08 Database Design | Draft |
-| 09–14 | Not started |
+| 09 Web & API Contracts | Draft |
+| 10–14 | Not started |

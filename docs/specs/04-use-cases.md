@@ -293,7 +293,7 @@ Relationships (UML, for the report diagram):
 
 ### UC-30 View department queue
 - **Actor:** Officer
-- **Main flow:** The officer opens **Department Queue**. The system lists their department's complaints with status `ASSIGNED`, `IN_PROGRESS` or `REOPENED` by default, overdue ones first and then oldest first. Filters: status, category, area, and search by number.
+- **Main flow:** The officer opens **Department Queue**. The system lists their department's complaints with status `ASSIGNED`, `IN_PROGRESS`, `REOPENED` or `RESOLVED` by default (D34; `RESOLVED` rows are marked "Awaiting citizen until …" and have no action), overdue ones first and then oldest first. Filters: status (each status, or all statuses), category, area, and search by number.
 - **Alternate flow:** If the officer has no department (data error), show "Your account has no department; contact the admin".
 
 ### UC-31 Start work on complaint
@@ -387,3 +387,4 @@ Relationships (UML, for the report diagram):
 |---|---|
 | 2026-11-22 | Initial draft |
 | 2026-11-22 | Added UC-17 Unwatch; officer duplicates limited to their department; withdraw blocked when duplicates are linked |
+| 2026-11-22 | UC-30: queue default includes `RESOLVED` (doc 09 §10, D34) |

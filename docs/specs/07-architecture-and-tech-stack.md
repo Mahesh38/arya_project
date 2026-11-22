@@ -126,15 +126,17 @@ com.smartgrievance
 ├── staff/             OfficerAdminController, CitizenAdminController, UserAdminService
 ├── complaint/         Complaint, ComplaintStatus, ComplaintRepository, ComplaintNumberGenerator,
 │                      ComplaintService (submit, edit, withdraw), ComplaintQueryService (lists,
-│                      filters), CitizenComplaintController, ComplaintDetailController, forms/views
+│                      filters, detail, action pages), CitizenComplaintController,
+│                      ComplaintDetailController, OfficerQueueController, AdminComplaintController,
+│                      web.ActionLinks (Action → button URL), forms/views
 ├── access/            ComplaintAccessPolicy (BR-60..64)
 ├── workflow/          Transition (enum T01..T13), TransitionRules, ComplaintWorkflowService,
-│                      DuplicateService, AdminWorkflowController, OfficerWorkflowController,
-│                      AutoCloseJob
+│                      DuplicateService, Action (enum, doc 09 §7), AdminWorkflowController,
+│                      OfficerWorkflowController, CitizenWorkflowController (close, reopen), AutoCloseJob
 ├── history/           ComplaintEvent, EventType, ComplaintRevision, EventRepository,
 │                      RevisionRepository, TimelineService (merges events + revisions)
 ├── watch/             WatcherRepository, WatchService, WatchController
-├── attachment/        Attachment, AttachmentRepository, FileStorageService, FileTypeDetector
+├── attachment/        Attachment, AttachmentRepository, AttachmentService, FileStorageService, FileTypeDetector
 │                      (magic bytes), AttachmentController
 ├── notification/      Notification, NotificationRepository, NotificationService
 │                      (recipient rules BR-67..69), NotificationController,
@@ -179,9 +181,9 @@ com.smartgrievance
 |---|---|
 | Authentication | Form login (`/login`). Username = email, lower-cased. BCrypt `PasswordEncoder`. `UserDetails.enabled = active`. |
 | Landing page | `RoleBasedSuccessHandler`: CITIZEN → `/citizen/complaints`, OFFICER → `/officer/queue`, ADMIN → `/admin/dashboard`. |
-| URL authorization | `/citizen/**` → CITIZEN, `/officer/**` → OFFICER, `/admin/**` → ADMIN. `/complaints/**`, `/attachments/**`, `/notifications/**` and `/account/**` require any logged-in user. `/`, `/login`, `/register`, `/webjars/**`, `/css/**`, `/js/**` and `/images/**` are public. |
+| URL authorization | `/citizen/**` → CITIZEN, `/officer/**` → OFFICER, `/admin/**` → ADMIN. `/verify-mobile/**` → CITIZEN. `/complaints/**`, `/attachments/**`, `/notifications/**` and `/account/**` require any logged-in user. `/`, `/login`, `/register`, `/error`, `/favicon.ico`, `/webjars/**`, `/css/**`, `/js/**` and `/images/**` are public. `GET /notifications/unread-count` answers 401 JSON instead of redirecting to the login page. Full route list: doc 09 §3. |
 | Object authorization | `ComplaintAccessPolicy` → 404 (ADR-05). |
-| Verified citizen | `VerifiedCitizenInterceptor` sends unverified citizens from `/citizen/complaints/new` to `/verify-mobile` (FR-09a). |
+| Verified citizen | `VerifiedCitizenInterceptor` sends unverified citizens from `GET /citizen/complaints/new` and `POST /citizen/complaints` to `/verify-mobile` (FR-09a); the service checks BR-86 again. |
 | CSRF | Enabled (default). Thymeleaf `th:action` adds the token automatically. |
 | Session | 30-minute timeout, session fixation protection (default), logout invalidates the session. |
 | Headers | Spring Security defaults (X-Frame-Options DENY, nosniff, cache-control). |
@@ -203,8 +205,10 @@ Sketch of `application.properties` (final values come in doc 14):
 spring.application.name=smart-grievance
 spring.profiles.default=dev
 server.servlet.session.timeout=30m
-spring.servlet.multipart.max-file-size=5MB
+# per-file 5 MB is checked by FileStorageService (app.upload.max-file-size), see doc 09 §9 (D36)
+spring.servlet.multipart.max-file-size=26MB
 spring.servlet.multipart.max-request-size=26MB
+server.tomcat.max-swallow-size=30MB
 spring.thymeleaf.cache=true
 
 app.timezone=Asia/Kolkata
@@ -294,3 +298,4 @@ A throwaway test project with the exact dependency set from §2.2 was built and 
 |---|---|
 | 2026-11-22 | Initial draft; versions verified with a test build |
 | 2026-11-22 | Admin name/mobile settings (D26) and `HousekeepingJob` (D28) from doc 08 |
+| 2026-11-22 | Doc 09 alignment: new controllers (`OfficerQueueController`, `AdminComplaintController`, `CitizenWorkflowController`), `Action` enum, `ActionLinks`, `AttachmentService`; `/verify-mobile/**`, `/error` URL rules; multipart per-file limit moved to the service (D36) |
