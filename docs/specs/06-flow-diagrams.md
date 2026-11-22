@@ -374,7 +374,7 @@ sequenceDiagram
         CS->>FS: validate(files) magic bytes, size, count
         Note over CS,DB: @Transactional begins
         CS->>SEQ: next(year)
-        SEQ->>DB: SELECT last_value ... FOR UPDATE, then UPDATE
+        SEQ->>DB: upsert year row, SELECT last_number ... FOR UPDATE, then UPDATE
         SEQ-->>CS: GRV-2026-000012
         CS->>CR: insert(complaint SUBMITTED)
         CR->>DB: INSERT complaint
@@ -624,3 +624,4 @@ sequenceDiagram
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft |
+| 2026-11-22 | SD-01 uses the `complaint_sequence` column names of doc 08 (D17, D19) |

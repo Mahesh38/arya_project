@@ -137,7 +137,8 @@ com.smartgrievance
 ├── attachment/        Attachment, AttachmentRepository, FileStorageService, FileTypeDetector
 │                      (magic bytes), AttachmentController
 ├── notification/      Notification, NotificationRepository, NotificationService
-│                      (recipient rules BR-67..69), NotificationController
+│                      (recipient rules BR-67..69), NotificationController,
+│                      HousekeepingJob (daily purge of old notifications and OTPs, FR-73, D28)
 ├── dashboard/         DashboardRepository (aggregate SQL), DashboardService,
 │                      AdminDashboardController, OfficerSummary
 └── seed/              AdminBootstrap (FR-07, all profiles), DevDataSeeder (@Profile("dev"))
@@ -222,6 +223,8 @@ app.otp.resend-cooldown=60s
 app.otp.max-sends-per-hour=5
 app.admin.email=admin@example.com
 app.admin.password=${ADMIN_PASSWORD:Admin@1234}
+app.admin.name=System Administrator
+app.admin.mobile=9000000000
 ```
 
 These properties are bound to a type-safe `AppProperties` record and validated at startup (`@Validated`), so a bad value stops the app with a clear message.
@@ -290,3 +293,4 @@ A throwaway test project with the exact dependency set from §2.2 was built and 
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft; versions verified with a test build |
+| 2026-11-22 | Admin name/mobile settings (D26) and `HousekeepingJob` (D28) from doc 08 |

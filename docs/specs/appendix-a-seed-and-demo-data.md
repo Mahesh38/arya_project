@@ -58,7 +58,7 @@ All emails use the reserved `example.com` domain, and all mobile numbers are fic
 ### 4.1 Admin (bootstrap, every profile)
 | Name | Email | Mobile | Note |
 |---|---|---|---|
-| System Administrator | `admin@example.com` | 9000000000 | Email and password come from `app.admin.email` / `app.admin.password`. In `prod`, a strong password **must** be set through an environment variable. |
+| System Administrator | `admin@example.com` | 9000000000 | Email, password, name and mobile come from `app.admin.email` / `app.admin.password` / `app.admin.name` / `app.admin.mobile` (D26). In `prod`, a strong password **must** be set through an environment variable. |
 
 ### 4.2 Department officers (dev only, created as if by the Admin)
 | Name | Email | Mobile | Department |
@@ -99,7 +99,7 @@ They cover all **10 statuses**. Dates are relative to the moment the seeder runs
 | GRV-2026-000010 | Streetlight / Kasba Peth | Sneha | `WITHDRAWN` | — | "Light started working again", withdrawn by the owner. |
 | GRV-2026-000011 | Streetlight / Viman Nagar | Mahesh | `RESOLVED` | Electrical | Resolved **8 days ago**, so the next auto-close job run will close it (S9). |
 
-Each sample complaint gets the full chain of `ComplaintEvent` rows matching its status path, plus the matching notifications, so the timelines and the bell look realistic. The complaint sequence for 2026 starts after the seeded numbers (`last_value = 11`).
+Each sample complaint gets the full chain of `ComplaintEvent` rows matching its status path, plus the matching notifications, so the timelines and the bell look realistic. The complaint sequence for that year starts after the seeded numbers (`complaint_sequence.last_number = 11`). The numbers use the **current** year when the seeder runs (`GRV-2026-…` in 2026), and the seeder skips itself if any complaint already exists (doc 08 §4.5, D27).
 
 ## 6. Demo login cheat-sheet
 
@@ -116,3 +116,4 @@ Each sample complaint gets the full chain of `ComplaintEvent` rows matching its 
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft (D15, D16) |
+| 2026-11-22 | Sequence column name, current-year numbering, admin name/mobile settings (doc 08, D17, D26, D27) |

@@ -87,6 +87,19 @@ arya_project/
 | D15 | Areas? | Seven well-known **Pune Municipal Corporation** localities: Shivajinagar, Kothrud, Aundh, Baner, Hadapsar, Viman Nagar, Kasba Peth (see Appendix A). |
 | D16 | Citizen identity verification? | **Mobile OTP.** A citizen self-registers and then verifies their mobile with a 6-digit OTP (5-minute expiry, 3 attempts, resend after 60 seconds). Sending goes through an `OtpSender` interface: in the demo the OTP is shown on screen and logged, and a real SMS gateway can replace it later. Unverified citizens can log in but **cannot submit complaints**. Staff (officer and admin) accounts are created by the Admin and count as verified. |
 | D9 | How does `RESOLVED` end? | The owner reviews it and either **closes** or **reopens** it. If there is no response within the review window (configurable, default 7 days), a scheduled job **auto-closes** it. |
+| D17 | Table and column names? | Singular snake_case tables. No reserved words: the user table is **`app_user`** (`USER` is reserved in H2), the sequence is **`complaint_sequence(seq_year, last_number)`** (`YEAR` reserved in H2, `LAST_VALUE` in MySQL 8), the read flag is `is_read`. |
+| D18 | Who sets timestamps? | **The application**, from the injected `Clock` (Asia/Kolkata). Time columns have no DB defaults, and queries take `:now` as a parameter instead of `NOW()`. |
+| D19 | How is the complaint number generated safely? | In the submit transaction: `INSERT … ON DUPLICATE KEY UPDATE` to create/lock the year row, then `SELECT … FOR UPDATE`, then `UPDATE`. No year rows are pre-seeded. Tested with 16 parallel clients: no duplicates, gaps or deadlocks. |
+| D20 | Extra columns beyond doc 05? | `complaint_event.department_id` (department assigned by T03/T04) and `complaint_event.related_complaint_id` (other side of a duplicate link), so the timeline can show them. `area.description` holds the PMC ward office. |
+| D21 | Business rules in the database? | Key invariants are repeated as `CHECK`s (DUPLICATE ⇔ linked, RESOLVED ⇒ resolved_at, department required/forbidden by status, officer ⇔ department, staff verified, event shapes). **Configurable** limits (file size, OTP attempts, max reopens, file count) are checked in code only. |
+| D22 | Enforce "one notification per recipient per event"? | Yes: `notification.event_id` + unique key `(event_id, recipient_id)`. |
+| D23 | Overdue in SQL? | Filter with `TIMESTAMPADD(DAY, sla_days, created_at) < :now`; return `due_at`. **Days overdue are computed in Java**, because `TIMESTAMPDIFF(DAY)` gives different answers on MySQL and H2. |
+| D24 | "Open" vs "closed" on the dashboard (FR-61)? | Open = not final (the five open statuses **plus `RESOLVED`**). Closed = `CLOSED`, `REJECTED`, `DUPLICATE`, `WITHDRAWN`. |
+| D25 | Optional list filters? | The repository appends fixed, whitelisted `AND …` fragments only for filters that have a value; values are always bound. Search = exact complaint number or case-insensitive title contains (`LOWER(title) LIKE … ESCAPE '!'`). No full-text index. |
+| D26 | Bootstrap admin details? | Created only if **no** `ADMIN` row exists (active or not). New settings `app.admin.name` (default "System Administrator") and `app.admin.mobile` (default 9000000000), because name and mobile are required columns. |
+| D27 | How is demo data loaded? | By `DevDataSeeder` (Java, `dev` profile only, one transaction), not Flyway. It skips itself if any complaint exists, uses relative dates from the `Clock`, numbers complaints with the **current** year and sets `complaint_sequence` for that year to 11. |
+| D28 | Retention? | Complaints, history, attachments and users are kept forever. A daily `HousekeepingJob` (Could, FR-73) purges notifications older than 90 days and OTP rows older than 30 days. |
+| D29 | Character set and case? | Database created with `utf8mb4` / `utf8mb4_0900_ai_ci`. Services check name/email uniqueness case-insensitively so H2 (case-sensitive) behaves like MySQL; the unique keys are the final guard. |
 
 ## Status
 
@@ -101,4 +114,5 @@ arya_project/
 | 06 Flow Diagrams | Draft |
 | 07 Architecture & Tech Stack | Draft |
 | Appendix A Seed & Demo Data | Draft |
-| 08–14 | Not started |
+| 08 Database Design | Draft |
+| 09–14 | Not started |

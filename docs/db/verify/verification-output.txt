@@ -1,0 +1,1032 @@
+Schema, reference data and sample rows loaded on MySQL and H2.
+
+====================================================================================================
+@Q01 My Complaints, page 1 (FR-20, BR-64) and its total
+---------------------------------------- MySQL
+--------------
+SELECT c.complaint_no, c.title, cat.name AS category, c.status, c.created_at
+FROM complaint c
+JOIN category cat ON cat.id = c.category_id
+WHERE c.owner_id = 4
+ORDER BY c.created_at DESC, c.id DESC
+LIMIT 10 OFFSET 0
+--------------
+
++-----------------+--------------------------------+---------------+-------------+---------------------+
+| complaint_no    | title                          | category      | status      | created_at          |
++-----------------+--------------------------------+---------------+-------------+---------------------+
+| GRV-2026-000001 | Pipeline leaking on Karve Road | Water Leakage | IN_PROGRESS | 2026-11-21 10:00:00 |
+| GRV-2026-000004 | Streetlight not working        | Streetlight   | RESOLVED    | 2026-11-15 19:00:00 |
+| GRV-2026-000011 | Streetlight flickering         | Streetlight   | RESOLVED    | 2026-11-10 20:00:00 |
++-----------------+--------------------------------+---------------+-------------+---------------------+
+3 rows in set
+
+--------------
+SELECT COUNT(*) AS total FROM complaint c WHERE c.owner_id = 4
+--------------
+
++-------+
+| total |
++-------+
+|     3 |
++-------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> ...> complaint_no    | title                          | category      | status      | created_at
+GRV-2026-000001 | Pipeline leaking on Karve Road | Water Leakage | IN_PROGRESS | 2026-11-21 10:00:00
+GRV-2026-000004 | Streetlight not working        | Streetlight   | RESOLVED    | 2026-11-15 19:00:00
+GRV-2026-000011 | Streetlight flickering         | Streetlight   | RESOLVED    | 2026-11-10 20:00:00
+(3 rows, 18 ms)
+sql> total
+3
+(1 row, 4 ms)
+sql> Connection closed
+====================================================================================================
+@Q02 My Complaints filtered by status (FR-20)
+---------------------------------------- MySQL
+--------------
+SELECT c.complaint_no, c.title, c.status, c.resolved_at
+FROM complaint c
+WHERE c.owner_id = 4 AND c.status = 'RESOLVED'
+ORDER BY c.created_at DESC, c.id DESC
+LIMIT 10 OFFSET 0
+--------------
+
++-----------------+-------------------------+----------+---------------------+
+| complaint_no    | title                   | status   | resolved_at         |
++-----------------+-------------------------+----------+---------------------+
+| GRV-2026-000004 | Streetlight not working | RESOLVED | 2026-11-20 11:00:00 |
+| GRV-2026-000011 | Streetlight flickering  | RESOLVED | 2026-11-14 10:00:00 |
++-----------------+-------------------------+----------+---------------------+
+2 rows in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> complaint_no    | title                   | status   | resolved_at
+GRV-2026-000004 | Streetlight not working | RESOLVED | 2026-11-20 11:00:00
+GRV-2026-000011 | Streetlight flickering  | RESOLVED | 2026-11-14 10:00:00
+(2 rows, 14 ms)
+sql> Connection closed
+====================================================================================================
+@Q03 Watching list: active watcher rows only (FR-22, BR-51)
+---------------------------------------- MySQL
+--------------
+SELECT c.complaint_no, c.title, cat.name AS category, c.status, c.created_at
+FROM complaint_watcher w
+JOIN complaint c ON c.id = w.complaint_id
+JOIN category cat ON cat.id = c.category_id
+WHERE w.user_id = 5 AND w.active = TRUE
+ORDER BY c.created_at DESC, c.id DESC
+LIMIT 10 OFFSET 0
+--------------
+
++-----------------+--------------------------------+---------------+-------------+---------------------+
+| complaint_no    | title                          | category      | status      | created_at          |
++-----------------+--------------------------------+---------------+-------------+---------------------+
+| GRV-2026-000001 | Pipeline leaking on Karve Road | Water Leakage | IN_PROGRESS | 2026-11-21 10:00:00 |
++-----------------+--------------------------------+---------------+-------------+---------------------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> ...> ...> complaint_no    | title                          | category      | status      | created_at
+GRV-2026-000001 | Pipeline leaking on Karve Road | Water Leakage | IN_PROGRESS | 2026-11-21 10:00:00
+(1 row, 13 ms)
+sql> Connection closed
+====================================================================================================
+@Q04 Access facts for ComplaintAccessPolicy.canView (BR-60): Jayesh on GRV-2026-000001
+---------------------------------------- MySQL
+--------------
+SELECT
+  (SELECT COUNT(*) FROM complaint_watcher w
+    WHERE w.complaint_id = 1 AND w.user_id = 5 AND w.active = TRUE) AS is_active_watcher,
+  (SELECT COUNT(*) FROM complaint d
+    WHERE d.duplicate_of_id = 1 AND d.owner_id = 5) AS owns_linked_duplicate
+--------------
+
++-------------------+-----------------------+
+| is_active_watcher | owns_linked_duplicate |
++-------------------+-----------------------+
+|                 1 |                     1 |
++-------------------+-----------------------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> is_active_watcher | owns_linked_duplicate
+1                 | 1
+(1 row, 17 ms)
+sql> Connection closed
+====================================================================================================
+@Q05 Access facts: Sneha on GRV-2026-000005 (inactive watcher, no duplicate) -> not visible
+---------------------------------------- MySQL
+--------------
+SELECT
+  (SELECT COUNT(*) FROM complaint_watcher w
+    WHERE w.complaint_id = 4 AND w.user_id = 6 AND w.active = TRUE) AS is_active_watcher,
+  (SELECT COUNT(*) FROM complaint d
+    WHERE d.duplicate_of_id = 4 AND d.owner_id = 6) AS owns_linked_duplicate
+--------------
+
++-------------------+-----------------------+
+| is_active_watcher | owns_linked_duplicate |
++-------------------+-----------------------+
+|                 0 |                     0 |
++-------------------+-----------------------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> is_active_watcher | owns_linked_duplicate
+0                 | 0
+(1 row, 17 ms)
+sql> Connection closed
+====================================================================================================
+@Q06 Department Queue: overdue first, then oldest first (FR-40, BR-65)
+---------------------------------------- MySQL
+--------------
+SELECT c.complaint_no, c.status, c.created_at, cat.sla_days,
+       TIMESTAMPADD(DAY, cat.sla_days, c.created_at) AS due_at,
+       CASE WHEN c.status IN ('SUBMITTED', 'UNDER_REVIEW', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED')
+             AND TIMESTAMPADD(DAY, cat.sla_days, c.created_at) < '2026-11-22 12:00:00'
+            THEN 1 ELSE 0 END AS overdue
+FROM complaint c
+JOIN category cat ON cat.id = c.category_id
+WHERE c.department_id = 2
+  AND c.status IN ('ASSIGNED', 'IN_PROGRESS', 'REOPENED', 'RESOLVED')
+ORDER BY overdue DESC, c.created_at ASC, c.id ASC
+LIMIT 10 OFFSET 0
+--------------
+
++-----------------+-------------+---------------------+----------+---------------------+---------+
+| complaint_no    | status      | created_at          | sla_days | due_at              | overdue |
++-----------------+-------------+---------------------+----------+---------------------+---------+
+| GRV-2026-000013 | ASSIGNED    | 2026-11-19 07:00:00 |        2 | 2026-11-21 07:00:00 |       1 |
+| GRV-2026-000012 | ASSIGNED    | 2026-11-16 10:00:00 |       10 | 2026-11-26 10:00:00 |       0 |
+| GRV-2026-000001 | IN_PROGRESS | 2026-11-21 10:00:00 |        2 | 2026-11-23 10:00:00 |       0 |
++-----------------+-------------+---------------------+----------+---------------------+---------+
+3 rows in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> ...> ...> ...> ...> ...> ...> complaint_no    | status      | created_at          | sla_days | due_at              | overdue
+GRV-2026-000013 | ASSIGNED    | 2026-11-19 07:00:00 | 2        | 2026-11-21 07:00:00 | 1
+GRV-2026-000012 | ASSIGNED    | 2026-11-16 10:00:00 | 10       | 2026-11-26 10:00:00 | 0
+GRV-2026-000001 | IN_PROGRESS | 2026-11-21 10:00:00 | 2        | 2026-11-23 10:00:00 | 0
+(3 rows, 15 ms)
+sql> Connection closed
+====================================================================================================
+@Q07 All Complaints with filters and search (FR-30)
+---------------------------------------- MySQL
+--------------
+SELECT c.complaint_no, c.title, c.status, cat.name AS category, a.name AS area, d.name AS department, c.created_at
+FROM complaint c
+JOIN category cat ON cat.id = c.category_id
+JOIN area a ON a.id = c.area_id
+LEFT JOIN department d ON d.id = c.department_id
+WHERE c.created_at >= '2026-11-01 00:00:00' AND c.created_at < '2026-11-23 00:00:00'
+  AND (c.complaint_no = 'GARBAGE' OR LOWER(c.title) LIKE '%garbage%')
+ORDER BY c.created_at DESC, c.id DESC
+LIMIT 10 OFFSET 0
+--------------
+
++-----------------+------------------------+-----------+----------+-------------+------------+---------------------+
+| complaint_no    | title                  | status    | category | area        | department | created_at          |
++-----------------+------------------------+-----------+----------+-------------+------------+---------------------+
+| GRV-2026-000003 | Garbage not collected  | SUBMITTED | Garbage  | Hadapsar    | NULL       | 2026-11-18 08:00:00 |
+| GRV-2026-000007 | Garbage piled up again | REOPENED  | Garbage  | Viman Nagar | Sanitation | 2026-11-15 09:00:00 |
++-----------------+------------------------+-----------+----------+-------------+------------+---------------------+
+2 rows in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> ...> ...> ...> ...> complaint_no    | title                  | status    | category | area        | department | created_at
+GRV-2026-000003 | Garbage not collected  | SUBMITTED | Garbage  | Hadapsar    | null       | 2026-11-18 08:00:00
+GRV-2026-000007 | Garbage piled up again | REOPENED  | Garbage  | Viman Nagar | Sanitation | 2026-11-15 09:00:00
+(2 rows, 16 ms)
+sql> Connection closed
+====================================================================================================
+@Q08 Dashboard: count per status (FR-60)
+---------------------------------------- MySQL
+--------------
+SELECT c.status, COUNT(*) AS cnt
+FROM complaint c
+GROUP BY c.status
+ORDER BY c.status
+--------------
+
++-------------+-----+
+| status      | cnt |
++-------------+-----+
+| ASSIGNED    |   3 |
+| DUPLICATE   |   1 |
+| IN_PROGRESS |   1 |
+| REOPENED    |   1 |
+| RESOLVED    |   2 |
+| SUBMITTED   |   1 |
++-------------+-----+
+6 rows in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> status      | cnt
+ASSIGNED    | 3
+DUPLICATE   | 1
+IN_PROGRESS | 1
+REOPENED    | 1
+RESOLVED    | 2
+SUBMITTED   | 1
+(6 rows, 14 ms)
+sql> Connection closed
+====================================================================================================
+@Q09 Dashboard: overdue count, all and for one department (FR-60, FR-63, BR-65)
+---------------------------------------- MySQL
+--------------
+SELECT COUNT(*) AS overdue_all
+FROM complaint c JOIN category cat ON cat.id = c.category_id
+WHERE c.status IN ('SUBMITTED', 'UNDER_REVIEW', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED')
+  AND TIMESTAMPADD(DAY, cat.sla_days, c.created_at) < '2026-11-22 12:00:00'
+--------------
+
++-------------+
+| overdue_all |
++-------------+
+|           4 |
++-------------+
+1 row in set
+
+--------------
+SELECT COUNT(*) AS overdue_dept
+FROM complaint c JOIN category cat ON cat.id = c.category_id
+WHERE c.department_id = 2
+  AND c.status IN ('SUBMITTED', 'UNDER_REVIEW', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED')
+  AND TIMESTAMPADD(DAY, cat.sla_days, c.created_at) < '2026-11-22 12:00:00'
+--------------
+
++--------------+
+| overdue_dept |
++--------------+
+|            1 |
++--------------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> overdue_all
+4
+(1 row, 17 ms)
+sql> ...> ...> ...> ...> overdue_dept
+1
+(1 row, 1 ms)
+sql> Connection closed
+====================================================================================================
+@Q10 Dashboard: open / closed by category (FR-61)
+---------------------------------------- MySQL
+--------------
+SELECT cat.name AS category,
+       SUM(CASE WHEN c.status IN ('SUBMITTED', 'UNDER_REVIEW', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED', 'RESOLVED') THEN 1 ELSE 0 END) AS open_cnt,
+       SUM(CASE WHEN c.status IN ('CLOSED', 'REJECTED', 'DUPLICATE', 'WITHDRAWN') THEN 1 ELSE 0 END) AS closed_cnt
+FROM category cat
+LEFT JOIN complaint c ON c.category_id = cat.id
+GROUP BY cat.id, cat.name
+ORDER BY cat.name
+--------------
+
++---------------+----------+------------+
+| category      | open_cnt | closed_cnt |
++---------------+----------+------------+
+| Drainage      |        0 |          0 |
+| Garbage       |        2 |          0 |
+| Other         |        0 |          0 |
+| Road Damage   |        2 |          0 |
+| Streetlight   |        2 |          0 |
+| Water Leakage |        2 |          1 |
++---------------+----------+------------+
+6 rows in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> ...> ...> category      | open_cnt | closed_cnt
+Drainage      | 0        | 0
+Garbage       | 2        | 0
+Other         | 0        | 0
+Road Damage   | 2        | 0
+Streetlight   | 2        | 0
+Water Leakage | 2        | 1
+(6 rows, 16 ms)
+sql> Connection closed
+====================================================================================================
+@Q11 Dashboard: open / closed by department, incl. "not assigned" (FR-61)
+---------------------------------------- MySQL
+--------------
+SELECT d.id AS department_id, COALESCE(d.name, '(Not assigned)') AS department,
+       SUM(CASE WHEN c.status IN ('SUBMITTED', 'UNDER_REVIEW', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED', 'RESOLVED') THEN 1 ELSE 0 END) AS open_cnt,
+       SUM(CASE WHEN c.status IN ('CLOSED', 'REJECTED', 'DUPLICATE', 'WITHDRAWN') THEN 1 ELSE 0 END) AS closed_cnt
+FROM complaint c
+LEFT JOIN department d ON d.id = c.department_id
+GROUP BY d.id, d.name
+ORDER BY department
+--------------
+
++---------------+------------------+----------+------------+
+| department_id | department       | open_cnt | closed_cnt |
++---------------+------------------+----------+------------+
+|          NULL | (Not assigned)   |        1 |          0 |
+|             5 | Electrical       |        2 |          0 |
+|             3 | Road Maintenance |        1 |          0 |
+|             1 | Sanitation       |        1 |          0 |
+|             2 | Water Supply     |        3 |          1 |
++---------------+------------------+----------+------------+
+5 rows in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> ...> ...> department_id | department       | open_cnt | closed_cnt
+null          | (Not assigned)   | 1        | 0
+5             | Electrical       | 2        | 0
+3             | Road Maintenance | 1        | 0
+1             | Sanitation       | 1        | 0
+2             | Water Supply     | 3        | 1
+(5 rows, 17 ms)
+sql> Connection closed
+====================================================================================================
+@Q12 Dashboard: open / closed by area (FR-61)
+---------------------------------------- MySQL
+--------------
+SELECT a.name AS area,
+       SUM(CASE WHEN c.status IN ('SUBMITTED', 'UNDER_REVIEW', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED', 'RESOLVED') THEN 1 ELSE 0 END) AS open_cnt,
+       SUM(CASE WHEN c.status IN ('CLOSED', 'REJECTED', 'DUPLICATE', 'WITHDRAWN') THEN 1 ELSE 0 END) AS closed_cnt
+FROM area a
+LEFT JOIN complaint c ON c.area_id = a.id
+GROUP BY a.id, a.name
+ORDER BY a.name
+--------------
+
++--------------+----------+------------+
+| area         | open_cnt | closed_cnt |
++--------------+----------+------------+
+| Aundh        |        2 |          0 |
+| Baner        |        0 |          0 |
+| Hadapsar     |        1 |          0 |
+| Kasba Peth   |        0 |          0 |
+| Kothrud      |        2 |          1 |
+| Shivajinagar |        1 |          0 |
+| Viman Nagar  |        2 |          0 |
++--------------+----------+------------+
+7 rows in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> ...> ...> area         | open_cnt | closed_cnt
+Aundh        | 2        | 0
+Baner        | 0        | 0
+Hadapsar     | 1        | 0
+Kasba Peth   | 0        | 0
+Kothrud      | 2        | 1
+Shivajinagar | 1        | 0
+Viman Nagar  | 2        | 0
+(7 rows, 19 ms)
+sql> Connection closed
+====================================================================================================
+@Q13 Overdue list, most overdue first (FR-62, BR-65, BR-66)
+---------------------------------------- MySQL
+--------------
+SELECT c.complaint_no, c.status, d.name AS department, cat.sla_days, c.created_at,
+       TIMESTAMPADD(DAY, cat.sla_days, c.created_at) AS due_at
+FROM complaint c
+JOIN category cat ON cat.id = c.category_id
+LEFT JOIN department d ON d.id = c.department_id
+WHERE c.status IN ('SUBMITTED', 'UNDER_REVIEW', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED')
+  AND TIMESTAMPADD(DAY, cat.sla_days, c.created_at) < '2026-11-22 12:00:00'
+ORDER BY due_at ASC, c.id ASC
+LIMIT 50
+--------------
+
++-----------------+-----------+------------------+----------+---------------------+---------------------+
+| complaint_no    | status    | department       | sla_days | created_at          | due_at              |
++-----------------+-----------+------------------+----------+---------------------+---------------------+
+| GRV-2026-000005 | ASSIGNED  | Road Maintenance |       10 | 2026-11-07 10:00:00 | 2026-11-17 10:00:00 |
+| GRV-2026-000007 | REOPENED  | Sanitation       |        3 | 2026-11-15 09:00:00 | 2026-11-18 09:00:00 |
+| GRV-2026-000013 | ASSIGNED  | Water Supply     |        2 | 2026-11-19 07:00:00 | 2026-11-21 07:00:00 |
+| GRV-2026-000003 | SUBMITTED | NULL             |        3 | 2026-11-18 08:00:00 | 2026-11-21 08:00:00 |
++-----------------+-----------+------------------+----------+---------------------+---------------------+
+4 rows in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> ...> ...> ...> ...> complaint_no    | status    | department       | sla_days | created_at          | due_at
+GRV-2026-000005 | ASSIGNED  | Road Maintenance | 10       | 2026-11-07 10:00:00 | 2026-11-17 10:00:00
+GRV-2026-000007 | REOPENED  | Sanitation       | 3        | 2026-11-15 09:00:00 | 2026-11-18 09:00:00
+GRV-2026-000013 | ASSIGNED  | Water Supply     | 2        | 2026-11-19 07:00:00 | 2026-11-21 07:00:00
+GRV-2026-000003 | SUBMITTED | null             | 3        | 2026-11-18 08:00:00 | 2026-11-21 08:00:00
+(4 rows, 14 ms)
+sql> Connection closed
+====================================================================================================
+@Q14 Timeline: events merged with their revisions (FR-21, FR-17)
+---------------------------------------- MySQL
+--------------
+SELECT e.id AS event_id, e.event_type, e.from_status, e.to_status, e.created_at,
+       u.full_name AS actor_name, u.role AS actor_role, d.name AS department,
+       rc.complaint_no AS related_no, e.remark,
+       r.field_name, r.old_value, r.new_value
+FROM complaint_event e
+LEFT JOIN app_user u ON u.id = e.actor_id
+LEFT JOIN department d ON d.id = e.department_id
+LEFT JOIN complaint rc ON rc.id = e.related_complaint_id
+LEFT JOIN complaint_revision r ON r.event_id = e.id
+WHERE e.complaint_id = 1
+ORDER BY e.created_at ASC, e.id ASC, r.id ASC
+--------------
+
++----------+--------------------+--------------+--------------+---------------------+----------------------+------------+--------------+-----------------+-------------------------------------+------------+------------------+--------------------------------+
+| event_id | event_type         | from_status  | to_status    | created_at          | actor_name           | actor_role | department   | related_no      | remark                              | field_name | old_value        | new_value                      |
++----------+--------------------+--------------+--------------+---------------------+----------------------+------------+--------------+-----------------+-------------------------------------+------------+------------------+--------------------------------+
+|        1 | CREATED            | NULL         | SUBMITTED    | 2026-11-21 10:00:00 | Mahesh Joshi         | CITIZEN    | NULL         | NULL            | NULL                                | NULL       | NULL             | NULL                           |
+|        2 | STATUS_CHANGED     | SUBMITTED    | UNDER_REVIEW | 2026-11-21 10:30:00 | System Administrator | ADMIN      | NULL         | NULL            | NULL                                | NULL       | NULL             | NULL                           |
+|        3 | EDITED             | NULL         | NULL         | 2026-11-21 10:45:00 | Mahesh Joshi         | CITIZEN    | NULL         | NULL            | Added the exact spot                | title      | Pipeline leaking | Pipeline leaking on Karve Road |
+|        3 | EDITED             | NULL         | NULL         | 2026-11-21 10:45:00 | Mahesh Joshi         | CITIZEN    | NULL         | NULL            | Added the exact spot                | address    | Karve Road       | Karve Road, near Kothrud Depot |
+|        4 | STATUS_CHANGED     | UNDER_REVIEW | ASSIGNED     | 2026-11-21 11:00:00 | System Administrator | ADMIN      | Water Supply | NULL            | NULL                                | NULL       | NULL             | NULL                           |
+|        5 | STATUS_CHANGED     | ASSIGNED     | IN_PROGRESS  | 2026-11-22 09:00:00 | Anita Deshmukh       | OFFICER    | NULL         | NULL            | Team sent to the site               | NULL       | NULL             | NULL                           |
+|        7 | DUPLICATE_RECEIVED | NULL         | NULL         | 2026-11-22 09:30:00 | Anita Deshmukh       | OFFICER    | NULL         | GRV-2026-000002 | GRV-2026-000002 linked as duplicate | NULL       | NULL             | NULL                           |
++----------+--------------------+--------------+--------------+---------------------+----------------------+------------+--------------+-----------------+-------------------------------------+------------+------------------+--------------------------------+
+7 rows in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> ...> ...> ...> ...> ...> ...> event_id | event_type         | from_status  | to_status    | created_at          | actor_name           | actor_role | department   | related_no      | remark                              | field_name | old_value        | new_value
+1        | CREATED            | null         | SUBMITTED    | 2026-11-21 10:00:00 | Mahesh Joshi         | CITIZEN    | null         | null            | null                                | null       | null             | null
+2        | STATUS_CHANGED     | SUBMITTED    | UNDER_REVIEW | 2026-11-21 10:30:00 | System Administrator | ADMIN      | null         | null            | null                                | null       | null             | null
+3        | EDITED             | null         | null         | 2026-11-21 10:45:00 | Mahesh Joshi         | CITIZEN    | null         | null            | Added the exact spot                | title      | Pipeline leaking | Pipeline leaking on Karve Road
+3        | EDITED             | null         | null         | 2026-11-21 10:45:00 | Mahesh Joshi         | CITIZEN    | null         | null            | Added the exact spot                | address    | Karve Road       | Karve Road, near Kothrud Depot
+4        | STATUS_CHANGED     | UNDER_REVIEW | ASSIGNED     | 2026-11-21 11:00:00 | System Administrator | ADMIN      | Water Supply | null            | null                                | null       | null             | null
+5        | STATUS_CHANGED     | ASSIGNED     | IN_PROGRESS  | 2026-11-22 09:00:00 | Anita Deshmukh       | OFFICER    | null         | null            | Team sent to the site               | null       | null             | null
+7        | DUPLICATE_RECEIVED | null         | null         | 2026-11-22 09:30:00 | Anita Deshmukh       | OFFICER    | null         | GRV-2026-000002 | GRV-2026-000002 linked as duplicate | null       | null             | null
+(7 rows, 15 ms)
+sql> Connection closed
+====================================================================================================
+@Q15 Unread notification count for the bell (FR-71)
+---------------------------------------- MySQL
+--------------
+SELECT COUNT(*) AS unread FROM notification n WHERE n.recipient_id = 4 AND n.is_read = FALSE
+--------------
+
++--------+
+| unread |
++--------+
+|      3 |
++--------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> unread
+3
+(1 row, 22 ms)
+sql> Connection closed
+====================================================================================================
+@Q16 Notification recipients: owner + active watchers, de-duplicated (BR-67, BR-68)
+---------------------------------------- MySQL
+--------------
+SELECT c.owner_id AS user_id FROM complaint c WHERE c.id = 1
+UNION
+SELECT w.user_id FROM complaint_watcher w WHERE w.complaint_id = 1 AND w.active = TRUE
+ORDER BY user_id
+--------------
+
++---------+
+| user_id |
++---------+
+|       4 |
+|       5 |
++---------+
+2 rows in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> user_id
+4
+5
+(2 rows, 15 ms)
+sql> Connection closed
+====================================================================================================
+@Q17 Withdraw guard: does anything link to this complaint as a duplicate? (BR-47)
+---------------------------------------- MySQL
+--------------
+SELECT COUNT(*) AS linked_duplicates FROM complaint d WHERE d.duplicate_of_id = 1
+--------------
+
++-------------------+
+| linked_duplicates |
++-------------------+
+|                 1 |
++-------------------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> linked_duplicates
+1
+(1 row, 14 ms)
+sql> Connection closed
+====================================================================================================
+@Q18 Auto-close selection: RESOLVED and review window over (FR-82, BR-30)
+---------------------------------------- MySQL
+--------------
+SELECT c.id, c.complaint_no, c.version, c.resolved_at
+FROM complaint c
+WHERE c.status = 'RESOLVED' AND c.resolved_at < '2026-11-15 12:00:00'
+ORDER BY c.resolved_at ASC, c.id ASC
+LIMIT 500
+--------------
+
++----+-----------------+---------+---------------------+
+| id | complaint_no    | version | resolved_at         |
++----+-----------------+---------+---------------------+
+|  6 | GRV-2026-000011 |       4 | 2026-11-14 10:00:00 |
++----+-----------------+---------+---------------------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> id | complaint_no    | version | resolved_at
+6  | GRV-2026-000011 | 4       | 2026-11-14 10:00:00
+(1 row, 13 ms)
+sql> Connection closed
+====================================================================================================
+@Q19 Optimistic-lock update: first Resolve with version 3 wins (BR-71)
+---------------------------------------- MySQL
+--------------
+UPDATE complaint
+SET status = 'RESOLVED', resolved_at = '2026-11-22 12:00:00', updated_at = '2026-11-22 12:00:00', version = version + 1
+WHERE id = 1 AND version = 3 AND status = 'IN_PROGRESS'
+--------------
+
+Query OK, 1 row affected
+Rows matched: 1  Changed: 1  Warnings: 0
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> (Update count: 1, 8 ms)
+sql> Connection closed
+====================================================================================================
+@Q20 Optimistic-lock update: second Resolve with the same stale version 3 updates 0 rows
+---------------------------------------- MySQL
+--------------
+UPDATE complaint
+SET status = 'RESOLVED', resolved_at = '2026-11-22 12:00:01', updated_at = '2026-11-22 12:00:01', version = version + 1
+WHERE id = 1 AND version = 3 AND status = 'IN_PROGRESS'
+--------------
+
+Query OK, 0 rows affected
+Rows matched: 0  Changed: 0  Warnings: 0
+
+--------------
+SELECT complaint_no, status, version, resolved_at FROM complaint WHERE id = 1
+--------------
+
++-----------------+----------+---------+---------------------+
+| complaint_no    | status   | version | resolved_at         |
++-----------------+----------+---------+---------------------+
+| GRV-2026-000001 | RESOLVED |       4 | 2026-11-22 12:00:00 |
++-----------------+----------+---------+---------------------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> (Update count: 0, 6 ms)
+sql> complaint_no    | status   | version | resolved_at
+GRV-2026-000001 | RESOLVED | 4       | 2026-11-22 12:00:00
+(1 row, 10 ms)
+sql> Connection closed
+====================================================================================================
+@Q21 Auto-close update for one selected row (T09), guarded by version and status
+---------------------------------------- MySQL
+--------------
+UPDATE complaint
+SET status = 'CLOSED', updated_at = '2026-11-22 12:00:00', version = version + 1
+WHERE id = 6 AND version = 4 AND status = 'RESOLVED'
+--------------
+
+Query OK, 1 row affected
+Rows matched: 1  Changed: 1  Warnings: 0
+
+--------------
+SELECT complaint_no, status, version FROM complaint WHERE id = 6
+--------------
+
++-----------------+--------+---------+
+| complaint_no    | status | version |
++-----------------+--------+---------+
+| GRV-2026-000011 | CLOSED |       5 |
++-----------------+--------+---------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> (Update count: 1, 8 ms)
+sql> complaint_no    | status | version
+GRV-2026-000011 | CLOSED | 5
+(1 row, 9 ms)
+sql> Connection closed
+====================================================================================================
+@Q22 Complaint number, existing year row (BR-10, BR-11): 2026 -> 14
+---------------------------------------- MySQL
+--------------
+INSERT INTO complaint_sequence (seq_year, last_number) VALUES (2026, 0)
+  ON DUPLICATE KEY UPDATE last_number = last_number
+--------------
+
+Query OK, 0 rows affected
+
+--------------
+SELECT last_number FROM complaint_sequence WHERE seq_year = 2026 FOR UPDATE
+--------------
+
++-------------+
+| last_number |
++-------------+
+|          13 |
++-------------+
+1 row in set
+
+--------------
+UPDATE complaint_sequence SET last_number = last_number + 1 WHERE seq_year = 2026
+--------------
+
+Query OK, 1 row affected
+Rows matched: 1  Changed: 1  Warnings: 0
+
+--------------
+SELECT last_number AS issued FROM complaint_sequence WHERE seq_year = 2026
+--------------
+
++--------+
+| issued |
++--------+
+|     14 |
++--------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> (Update count: 0, 12 ms)
+sql> last_number
+13
+(1 row, 13 ms)
+sql> (Update count: 1, 2 ms)
+sql> issued
+14
+(1 row, 0 ms)
+sql> Connection closed
+====================================================================================================
+@Q23 Complaint number, first complaint of a new year: 2027 -> 1
+---------------------------------------- MySQL
+--------------
+INSERT INTO complaint_sequence (seq_year, last_number) VALUES (2027, 0)
+  ON DUPLICATE KEY UPDATE last_number = last_number
+--------------
+
+Query OK, 1 row affected
+
+--------------
+SELECT last_number FROM complaint_sequence WHERE seq_year = 2027 FOR UPDATE
+--------------
+
++-------------+
+| last_number |
++-------------+
+|           0 |
++-------------+
+1 row in set
+
+--------------
+UPDATE complaint_sequence SET last_number = last_number + 1 WHERE seq_year = 2027
+--------------
+
+Query OK, 1 row affected
+Rows matched: 1  Changed: 1  Warnings: 0
+
+--------------
+SELECT last_number AS issued FROM complaint_sequence WHERE seq_year = 2027
+--------------
+
++--------+
+| issued |
++--------+
+|      1 |
++--------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> (Update count: 1, 3 ms)
+sql> last_number
+0
+(1 row, 11 ms)
+sql> (Update count: 1, 4 ms)
+sql> issued
+1
+(1 row, 0 ms)
+sql> Connection closed
+====================================================================================================
+@Q24 Mark notifications read: one item, then "mark all" (FR-72)
+---------------------------------------- MySQL
+--------------
+UPDATE notification SET is_read = TRUE, read_at = '2026-11-22 12:00:00'
+WHERE id = 2 AND recipient_id = 4 AND is_read = FALSE
+--------------
+
+Query OK, 1 row affected
+Rows matched: 1  Changed: 1  Warnings: 0
+
+--------------
+UPDATE notification SET is_read = TRUE, read_at = '2026-11-22 12:00:00'
+WHERE recipient_id = 4 AND is_read = FALSE
+--------------
+
+Query OK, 2 rows affected
+Rows matched: 2  Changed: 2  Warnings: 0
+
+--------------
+SELECT COUNT(*) AS unread_after FROM notification n WHERE n.recipient_id = 4 AND n.is_read = FALSE
+--------------
+
++--------------+
+| unread_after |
++--------------+
+|            0 |
++--------------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> (Update count: 1, 8 ms)
+sql> ...> (Update count: 2, 2 ms)
+sql> unread_after
+0
+(1 row, 14 ms)
+sql> Connection closed
+====================================================================================================
+@Q25 Constraint check: a RESOLVED complaint without resolved_at is refused (ck_complaint_resolved_at)
+---------------------------------------- MySQL
+--------------
+UPDATE complaint SET resolved_at = NULL WHERE id = 3
+--------------
+
+Bye
+ERROR 3819 (HY000) at line 1: Check constraint 'ck_complaint_resolved_at' is violated.
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> Error: org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException: Check constraint violation: "ck_complaint_resolved_at: "; SQL statement:
+UPDATE complaint SET resolved_at = NULL WHERE id = 3 [23513-252]
+sql> Connection closed
+====================================================================================================
+@Q26 Search with an escaped LIKE pattern: "50%" must match literally, not as a wildcard (FR-30, D25)
+---------------------------------------- MySQL
+--------------
+SELECT COUNT(*) AS matches FROM complaint c WHERE (c.complaint_no = '50%' OR LOWER(c.title) LIKE '%50!%%' ESCAPE '!')
+--------------
+
++---------+
+| matches |
++---------+
+|       1 |
++---------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> matches
+1
+(1 row, 13 ms)
+sql> Connection closed
+====================================================================================================
+@Q27 Notification list, newest first (FR-72)
+---------------------------------------- MySQL
+--------------
+SELECT n.id, n.message, n.is_read, n.created_at, c.complaint_no
+FROM notification n LEFT JOIN complaint c ON c.id = n.complaint_id
+WHERE n.recipient_id = 4
+ORDER BY n.created_at DESC, n.id DESC
+LIMIT 10 OFFSET 0
+--------------
+
++----+-------------------------------------+---------+---------------------+-----------------+
+| id | message                             | is_read | created_at          | complaint_no    |
++----+-------------------------------------+---------+---------------------+-----------------+
+|  4 | GRV-2026-000001 is now In Progress  |       1 | 2026-11-22 09:00:00 | GRV-2026-000001 |
+|  3 | GRV-2026-000001 is now Assigned     |       1 | 2026-11-21 11:00:00 | GRV-2026-000001 |
+|  2 | GRV-2026-000001 is now Under Review |       1 | 2026-11-21 10:30:00 | GRV-2026-000001 |
+|  1 | GRV-2026-000001 registered          |       1 | 2026-11-21 10:00:00 | GRV-2026-000001 |
++----+-------------------------------------+---------+---------------------+-----------------+
+4 rows in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> ...> ...> ...> id | message                             | is_read | created_at          | complaint_no
+4  | GRV-2026-000001 is now In Progress  | TRUE    | 2026-11-22 09:00:00 | GRV-2026-000001
+3  | GRV-2026-000001 is now Assigned     | TRUE    | 2026-11-21 11:00:00 | GRV-2026-000001
+2  | GRV-2026-000001 is now Under Review | TRUE    | 2026-11-21 10:30:00 | GRV-2026-000001
+1  | GRV-2026-000001 registered          | TRUE    | 2026-11-21 10:00:00 | GRV-2026-000001
+(4 rows, 13 ms)
+sql> Connection closed
+====================================================================================================
+@Q28 Watcher: Unwatch, then Watch again reactivates the same row (BR-51, BR-52)
+---------------------------------------- MySQL
+--------------
+UPDATE complaint_watcher SET active = FALSE, updated_at = '2026-11-22 12:00:00'
+WHERE complaint_id = 1 AND user_id = 5 AND active = TRUE
+--------------
+
+Query OK, 1 row affected
+Rows matched: 1  Changed: 1  Warnings: 0
+
+--------------
+UPDATE complaint_watcher SET active = TRUE, since = '2026-11-22 12:00:00', updated_at = '2026-11-22 12:00:00'
+WHERE complaint_id = 1 AND user_id = 5 AND active = FALSE
+--------------
+
+Query OK, 1 row affected
+Rows matched: 1  Changed: 1  Warnings: 0
+
+--------------
+SELECT complaint_id, user_id, active, since FROM complaint_watcher WHERE complaint_id = 1
+--------------
+
++--------------+---------+--------+---------------------+
+| complaint_id | user_id | active | since               |
++--------------+---------+--------+---------------------+
+|            1 |       5 |      1 | 2026-11-22 12:00:00 |
++--------------+---------+--------+---------------------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> (Update count: 1, 9 ms)
+sql> ...> (Update count: 1, 1 ms)
+sql> complaint_id | user_id | active | since
+1            | 5       | TRUE   | 2026-11-22 12:00:00
+(1 row, 10 ms)
+sql> Connection closed
+====================================================================================================
+@Q29 Guards: active complaint attachments (BR-23) and other active admins (BR-82)
+---------------------------------------- MySQL
+--------------
+SELECT COUNT(*) AS active_files FROM attachment
+WHERE complaint_id = 1 AND purpose = 'COMPLAINT' AND deleted = FALSE
+--------------
+
++--------------+
+| active_files |
++--------------+
+|            0 |
++--------------+
+1 row in set
+
+--------------
+SELECT COUNT(*) AS other_active_admins FROM app_user WHERE role = 'ADMIN' AND active = TRUE AND id <> 1
+--------------
+
++---------------------+
+| other_active_admins |
++---------------------+
+|                   0 |
++---------------------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> ...> active_files
+0
+(1 row, 13 ms)
+sql> other_active_admins
+0
+(1 row, 0 ms)
+sql> Connection closed
+====================================================================================================
+@Q30 OTP: issue, cooldown/hourly facts, latest usable OTP (BR-85)
+---------------------------------------- MySQL
+--------------
+UPDATE mobile_otp SET used = TRUE WHERE user_id = 6 AND used = FALSE
+--------------
+
+Query OK, 0 rows affected
+Rows matched: 0  Changed: 0  Warnings: 0
+
+--------------
+INSERT INTO mobile_otp (user_id, otp_hash, sent_at, expires_at, attempts, used) VALUES (6, 'hash-1', '2026-11-22 12:00:00', '2026-11-22 12:05:00', 0, FALSE)
+--------------
+
+Query OK, 1 row affected
+
+--------------
+SELECT MAX(sent_at) AS last_sent, SUM(CASE WHEN sent_at > '2026-11-22 11:00:00' THEN 1 ELSE 0 END) AS sends_last_hour
+FROM mobile_otp WHERE user_id = 6
+--------------
+
++---------------------+-----------------+
+| last_sent           | sends_last_hour |
++---------------------+-----------------+
+| 2026-11-22 12:00:00 |               1 |
++---------------------+-----------------+
+1 row in set
+
+--------------
+SELECT id, otp_hash, expires_at, attempts FROM mobile_otp
+WHERE user_id = 6 AND used = FALSE ORDER BY sent_at DESC, id DESC LIMIT 1
+--------------
+
++----+----------+---------------------+----------+
+| id | otp_hash | expires_at          | attempts |
++----+----------+---------------------+----------+
+|  1 | hash-1   | 2026-11-22 12:05:00 |        0 |
++----+----------+---------------------+----------+
+1 row in set
+
+Bye
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> (Update count: 0, 5 ms)
+sql> (Update count: 1, 2 ms)
+sql> ...> last_sent           | sends_last_hour
+2026-11-22 12:00:00 | 1
+(1 row, 11 ms)
+sql> ...> id | otp_hash | expires_at          | attempts
+1  | hash-1   | 2026-11-22 12:05:00 | 0
+(1 row, 1 ms)
+sql> Connection closed
+====================================================================================================
+@Q31 Constraint check: a second notification for the same event and recipient is refused (BR-68)
+---------------------------------------- MySQL
+--------------
+INSERT INTO notification (recipient_id, complaint_id, event_id, message, is_read, created_at) VALUES (4, 1, 2, 'dup', FALSE, '2026-11-22 12:00:00')
+--------------
+
+Bye
+ERROR 1062 (23000) at line 1: Duplicate entry '2-4' for key 'notification.uq_notification_event_recipient'
+---------------------------------------- H2 (MySQL mode)
+list           Toggle result list / stack trace mode
+
+sql> Error: org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException: Unique index or primary key violation: "public.uq_notification_event_recipient INDEX public.uq_notification_event_recipient_INDEX_2 ON public.notification(event_id NULLS FIRST, recipient_id NULLS FIRST) VALUES ( /* key:2 */ CAST(2 AS BIGINT), CAST(4 AS BIGINT))"; SQL statement:
+INSERT INTO notification (recipient_id, complaint_id, event_id, message, is_read, created_at) VALUES (4, 1, 2, 'dup', FALSE, '2026-11-22 12:00:00') [23505-252]
+sql> Connection closed

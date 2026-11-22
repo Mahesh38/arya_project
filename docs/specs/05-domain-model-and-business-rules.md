@@ -50,6 +50,7 @@ classDiagram
     class Area {
       Long id
       String name
+      String description
       boolean active
     }
     class Complaint {
@@ -79,6 +80,8 @@ classDiagram
       EventType type
       ComplaintStatus fromStatus
       ComplaintStatus toStatus
+      Department department  %% assigned by T03/T04
+      Complaint relatedComplaint  %% other side of a duplicate link
       String remark
       LocalDateTime createdAt
     }
@@ -212,7 +215,7 @@ Remark, reason and note fields are 10–500 characters when required, and at mos
 | ID | Rule |
 |---|---|
 | BR-10 | The format is `GRV-{YYYY}-{NNNNNN}`, e.g. `GRV-2026-000123`. `YYYY` is the submission year in Asia/Kolkata. `NNNNNN` is zero-padded and restarts at 000001 each year. |
-| BR-11 | The sequence comes from a `complaint_sequence(year, last_value)` row, read with `SELECT … FOR UPDATE` in the same transaction as the insert. Two parallel submissions therefore never get the same number, and a rollback never leaves a gap. |
+| BR-11 | The sequence comes from a `complaint_sequence(seq_year, last_number)` row (doc 08 §5.9), read with `SELECT … FOR UPDATE` in the same transaction as the insert. Two parallel submissions therefore never get the same number, and a rollback never leaves a gap. |
 | BR-12 | `complaintNo` is unique (DB constraint) and never changes. The internal numeric `id` is never shown to users. |
 
 ### 4.2 Complaint data
@@ -317,3 +320,4 @@ Remark, reason and note fields are 10–500 characters when required, and at mos
 |---|---|
 | 2026-11-22 | Initial draft (includes D13, D14) |
 | 2026-11-22 | Added MobileOtp, BR-84 to BR-87 (D16) |
+| 2026-11-22 | Doc 08 alignment: BR-11 column names `seq_year`, `last_number` (D17); `ComplaintEvent.department` and `relatedComplaint`, `Area.description` (D20) |

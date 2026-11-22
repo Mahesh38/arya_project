@@ -196,6 +196,7 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | `spring.servlet.multipart.max-request-size` | 26MB | FR-11 (5 × 5 MB + form) |
 | `app.upload.dir` | `./uploads` | NFR-05 |
 | `app.admin.email` / `app.admin.password` | set at deployment time | FR-07 |
+| `app.admin.name` / `app.admin.mobile` | System Administrator / 9000000000 | FR-07 (D26) |
 | `server.servlet.session.timeout` | 30m | FR-04 |
 | `app.otp.length` / `app.otp.ttl` | 6 / 5m | FR-09 |
 | `app.otp.max-attempts` / `app.otp.resend-cooldown` / `app.otp.max-sends-per-hour` | 3 / 60s / 5 | FR-09 |
@@ -215,3 +216,4 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | 2026-11-22 | FR-09 to FR-09c mobile OTP verification (D16); Pune areas (D15) |
 | 2026-11-22 | FR-29 Unwatch; duplicate and withdraw rules point to doc 05 (D13, D14) |
 | 2026-11-22 | Multiple attachments (JPG/PNG/PDF, ≤ 5 MB, max 5); edit and withdraw with revisions (FR-16 to FR-19) |
+| 2026-11-22 | Added `app.admin.name` / `app.admin.mobile` settings (doc 08, D26) |
