@@ -50,7 +50,7 @@ Details are in **02 Glossary & Actors**.
 | Module | Included |
 |---|---|
 | M1 Registration & Login | Citizen self-registration, login and logout for all three roles. Officer and admin accounts are created by the admin or the seed data, not by self-registration. |
-| M2 Complaint Registration | Category, title, description, **area (dropdown) + free-text address**, one optional photo, and a generated complaint ID. |
+| M2 Complaint Registration | Category, title, description, **area (dropdown) + free-text address**, up to **5 attachments** (JPG/PNG/PDF, ≤ 5 MB each), and a generated complaint ID. The owner can **edit** the complaint before it is assigned and **withdraw** it before work starts. Every change is kept as a visible revision. |
 | M3 Complaint Tracking | "My Complaints" list, a complaint detail page with a status timeline, and a "Watching" list. Only the owner, the watchers, the assigned department's officers and the admin can view a complaint. |
 | M4 Admin Dashboard | List and filter all complaints, review them, assign or reassign a department, view the full history. |
 | M5 Department Management | CRUD for departments and officer accounts. Each category maps to a default department, which is suggested when assigning. |
@@ -67,7 +67,8 @@ Details are in **02 Glossary & Actors**.
 - A mobile app or public REST API.
 - Automatic similar-complaint detection. Duplicates are marked manually for now.
 - Public or anonymous complaint lookup by ID.
-- Several photos per complaint, comments or chat threads, and citizen ratings.
+- Comments or chat threads, and citizen ratings.
+- Attachment types other than JPG/PNG/PDF.
 - Multiple languages.
 
 ## 6. Constraints
@@ -84,7 +85,7 @@ Details are in **02 Glossary & Actors**.
 
 - A1: One complaint has exactly one category and, once assigned, exactly one responsible department.
 - A2: Each officer belongs to exactly one department.
-- A3: Photos are stored on the server's file system, and their paths are stored in the database.
+- A3: Attachments are stored on the server's file system, and their metadata (original name, type, size, stored name) is stored in the database.
 - A4: Areas (wards or localities) are a fixed list maintained by the admin.
 - A5: Every user has an email address, which is used as the login ID.
 
@@ -102,3 +103,4 @@ Details are in **02 Glossary & Actors**.
 |---|---|
 | 2026-11-22 | Initial draft |
 | 2026-11-22 | Added reopen and auto-close (D8, D9) |
+| 2026-11-22 | Added edit/withdraw with revisions and multiple attachments (D11, D12) |

@@ -90,6 +90,9 @@ arya_project/
 | D6 | Packaging? | **Executable JAR** with embedded Tomcat. |
 | D7 | Versions? | Latest stable versions everywhere, JDK 25 LTS, Spring Boot 4.x (see §3). |
 | D8 | Can a citizen reopen a resolved complaint? | **Yes.** The owner can reopen a `RESOLVED` complaint with a reason during the review window. It goes back to the same department as `REOPENED`. |
+| D10 | Authorization style? | Roles are enforced on URLs with Spring Security. Access to each complaint (owner, watcher, department, admin) is checked by one central `ComplaintAccessPolicy` in the service layer, and anyone not allowed gets **404**, never 403. |
+| D11 | Edit or withdraw after submitting? | **Allowed, with a full audit trail.** The owner can **edit** while the status is `SUBMITTED` or `UNDER_REVIEW`, and **withdraw** until work starts (`SUBMITTED`, `UNDER_REVIEW`, `ASSIGNED`). Every edit is stored as a revision (field, old value, new value, who, when) and shown in the timeline. Withdrawing sets the new final status `WITHDRAWN`. Nothing is ever hard-deleted. |
+| D12 | Attachments? | Up to **5 files per complaint**, each **≤ 5 MB**. Allowed types are **JPG, PNG and PDF**, checked by file content, not just the extension. Other types such as Office files or executables are blocked for safety. A removed attachment is soft-deleted and stays in the history. |
 | D9 | How does `RESOLVED` end? | The owner reviews it and either **closes** or **reopens** it. If there is no response within the review window (configurable, default 7 days), a scheduled job **auto-closes** it. |
 
 ## Status
@@ -100,4 +103,5 @@ arya_project/
 | 01 Vision & Scope | Draft |
 | 02 Glossary & Actors | Draft |
 | 03 Requirements (SRS) | Draft |
-| 04–14 | Not started |
+| 04 Use Cases | Draft |
+| 05–14 | Not started |

@@ -29,19 +29,23 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 
 | ID | Requirement | Pri |
 |---|---|:-:|
-| FR-10 | A Citizen can submit a complaint with: **category** (required, active categories only), **title** (5–100 characters), **description** (20–2000 characters), **area** (required, active areas only), **address** (5–255 characters), and **photo** (optional). | M |
-| FR-11 | The photo must be JPG or PNG and at most 5 MB. The file content must be a real image, not just a file with the right extension. | M |
+| FR-10 | A Citizen can submit a complaint with: **category** (required, active categories only), **title** (5–100 characters), **description** (20–2000 characters), **area** (required, active areas only), **address** (5–255 characters), and **attachments** (optional, 0–5 files). | M |
+| FR-11 | Each attachment must be **JPG, PNG or PDF** and **≤ 5 MB**, with **at most 5 active attachments per complaint**. The type is checked from the file's content (magic bytes), not only its extension. If any file is invalid, the whole submission is rejected with a message for that file. | M |
 | FR-12 | On submit, the system generates a unique **complaint number** in the format `GRV-YYYY-NNNNNN` (year + a sequence that restarts each year). | M |
 | FR-13 | A new complaint starts as `SUBMITTED` and gets its first history entry: "Complaint submitted". | M |
 | FR-14 | After submission, a confirmation page shows the complaint number and a link to the complaint. | M |
 | FR-15 | Submission notifies the owner ("Complaint GRV-… registered") and all Admins ("New complaint GRV-…"). | M |
+| FR-16 | The **owner** can **edit** the category, title, description, area and address, and can add or remove attachments (FR-11 limits apply), while the status is `SUBMITTED` or `UNDER_REVIEW`. An optional "reason for change" can be entered. | M |
+| FR-17 | Every edit creates **revision** records (field, old value, new value, editor, timestamp, reason). The timeline shows them as "Edited: Title changed from '…' to '…'". Removed attachments are soft-deleted, still listed as "removed on …", and stay viewable by the Admin. Revisions are never edited or deleted. | M |
+| FR-18 | The **owner** can **withdraw** a complaint while it is `SUBMITTED`, `UNDER_REVIEW` or `ASSIGNED`, with a mandatory reason. The status becomes `WITHDRAWN` (final). | M |
+| FR-19 | Edit and Withdraw buttons appear only when allowed. A request outside the allowed statuses is refused, even if someone posts the form directly. | M |
 
 ### M3 — Complaint Tracking (Citizen)
 
 | ID | Requirement | Pri |
 |---|---|:-:|
 | FR-20 | **My Complaints** lists the citizen's own complaints (number, title, category, status badge, created date), newest first, paginated, and can be filtered by status. | M |
-| FR-21 | **Complaint detail** shows all fields, the photo, the assigned department and a **timeline** of status changes with dates and remarks. | M |
+| FR-21 | **Complaint detail** shows all fields, the attachments (image thumbnails, PDF links), the assigned department and a **timeline** of status changes with dates and remarks. | M |
 | FR-22 | **Watching** lists the complaints the citizen watches, with the same columns as FR-20. | M |
 | FR-23 | A citizen can only view complaints they own or watch. Any other complaint returns **404 Not Found**, so the system never reveals that a complaint exists. | M |
 | FR-24 | A complaint in `DUPLICATE` status shows a banner: "Linked to GRV-… which is already being handled", with a link to the original. | M |
@@ -74,7 +78,7 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | FR-45 | An Officer can **reject** a complaint in their department, with a mandatory reason. | M |
 | FR-46 | An Officer can **send a complaint back to the Admin** ("wrong department") with a remark. The status returns to `UNDER_REVIEW` and the department is cleared. | S |
 | FR-47 | An Officer can only act on complaints of their own department. Any other complaint returns 404. | M |
-| FR-48 | Optionally, an Officer can upload a "work done" photo when resolving a complaint. | C |
+| FR-48 | Optionally, an Officer can upload up to 3 "work done" attachments when resolving a complaint (same type and size rules as FR-11). | C |
 
 ### M5 — Master Data Management (Admin)
 
@@ -92,7 +96,7 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 
 | ID | Requirement | Pri |
 |---|---|:-:|
-| FR-60 | The Admin dashboard shows summary cards: Total, Pending (`SUBMITTED` + `UNDER_REVIEW`), Assigned, In Progress, Reopened, Resolved, Closed, Rejected, Duplicate, **Overdue**. | M |
+| FR-60 | The Admin dashboard shows summary cards: Total, Pending (`SUBMITTED` + `UNDER_REVIEW`), Assigned, In Progress, Reopened, Resolved, Closed, Rejected, Duplicate, Withdrawn, **Overdue**. | M |
 | FR-61 | It also shows count tables **by category**, **by department** and **by area**, each split into open and closed. | M |
 | FR-62 | An **overdue list** shows each complaint, its department, the days elapsed against its SLA days, and its status. | M |
 | FR-63 | The Officer home page shows the same cards limited to their own department. | S |
@@ -111,6 +115,8 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | | • Reopened → officers of the department, all admins | |
 | | • Closed (by the owner or automatically) → owner; officers of the department | |
 | | • Sent back to admin → all admins | |
+| | • Edited by owner → all admins | |
+| | • Withdrawn → all admins; officers of the department, if assigned | |
 | FR-71 | The navbar shows a bell icon with the unread count. | M |
 | FR-72 | The notification list shows newest first. Clicking an item marks it read and opens the complaint. There is also "Mark all as read". | M |
 | FR-73 | Notifications older than 90 days may be purged. | C |
@@ -119,7 +125,7 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 
 | ID | Requirement | Pri |
 |---|---|:-:|
-| FR-80 | **Overdue**: a complaint whose status is not `RESOLVED`, `CLOSED`, `REJECTED` or `DUPLICATE`, and where `now > created_at + category.sla_days`. Overdue is calculated when queried, not stored. | M |
+| FR-80 | **Overdue**: a complaint whose status is not `RESOLVED`, `CLOSED`, `REJECTED`, `DUPLICATE` or `WITHDRAWN`, and where `now > created_at + category.sla_days`. Overdue is calculated when queried, not stored. | M |
 | FR-81 | **History**: every status change, reassignment, duplicate link and remark is stored with the from-status, to-status, actor (or SYSTEM), timestamp and remark. History is never edited or deleted. | M |
 | FR-82 | **Auto-close job**: a scheduled job (hourly, configurable) closes every `RESOLVED` complaint whose review window has expired. The actor is SYSTEM and the remark is "Auto-closed: no response within N days". It sends the FR-70 notifications. | M |
 | FR-83 | Status changes are only allowed according to the state machine in doc 05. Invalid transitions are refused with a clear message. | M |
@@ -179,7 +185,10 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | `app.complaint.review-window-days` | 7 | FR-25, FR-82 |
 | `app.complaint.max-reopens` | 2 | FR-27 |
 | `app.complaint.auto-close-cron` | `0 0 * * * *` (hourly) | FR-82 |
-| `app.upload.max-size` | 5MB | FR-11 |
+| `app.upload.max-file-size` | 5MB | FR-11 |
+| `app.upload.max-files-per-complaint` | 5 | FR-11 |
+| `app.upload.allowed-types` | `image/jpeg, image/png, application/pdf` | FR-11 |
+| `spring.servlet.multipart.max-request-size` | 26MB | FR-11 (5 × 5 MB + form) |
 | `app.upload.dir` | `./uploads` | NFR-05 |
 | `app.admin.email` / `app.admin.password` | set at deployment time | FR-07 |
 | `server.servlet.session.timeout` | 30m | FR-04 |
@@ -195,3 +204,4 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft |
+| 2026-11-22 | Multiple attachments (JPG/PNG/PDF, ≤ 5 MB, max 5); edit and withdraw with revisions (FR-16 to FR-19) |

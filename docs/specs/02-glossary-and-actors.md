@@ -11,13 +11,16 @@
 
 | Term | Meaning |
 |---|---|
-| **Complaint** | A public problem reported by a citizen. It has a category, title, description, area, address, optional photo, status and history. |
+| **Complaint** | A public problem reported by a citizen. It has a category, title, description, area, address, up to 5 attachments, status, revisions and history. |
 | **Complaint ID** (`complaint_no`) | The human-readable unique number shown to users, e.g. `GRV-2026-000123`. The format is finalised in doc 05. It is separate from the database primary key. |
 | **Category** | The type of problem: Garbage, Water Leakage, Road Damage, Drainage, Streetlight, Other. Each category has a **default department**. |
 | **Department** | The authority unit that fixes a problem, e.g. Sanitation, Water Supply, Road Maintenance, Electrical. |
 | **Area** | A ward or locality chosen from a dropdown. Together with the free-text address, it forms the complaint's location. |
 | **Status** | The current lifecycle state of a complaint (see §3). |
 | **Status History** | A record of every status change: from-status, to-status, who made it, when, and a remark. It drives the tracking timeline. |
+| **Attachment** | A file added to a complaint (JPG, PNG or PDF, ≤ 5 MB, at most 5 per complaint). It is stored on disk under a random name and served only to people allowed to view the complaint. |
+| **Revision** | A record of one edit by the owner: which field changed, the old and new values, who made the change and when. Revisions are shown in the timeline and never deleted. |
+| **Withdraw** | The owner cancels their own complaint before work starts. The status becomes `WITHDRAWN`. |
 | **Remark** | A short note entered with a status change, e.g. "Team visited, pipe replacement scheduled". |
 | **Assignment** | Linking a complaint to the responsible department. It is done by the admin. |
 | **Duplicate** | A complaint describing the same problem as an earlier one that is already being handled. It is linked to the **original** (master) complaint. |
@@ -34,7 +37,8 @@
 
 ### 2.1 Citizen (`ROLE_CITIZEN`)
 - Registers using their name, email, mobile number and password.
-- Submits complaints.
+- Submits complaints with up to 5 attachments.
+- **Edits** their own complaint while it is `SUBMITTED`/`UNDER_REVIEW`, and **withdraws** it while it is `SUBMITTED`/`UNDER_REVIEW`/`ASSIGNED`. Every edit is kept as a revision.
 - Views **only** the complaints they own or watch.
 - Sees the status timeline and the officers' remarks.
 - Reviews their own `RESOLVED` complaint: **closes** it, or **reopens** it with a reason.
@@ -73,6 +77,7 @@
 | `RESOLVED` | The work is done | Officer |
 | `REOPENED` | The citizen was not satisfied with the resolution and sent it back to the department | Citizen (owner) |
 | `CLOSED` | Resolution accepted by the owner, or auto-closed after the review window (final) | Citizen (owner) / System |
+| `WITHDRAWN` | Cancelled by the owner before work started (final) | Citizen (owner) |
 | `REJECTED` | Invalid, not a public issue, or fake (final) | Admin / Officer |
 | `DUPLICATE` | Linked to an original complaint (final for this record) | Admin / Officer |
 
@@ -84,6 +89,7 @@ While a complaint is `RESOLVED`, the owner has a **review window** (default 7 da
 |---|:-:|:-:|:-:|
 | Register self | ✔ | | |
 | Submit complaint | ✔ | | |
+| Edit / withdraw complaint | owner (before assignment / before work starts) | | |
 | View complaint | own + watched | own department | all |
 | Review / assign department | | | ✔ |
 | Update status (In Progress / Resolved) | | own department | ✔ |
@@ -107,4 +113,5 @@ While a complaint is `RESOLVED`, the owner has a **review window** (default 7 da
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft |
+| 2026-11-22 | Added `WITHDRAWN`, attachments and revisions (D11, D12) |
 | 2026-11-22 | Added `REOPENED` status, review window and auto-close (D8, D9) |
