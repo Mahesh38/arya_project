@@ -49,7 +49,7 @@ Details are in **02 Glossary & Actors**.
 
 | Module | Included |
 |---|---|
-| M1 Registration & Login | Citizen self-registration, login and logout for all three roles. Officer and admin accounts are created by the admin or the seed data, not by self-registration. |
+| M1 Registration & Login | Citizen self-registration with **mobile OTP verification**, login and logout for all three roles. Officer and admin accounts are created by the admin or the seed data, not by self-registration. |
 | M2 Complaint Registration | Category, title, description, **area (dropdown) + free-text address**, up to **5 attachments** (JPG/PNG/PDF, ≤ 5 MB each), and a generated complaint ID. The owner can **edit** the complaint before it is assigned and **withdraw** it before work starts. Every change is kept as a visible revision. |
 | M3 Complaint Tracking | "My Complaints" list, a complaint detail page with a status timeline, and a "Watching" list. Only the owner, the watchers, the assigned department's officers and the admin can view a complaint. |
 | M4 Admin Dashboard | List and filter all complaints, review them, assign or reassign a department, view the full history. |
@@ -63,7 +63,7 @@ Details are in **02 Glossary & Actors**.
 ### 5.2 Out of scope (future, from the synopsis and these decisions)
 
 - Google Maps: there are **no latitude/longitude fields yet**, but the location data is kept in its own columns so they can be added later without redesigning anything.
-- Email or SMS alerts.
+- Email or SMS alerts, and a real SMS gateway for OTP (the demo shows the OTP on screen through a pluggable sender).
 - A mobile app or public REST API.
 - Automatic similar-complaint detection. Duplicates are marked manually for now.
 - Public or anonymous complaint lookup by ID.
@@ -86,7 +86,7 @@ Details are in **02 Glossary & Actors**.
 - A1: One complaint has exactly one category and, once assigned, exactly one responsible department.
 - A2: Each officer belongs to exactly one department.
 - A3: Attachments are stored on the server's file system, and their metadata (original name, type, size, stored name) is stored in the database.
-- A4: Areas (wards or localities) are a fixed list maintained by the admin.
+- A4: Areas (wards or localities) are a fixed list maintained by the admin. The initial list is seven PMC localities in Pune.
 - A5: Every user has an email address, which is used as the login ID.
 
 ## 8. Success criteria for the project demo

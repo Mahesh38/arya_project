@@ -17,6 +17,7 @@ Each use case lists the requirements (FR-xx) it implements. The allowed status c
 | UC-01 | Register as citizen | Visitor | FR-01, 02, 08 |
 | UC-02 | Log in / log out | Any user | FR-03, 04, 05 |
 | UC-03 | Change own password | Any user | FR-06 |
+| UC-04 | Verify mobile with OTP | Citizen | FR-09, 09a, 09b |
 | **Citizen** ||||
 | UC-10 | Submit complaint | Citizen | FR-10–15 |
 | UC-11 | Edit complaint | Citizen (owner) | FR-16, 17, 19 |
@@ -64,6 +65,7 @@ flowchart LR
         UC01(UC-01 Register)
         UC02(UC-02 Log in / out)
         UC03(UC-03 Change password)
+        UC04(UC-04 Verify mobile OTP)
         UC10(UC-10 Submit complaint)
         UC11(UC-11 Edit complaint)
         UC12(UC-12 Withdraw complaint)
@@ -89,7 +91,7 @@ flowchart LR
     end
 
     V --- UC01
-    C --- UC02 & UC03 & UC10 & UC11 & UC12 & UC13 & UC14 & UC15 & UC16 & UC17 & UC60
+    C --- UC02 & UC03 & UC04 & UC10 & UC11 & UC12 & UC13 & UC14 & UC15 & UC16 & UC17 & UC60
     O --- UC02 & UC03 & UC14 & UC16 & UC22 & UC23 & UC30 & UC31 & UC32 & UC33 & UC34 & UC51 & UC60
     A --- UC02 & UC03 & UC14 & UC16 & UC20 & UC21 & UC22 & UC23 & UC4X & UC50 & UC60
     S --- UC70
@@ -121,10 +123,10 @@ Relationships (UML, for the report diagram):
   1. The visitor opens **Register**.
   2. They enter full name, email, mobile, password and confirm password.
   3. The system validates the input (FR-02).
-  4. The system creates an active Citizen account with a BCrypt-hashed password.
-  5. The system redirects to Login with "Registration successful, please log in".
+  4. The system creates an active, **unverified** Citizen account with a BCrypt-hashed password.
+  5. The system logs the citizen in and continues with **UC-04 Verify mobile**.
 - **Alternate flows:**
-  - 3a. The email is already registered: show "Email already registered".
+  - 3a. The email or mobile is already registered: show "Email already registered" or "Mobile already registered".
   - 3b. The passwords don't match or are too weak: show a field error.
 - **Postcondition:** A Citizen account exists (role `CITIZEN`).
 
@@ -144,9 +146,23 @@ Relationships (UML, for the report diagram):
 - **Main flow:** The user enters the current password and the new password twice. The system checks the current one, validates the new one (FR-02), saves the hash, and shows "Password changed".
 - **Alternate flow:** If the current password is wrong, show a field error.
 
+### UC-04 Verify mobile with OTP
+- **Actor:** Citizen (logged in, unverified)
+- **Main flow:**
+  1. The system generates a random 6-digit OTP, stores only its hash with an expiry time (now + 5 minutes), and sends it through `OtpSender`. In the demo, it is shown on the page as "Demo OTP: 123456" and logged.
+  2. The citizen enters the OTP.
+  3. The system checks that it matches, has not expired, and attempts are below 3.
+  4. The system marks the mobile as verified and invalidates the OTP, then redirects to My Complaints with "Mobile verified, you can now file complaints".
+- **Alternate flows:**
+  - 3a. Wrong OTP: increment attempts and show "Incorrect OTP, N attempts left".
+  - 3b. Expired, or 3 wrong attempts: show "OTP expired, please request a new one".
+  - *Resend:* allowed 60 seconds after the last send and at most 5 per hour. It invalidates the previous OTP.
+  - *Skip for now:* the citizen can browse, but New Complaint redirects back here (FR-09a).
+- **Postcondition:** `mobileVerified = true`.
+
 ### UC-10 Submit complaint
 - **Actor:** Citizen
-- **Precondition:** Logged in as a Citizen.
+- **Precondition:** Logged in as a **verified** Citizen (otherwise redirect to UC-04).
 - **Main flow:**
   1. The citizen opens **New Complaint**.
   2. The system shows the form: category and area dropdowns (active entries only), title, description, address, and attachments (0–5).
@@ -350,7 +366,8 @@ Relationships (UML, for the report diagram):
 
 | FR | UC | FR | UC | FR | UC |
 |---|---|---|---|---|---|
-| FR-01/02/08 | UC-01 | FR-24 | UC-14 | FR-47 | UC-30 |
+| FR-01/02/08 | UC-01 |
+| FR-09/09a/09b | UC-04 | FR-24 | UC-14 | FR-47 | UC-30 |
 | FR-03/04/05 | UC-02 | FR-25/26 | UC-15 | FR-50/51/52/56 | UC-40–42 |
 | FR-07 | (startup, doc 14) | FR-28/29 | UC-14, UC-17 | FR-53 | UC-43 |
 | FR-10–15 | UC-10 | FR-30/31 | UC-20 | FR-60–62 | UC-50 |

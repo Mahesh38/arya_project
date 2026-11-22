@@ -21,6 +21,8 @@
 | **Attachment** | A file added to a complaint (JPG, PNG or PDF, ≤ 5 MB, at most 5 per complaint). It is stored on disk under a random name and served only to people allowed to view the complaint. |
 | **Revision** | A record of one edit by the owner: which field changed, the old and new values, who made the change and when. Revisions are shown in the timeline and never deleted. |
 | **Withdraw** | The owner cancels their own complaint before work starts. The status becomes `WITHDRAWN`. |
+| **OTP** | A one-time 6-digit password used to verify a citizen's mobile number after registration. It is valid for 5 minutes. |
+| **Verified citizen** | A citizen whose mobile number is OTP-verified. Only verified citizens can submit complaints. |
 | **Remark** | A short note entered with a status change, e.g. "Team visited, pipe replacement scheduled". |
 | **Assignment** | Linking a complaint to the responsible department. It is done by the admin. |
 | **Duplicate** | A complaint describing the same problem as an earlier one that is already being handled. It is linked to the **original** (master) complaint. |
@@ -36,7 +38,7 @@
 ## 2. Actors
 
 ### 2.1 Citizen (`ROLE_CITIZEN`)
-- Registers using their name, email, mobile number and password.
+- Registers using their name, email, mobile number and password, then **verifies the mobile number with an OTP** before they can submit complaints.
 - Submits complaints with up to 5 attachments.
 - **Edits** their own complaint while it is `SUBMITTED`/`UNDER_REVIEW`, and **withdraws** it while it is `SUBMITTED`/`UNDER_REVIEW`/`ASSIGNED`. Every edit is kept as a revision.
 - Views **only** the complaints they own or watch.

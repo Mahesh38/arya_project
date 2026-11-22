@@ -24,6 +24,10 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | FR-06 | Any logged-in user can change their own password by entering the current password. | S |
 | FR-07 | On first startup, the system creates one Admin account from configuration if no admin exists. | M |
 | FR-08 | Self-registration always creates a Citizen account. Officer and Admin accounts are never created through registration. | M |
+| FR-09 | After registration, the citizen is asked to **verify their mobile number with a 6-digit OTP**. The OTP is valid for 5 minutes and allows 3 wrong attempts, after which a new OTP is needed. Resend is allowed after 60 seconds, at most 5 sends per hour. Mobile numbers are unique across all users. | M |
+| FR-09a | An **unverified** citizen can log in and sees a "Verify your mobile number" banner. Opening New Complaint redirects them to the verification page. | M |
+| FR-09b | OTP delivery goes through a pluggable `OtpSender`. The demo implementation shows the OTP on the verification page and writes it to the log. A real SMS implementation is future scope. | M |
+| FR-09c | Accounts created by the Admin (officers) and the seeded Admin count as verified. The Admin can mark a citizen verified manually. | S |
 
 ### M2 — Complaint Registration
 
@@ -193,17 +197,21 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | `app.upload.dir` | `./uploads` | NFR-05 |
 | `app.admin.email` / `app.admin.password` | set at deployment time | FR-07 |
 | `server.servlet.session.timeout` | 30m | FR-04 |
+| `app.otp.length` / `app.otp.ttl` | 6 / 5m | FR-09 |
+| `app.otp.max-attempts` / `app.otp.resend-cooldown` / `app.otp.max-sends-per-hour` | 3 / 60s / 5 | FR-09 |
+| `app.otp.sender` | `demo` (show on screen + log) | FR-09b |
 
 ## 4. Seed data (initial)
 
 - **Departments:** Sanitation, Water Supply, Road Maintenance, Drainage, Electrical.
 - **Categories → default department (SLA days):** Garbage → Sanitation (3), Water Leakage → Water Supply (2), Road Damage → Road Maintenance (10), Drainage → Drainage (5), Streetlight → Electrical (3), Other → *none, admin decides* (7).
-- **Areas:** about 6 sample wards or localities, to be supplied by the team.
-- **Users:** one Admin from configuration, plus demo officers and citizens in the `dev` profile only.
+- **Areas:** Shivajinagar, Kothrud, Aundh, Baner, Hadapsar, Viman Nagar, Kasba Peth (Pune, PMC).
+- **Users:** one Admin from configuration, plus demo officers, citizens and sample complaints in the `dev` profile only. The full list is in **Appendix A**.
 
 ## Change log
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft |
+| 2026-11-22 | FR-09 to FR-09c mobile OTP verification (D16); Pune areas (D15) |
 | 2026-11-22 | FR-29 Unwatch; duplicate and withdraw rules point to doc 05 (D13, D14) |
 | 2026-11-22 | Multiple attachments (JPG/PNG/PDF, ≤ 5 MB, max 5); edit and withdraw with revisions (FR-16 to FR-19) |

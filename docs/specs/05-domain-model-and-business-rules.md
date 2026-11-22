@@ -23,7 +23,16 @@ classDiagram
       String passwordHash
       Role role
       boolean active
+      boolean mobileVerified
       Department department  %% officers only
+    }
+    class MobileOtp {
+      Long id
+      String otpHash
+      LocalDateTime expiresAt
+      int attempts
+      LocalDateTime sentAt
+      boolean used
     }
     class Department {
       Long id
@@ -104,6 +113,7 @@ classDiagram
     Category "*" --> "0..1" Department : default
     User "*" --> "0..1" Department : officer of
     Notification "*" --> "1" User : recipient
+    MobileOtp "*" --> "1" User : for
     Notification "*" --> "0..1" Complaint
 ```
 
@@ -173,7 +183,7 @@ stateDiagram-v2
 
 | ID | Action | From | To | Allowed actor | Guards (all must hold) | Required input | Side effects |
 |---|---|---|---|---|---|---|---|
-| T01 | Submit | — | `SUBMITTED` | Citizen | Valid fields and files (BR-20 to BR-27) | form | Generate `complaintNo` (BR-10). Event `CREATED`. Notify owner and admins. |
+| T01 | Submit | — | `SUBMITTED` | Verified citizen (BR-86) | Valid fields and files (BR-20 to BR-27) | form | Generate `complaintNo` (BR-10). Event `CREATED`. Notify owner and admins. |
 | T02 | Start review | `SUBMITTED` | `UNDER_REVIEW` | Admin | — | — | Event. Notify owner. |
 | T03 | Assign | `UNDER_REVIEW` | `ASSIGNED` | Admin | Department active | department, remark (optional) | Set `department`. Event. Notify owner, watchers, department officers. |
 | T04 | Reassign | `ASSIGNED`, `IN_PROGRESS`, `REOPENED` | `ASSIGNED` | Admin | New department ≠ current, and active | department, **remark** | Event `REASSIGNED`. Notify owner, watchers, new department officers. |
@@ -278,6 +288,10 @@ Remark, reason and note fields are 10–500 characters when required, and at mos
 | BR-81 | An `OFFICER` must have a department. `CITIZEN` and `ADMIN` must not have one. |
 | BR-82 | The system must always have at least one active Admin, so the last active Admin cannot be deactivated. |
 | BR-83 | Deactivating a user ends their access at the next request. Their existing complaints and history stay unchanged. |
+| BR-84 | Mobile number: 10 digits starting with 6–9, unique across all users. |
+| BR-85 | OTP: 6 digits from `SecureRandom`, stored **hashed** (never in plain text), valid 5 minutes, at most 3 wrong attempts. A new OTP invalidates earlier unused ones. Resend cooldown is 60 seconds, with at most 5 sends per hour per user. |
+| BR-86 | T01 (Submit) additionally requires `owner.mobileVerified = true`. |
+| BR-87 | Officers and Admins are created with `mobileVerified = true`. |
 
 ---
 
@@ -302,3 +316,4 @@ Remark, reason and note fields are 10–500 characters when required, and at mos
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft (includes D13, D14) |
+| 2026-11-22 | Added MobileOtp, BR-84 to BR-87 (D16) |

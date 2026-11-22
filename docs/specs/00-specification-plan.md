@@ -95,6 +95,8 @@ arya_project/
 | D12 | Attachments? | Up to **5 files per complaint**, each **≤ 5 MB**. Allowed types are **JPG, PNG and PDF**, checked by file content, not just the extension. Other types such as Office files or executables are blocked for safety. A removed attachment is soft-deleted and stays in the history. |
 | D13 | Cross-department duplicates? | An **Officer** can link duplicates only **within their own department**. Other cases are sent back to the Admin, who can link **across departments**. |
 | D14 | Unwatch? | **Yes.** A watcher can **Unwatch**, which stops notifications and removes the complaint from their Watching list. They can still open the original through their own duplicate complaint and **Watch again**. |
+| D15 | Areas? | Seven well-known **Pune Municipal Corporation** localities: Shivajinagar, Kothrud, Aundh, Baner, Hadapsar, Viman Nagar, Kasba Peth (see Appendix A). |
+| D16 | Citizen identity verification? | **Mobile OTP.** A citizen self-registers and then verifies their mobile with a 6-digit OTP (5-minute expiry, 3 attempts, resend after 60 seconds). Sending goes through an `OtpSender` interface: in the demo the OTP is shown on screen and logged, and a real SMS gateway can replace it later. Unverified citizens can log in but **cannot submit complaints**. Staff (officer and admin) accounts are created by the Admin and count as verified. |
 | D9 | How does `RESOLVED` end? | The owner reviews it and either **closes** or **reopens** it. If there is no response within the review window (configurable, default 7 days), a scheduled job **auto-closes** it. |
 
 ## Status
@@ -107,4 +109,5 @@ arya_project/
 | 03 Requirements (SRS) | Draft |
 | 04 Use Cases | Draft |
 | 05 Domain Model & Business Rules | Draft |
+| Appendix A Seed & Demo Data | Draft |
 | 06–14 | Not started |
