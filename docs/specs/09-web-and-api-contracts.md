@@ -100,9 +100,9 @@ Every list (NFR-11) takes the same paging parameters:
 ### 1.6 CSRF
 
 - CSRF protection is on for every `POST` (NFR-03). Every form is written with `th:action`, so Thymeleaf adds the hidden `_csrf` field automatically. The logout link is a small `POST` form, not a link.
-- Multipart forms (`enctype="multipart/form-data"`) carry `_csrf` as a form field as well. Doc 11 must check with a test that an **over-size** upload still reaches the handler of §9.3 and is not turned into a 403 by a missing token (risk K1 in §13).
+- Multipart forms (`enctype="multipart/form-data"`) carry `_csrf` as a form field as well. An **over-size** upload never reaches `CsrfFilter` on the upload routes: `UploadSizeGuardFilter` answers it first (§9.3, doc 11 §4.6, K1 decided).
 - The one JSON endpoint is a `GET` and needs no token. There are no JSON `POST`s.
-- A `POST` after the session has expired carries a stale token. Spring Security would answer 403; instead the access-denied handler sends `InvalidCsrfTokenException` / `MissingCsrfTokenException` to `302 /login?expired` (doc 11).
+- A `POST` after the session has expired carries a stale token. Spring Security would answer 403; instead `AppAccessDeniedHandler` sends a CSRF failure with an invalid requested session id to `302 /login?expired`, a visitor without any session to `302 /login`, and a logged-in user with a stale token to the 403 page with the text "This form has expired" (doc 11 §4.4, K5 decided, D62).
 
 ### 1.7 Input binding rules (summary; details in doc 12)
 
@@ -126,7 +126,10 @@ Every list (NFR-11) takes the same paging parameters:
 | Business-rule refusal | `302` back + `flashError` | §1.2, R-STATE |
 | Concurrent update | `302` back + `flashError` | FR-84 |
 | Unexpected exception | `500` page with a reference id, stack trace only in the log | NFR-06 |
-| Upload larger than the request limit | `302` back + `flashError` (§9.3) | FR-11 |
+| Upload larger than the request limit (26 MB) on an upload route | `302` to the form page + `flashError` (§9.3) | FR-11, D63 |
+| Multipart above 26 MB on any other route | `413` page `error/4xx` (from Tomcat) | doc 11 §4.6 |
+| `POST` with a stale CSRF token | expired session → `302 /login?expired`; no session → `302 /login`; logged in → `403` page "This form has expired" | D62 |
+| Too many failed logins | `302 /login?locked` | D56 |
 
 "Back" for a complaint action means `/complaints/{no}`; for master data and user actions it means the list page of that entity. The exception carries the target, so `GlobalExceptionHandler` can build the redirect (D40).
 
@@ -145,8 +148,8 @@ Unless noted otherwise, every complaint route returns **404** when the complaint
 | ID | Method & path | Role | Input | Service call | Success | Errors |
 |---|---|---|---|---|---|---|
 | R-01 | `GET /` | public | — | — | Logged in: `302` to the role home (CITIZEN `/citizen/complaints`, OFFICER `/officer/queue`, ADMIN `/admin/dashboard`). Not logged in: `302 /login` | — |
-| R-02 | `GET /login` | public | query `error`, `logout`, `expired` (flags) | — | view `auth/login`; model `form` (`LoginForm`, empty), `loginError` (bool), `loggedOut` (bool), `sessionExpired` (bool) | Already logged in → `302 /` |
-| R-03 | `POST /login` | public | `email`, `password`, `_csrf` | Spring Security `UsernamePasswordAuthenticationFilter` → `AppUserDetailsService.loadUserByUsername(email lower-cased)` | `302` by role via `RoleBasedSuccessHandler` (or to the saved request) (FR-03) | Wrong credentials or inactive → `302 /login?error`, one generic message (FR-05) |
+| R-02 | `GET /login` | public | query `error`, `locked`, `logout`, `expired`, `inactive` (flags) | — | view `auth/login`; model `form` (`LoginForm`; `email` pre-filled once after a failed login, D71), `loginError`, `accountLocked`, `loggedOut`, `sessionExpired`, `accountInactive` (bools; doc 11 §3.4, §3.10) | Already logged in → `302 /` |
+| R-03 | `POST /login` | public | `email`, `password`, `_csrf` | Spring Security `UsernamePasswordAuthenticationFilter` → `AppUserDetailsService.loadUserByUsername(email lower-cased)` | `302` by role via `RoleBasedSuccessHandler` (or to the saved request) (FR-03) | Wrong credentials or inactive → `302 /login?error`, one generic message (FR-05). Too many failures for this email or IP → `302 /login?locked` (doc 11 §3.5, D56) |
 | R-04 | `POST /logout` | logged in | `_csrf` | Spring Security `LogoutFilter` (invalidates session) | `302 /login?logout` "You have been logged out" (FR-04) | — |
 
 Session timeout (30 min, FR-04): the next request goes to `302 /login?expired`.
@@ -156,7 +159,7 @@ Session timeout (30 min, FR-04): the next request goes to `302 /login?expired`.
 | ID | Method & path | Role | Input | Service call | Success | Errors |
 |---|---|---|---|---|---|---|
 | R-05 | `GET /register` | public | — | — | view `auth/register`; model `form` (`RegistrationForm`) | Logged in → `302 /` |
-| R-06 | `POST /register` | public | `RegistrationForm` (§4.1) | `RegistrationService.register(form)` → creates an unverified CITIZEN (FR-01, FR-02, FR-08), then `OtpService.issue(user)` | Logs the new user in (saves the `SecurityContext`, D46) and `302 /verify-mobile`, `flashSuccess` "Account created. Verify your mobile number", `demoOtp` (demo sender only) | V: field errors; "Email already registered" / "Mobile already registered" as field errors on `email` / `mobile` |
+| R-06 | `POST /register` | public | `RegistrationForm` (§4.1) | `RegistrationService.register(form)` → creates an unverified CITIZEN (FR-01, FR-02, FR-08), then `OtpService.issue(user)` | Logs the new user in (saves the `SecurityContext`, D46) and `302 /verify-mobile`, `flashSuccess` "Account created. Verify your mobile number", `demoOtp` (demo sender only) | V: field errors; "Email already registered" / "Mobile already registered" as field errors on `email` / `mobile`. More than 10 registrations from one IP in an hour → `200` same view, global error (doc 11 §3.5) |
 
 **`PasswordController`**
 
@@ -186,7 +189,7 @@ Session timeout (30 min, FR-04): the next request goes to `302 /login?expired`.
 | R-20 | `GET /citizen/complaints` | CITIZEN | query `status` (status or group, default all), `q`, `page`, `size` | `ComplaintQueryService.myComplaints(user, filter)` (FR-20, BR-64) | view `citizen/my-complaints`; model `page` (`PageResult<ComplaintListItem>`), `filter`, `statusOptions`, `verifyBanner` (bool, FR-09a) | — (bad params ignored, §1.4) |
 | R-21 | `GET /citizen/watching` | CITIZEN | query `status`, `page`, `size` | `ComplaintQueryService.watching(user, filter)` (FR-22, BR-51) | view `citizen/watching`; model `page`, `filter`, `statusOptions` | — |
 | R-22 | `GET /citizen/complaints/new` | CITIZEN, **verified** | — | `MasterDataService.activeCategories()`, `activeAreas()` (FR-56) | view `citizen/complaint-form`; model `form` (`ComplaintForm`), `categories`, `areas` (`List<LookupOption>`), `mode` = `CREATE`, `maxFiles` (5), `maxFileSizeMb` (5) | Unverified → `VerifiedCitizenInterceptor` `302 /verify-mobile`, `flashInfo` "Verify your mobile number to file complaints" (FR-09a) |
-| R-23 | `POST /citizen/complaints` (multipart) | CITIZEN, **verified** | `ComplaintForm` + files part `files` (0–5) | `ComplaintService.submit(form, files, user)` → `complaintNo` (FR-10 … FR-15, T01, BR-86) | `302 /citizen/complaints/{no}/submitted` | V: field errors; file errors on `files` (§9.2); inactive category / area → field error. Unverified → interceptor `302 /verify-mobile`. Storage failure → `200` same view, global error "Could not save your complaint, please try again" (UC-10 6a) |
+| R-23 | `POST /citizen/complaints` (multipart) | CITIZEN, **verified** | `ComplaintForm` + files part `files` (0–5) | `ComplaintService.submit(form, files, user)` → `complaintNo` (FR-10 … FR-15, T01, BR-86) | `302 /citizen/complaints/{no}/submitted` | V: field errors; file errors on `files` (§9.2); inactive category / area → field error. Unverified → interceptor `302 /verify-mobile`. Storage failure → `200` same view, global error "Could not save your complaint, please try again" (UC-10 6a). Daily limit reached (BR-88) → `200` same view, global error "You have filed 10 complaints in the last 24 hours. Please try again later." Request above 26 MB → `UploadSizeGuardFilter` `302 /citizen/complaints/new` + `flashError` (§9.3) |
 | R-24 | `GET /citizen/complaints/{no}/submitted` | CITIZEN (owner) | path `no` | `ComplaintQueryService.submittedSummary(no, user)` (owner only) | view `citizen/submitted`; model `complaint` (`ComplaintSummary`) (FR-14) | Not the owner → 404 |
 | R-25 | `GET /citizen/complaints/{no}/edit` | CITIZEN (owner) | path `no` | `ComplaintService.editForm(no, user)` → prefilled `ComplaintEditForm`; `ComplaintQueryService.attachments(no, user)`; active lookups + the complaint's current category/area even if inactive (BR-21) | view `citizen/complaint-form`; model `form` (`ComplaintEditForm`), `complaint` (`ComplaintSummary`), `currentAttachments` (`List<AttachmentView>`), `categories`, `areas`, `mode` = `EDIT`, `maxFiles`, `maxFileSizeMb` | B: status not `SUBMITTED`/`UNDER_REVIEW`, or not owner but visible (watcher) → `302 /complaints/{no}` + `flashError` (FR-19) |
 | R-26 | `POST /citizen/complaints/{no}/edit` (multipart) | CITIZEN (owner) | `ComplaintEditForm` (incl. `version`, `removeAttachmentIds`, `changeReason`) + files part `files` | `ComplaintService.edit(no, form, files, user)` → `EditResult(changed)` (FR-16, FR-17, BR-23, BR-27) | Changed: `302 /complaints/{no}`, `flashSuccess` "Complaint updated". Nothing changed: `302 /complaints/{no}`, `flashInfo` "No changes to save" | V: field / file errors; more than 5 active files after the change → error on `files`. B: wrong status (FR-19), concurrent update (FR-84) |
@@ -210,7 +213,7 @@ Session timeout (30 min, FR-04): the next request goes to `302 /login?expired`.
 | ID | Method & path | Role | Input | Service call | Success | Errors |
 |---|---|---|---|---|---|---|
 | R-31 | `GET /admin/complaints` | ADMIN | query `status` (status or group), `categoryId`, `departmentId` (or `NONE` = not assigned), `areaId`, `from`, `to`, `q`, `overdue` (bool), `page`, `size` | `ComplaintQueryService.allComplaints(filter)` (FR-30, doc 08 Q07) | view `admin/complaints`; model `page`, `filter`, `statusOptions`, `categories`, `departments`, `areas` (all, incl. inactive), `exportUrl` (current filter as CSV link) | `from > to` → global error on the page, dates ignored (§1.4) |
-| R-32 | `GET /admin/complaints/export.csv` | ADMIN | same filters as R-31 (no `page`/`size`) | `ComplaintQueryService.exportCsv(filter, writer)` (FR-65, Could) | `200`, `Content-Type: text/csv; charset=UTF-8`, `Content-Disposition: attachment; filename="complaints-YYYYMMDD-HHmm.csv"`, UTF-8 BOM, at most 5,000 rows (D43) | More than 5,000 matching rows → `302 /admin/complaints?…` + `flashError` "Too many rows (N). Narrow the filter to 5,000 or fewer." |
+| R-32 | `GET /admin/complaints/export.csv` | ADMIN | same filters as R-31 (no `page`/`size`) | `ComplaintQueryService.exportCsv(filter, writer)` (FR-65, Could) | `200`, `Content-Type: text/csv; charset=UTF-8`, `Content-Disposition: attachment; filename="complaints-YYYYMMDD-HHmm.csv"`, UTF-8 BOM, at most 5,000 rows (D43); cells starting with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'` (D43, D75); no email or mobile columns (doc 11 §10.2) | More than 5,000 matching rows → `302 /admin/complaints?…` + `flashError` "Too many rows (N). Narrow the filter to 5,000 or fewer." |
 
 ### 3.4 Package `workflow`
 
@@ -242,7 +245,7 @@ All rows: the `GET` shows the action form page `complaint/action-form` (§5.4) f
 | R-54 | `GET …/duplicate` | query `original` (optional complaint number) | Without `original`: `actionPage(no, user, MARK_DUPLICATE)`. With `original`: `DuplicateService.preview(no, original, user)` (BR-40 … BR-43, SD-03) | Step 1 (no `original`): `action-form` with only the `originalNo` field (a `GET` form). Step 2: same view with `original` (`ComplaintSummary` of A: title, area, status, department) and the `remark` (note) field + confirm button | Rule failure in step 2 (A unknown, A = B, A not `ASSIGNED`/`IN_PROGRESS`/`REOPENED`, A is a duplicate, other department) → `200` same view, step 1, error on `originalNo` with the specific reason (UC-23 3a). B: B itself not allowed → `302 /complaints/{no}` |
 | R-55 | `POST …/duplicate` | `DuplicateForm` (`version`, `originalNo`, `remark` = note, required) | `DuplicateService.markDuplicate(no, originalNo, version, note, user)` (FR-44, T12, BR-44) | `302 /complaints/{no}`, "Linked to GRV-A as a duplicate" | V: note → same view step 2. B: rules re-checked; any failure (state changed meanwhile) or concurrency → `302 /complaints/{no}` + `flashError` |
 
-Note for officers and A unknown vs. not visible: when the officer types a number of a complaint outside their department, the message is "GRV-… is not in your department. Use Send back and mention it in the remark" (BR-43). This reveals that the number exists, which is acceptable for staff (D2/D10 protect citizens' complaints from other **citizens**; officers are trusted staff). Doc 11 confirms.
+Note for officers and A unknown vs. not visible (confirmed in doc 11 §5.5, D69; the step-2 preview is shown only for complaints the officer can view): when the officer types a number of a complaint outside their department, the message is "GRV-… is not in your department. Use Send back and mention it in the remark" (BR-43). This reveals that the number exists, which is acceptable for staff (D2/D10 protect citizens' complaints from other **citizens**; officers are trusted staff). Doc 11 confirms.
 
 **`AdminWorkflowController`** — prefix `/admin/complaints/{no}`, role ADMIN (sees every complaint).
 
@@ -567,7 +570,7 @@ Methods for templates: `can(String actionName)` → boolean, `isFinal()`, `isRes
 
 **`AttachmentView`**: `id`, `originalName`, `contentType`, `image` (bool → thumbnail with `<img src="/attachments/{id}">`), `sizeLabel` ("1.2 MB"), `purpose`, `uploadedAt`, `deleted`, `deletedAt`.
 
-**`TimelineEntry`**: `type` (`EventType`), `fromStatus`, `toStatus`, `actorLabel` (computed per viewer by `TimelineService`: staff see "{name} (Officer, {Department})"; citizens see "You", "The complainant", "{Department} Dept." or "Grievance Cell" — never a staff name; "System" when null. Doc 10 §7.3, D48), `actorRole`, `departmentName` (T03/T04), `relatedNo` (duplicate link), `remark`, `createdAt`, `changes` (`List<FieldChange>` with `field`, `oldValue`, `newValue` for `EDITED`, FR-17).
+**`TimelineEntry`**: `type` (`EventType`), `fromStatus`, `toStatus`, `actorLabel` (computed per viewer by `TimelineService`: staff see "{name} (Officer, {Department})"; citizens see "You", "The complainant", "{Department} Dept." or "Grievance Cell" — never a staff name; "System" when null. Doc 10 §7.3, D48), `actorRole`, `departmentName` (T03/T04), `relatedNo` (duplicate link), `relatedLinkable` (bool: the viewer can open `relatedNo`; otherwise staff see the number as plain text, D69), `remark`, `createdAt`, `changes` (`List<FieldChange>` with `field`, `oldValue`, `newValue` for `EDITED`, FR-17).
 
 ### 5.4 Action form page (`complaint/action-form`, R-27, R-40 … R-70)
 
@@ -602,7 +605,7 @@ See R-22 / R-25. `mode` (`CREATE`/`EDIT`) switches the title, the post URL (`/ci
 | `cards` | `List<SummaryCard>` | FR-60: Total, Pending, Assigned, In Progress, Reopened, Resolved, Closed, Rejected, Duplicate, Withdrawn, Overdue |
 | `byCategory`, `byDepartment`, `byArea` | `List<CountRow>` | FR-61; `CountRow(id, name, openCount, closedCount, openUrl, closedUrl)`. `byDepartment` has a "(Not assigned)" row with `id = null` |
 | `overdue` | `List<OverdueItem>` | FR-62, top 10 by due date; `OverdueItem(complaintNo, title, status, departmentName, slaDays, daysElapsed, daysOverdue)`; "View all" → `/admin/complaints?overdue=true` |
-| `chartJson` | String | FR-64 (Could): the same counts serialised once by the controller with Jackson and written with `th:inline="javascript"`; no extra JSON endpoint |
+| `chartJson` | String | FR-64 (Could): the same counts serialised once by the controller with Jackson and written into a data attribute, `<div id="chart-data" th:attr="data-chart=${dash.chartJson}">`, which `app.js` reads with `JSON.parse(el.dataset.chart)`. No inline script (strict CSP, doc 11 §4.7, D64); no extra JSON endpoint |
 
 **`SummaryCard`**: `label`, `count`, `url` (R-31 with filter), `style`. Card links: Total → `/admin/complaints`; Pending → `?status=PENDING`; each status card → `?status=<STATUS>`; Overdue → `?overdue=true`. Count rows: open → `?categoryId=3&status=NOT_FINAL`, closed → `?categoryId=3&status=FINAL` (same for `departmentId` — `NONE` for the not-assigned row — and `areaId`).
 
@@ -741,7 +744,7 @@ Only one JSON endpoint is needed (D37). Everything else is rendered on the serve
 | Considered | Decision | Why |
 |---|---|---|
 | Unread notification count | **JSON endpoint R-77** | The bell must be correct after the back button: a page restored from the browser's back-forward cache still shows the old count after "Mark all as read". |
-| Dashboard chart data (FR-64) | No endpoint | The data is already in the dashboard model; it is written into the page as inline JSON (§5.7). |
+| Dashboard chart data (FR-64) | No endpoint | The data is already in the dashboard model; it is written into the page as a `data-chart` attribute (§5.7, D64). |
 | Duplicate lookup (UC-23 step 4) | No endpoint | Done by the `GET …/duplicate?original=` page (R-54), which works without JavaScript. |
 | Category → default department | No endpoint | The assign page is rendered with the default already selected (R-57). |
 | Live search / autocomplete | No endpoint | Not required; lists use normal `GET` filters. |
@@ -811,7 +814,12 @@ The forms use `enctype="multipart/form-data"` and `method="post"`. Parts with an
 
 ### 9.3 Over-size requests
 
-A request above 26 MB is refused by the container with `MaxUploadSizeExceededException`. `GlobalExceptionHandler` answers `302` to the page the form belongs to (`/citizen/complaints/new`, `/citizen/complaints/{no}/edit` or the resolve page, taken from the request URI, not from the `Referer` header), with `flashError` "The files are too large together. Each file can be at most 5 MB and all files together at most 25 MB." Typed text is lost in this case only. To let Tomcat read the rest of an over-size request and send this redirect instead of resetting the connection, `server.tomcat.max-swallow-size` is raised to at least the request limit (doc 14, risk K1).
+Verified in doc 11 §4.6 and §13: on Spring Boot 4.2 / Tomcat 11 a multipart request above 26 MB fails inside `CsrfFilter` (Tomcat answers **413** while parsing the `_csrf` parameter), so it never reaches `MaxUploadSizeExceededException`. Therefore:
+
+- **`UploadSizeGuardFilter`** (package `attachment`, a servlet filter **before** Spring Security) checks `POST` multipart requests whose `Content-Length` is above `spring.servlet.multipart.max-request-size`. For the three upload routes it answers `302` to the form page (`/citizen/complaints/new`, `/citizen/complaints/{no}/edit`, or the resolve page; taken from the request path, not from the `Referer` header) with `flashError` "The files are too large together. Each file can be at most 5 MB and all files together at most 25 MB." Typed text is lost in this case only. It does not read the body and changes nothing else, so answering before the CSRF check is safe.
+- Any other route gets Tomcat's `413`, rendered by `error/4xx`.
+- `server.tomcat.max-swallow-size=64MB`, so Tomcat reads and discards the unread body and the browser receives the redirect (with the 2 MB default Chromium shows "connection reset", doc 11 §13).
+- `GlobalExceptionHandler` keeps a `MaxUploadSizeExceededException` → same redirect mapping only as a fallback.
 
 ### 9.4 Download (R-73)
 
@@ -975,21 +983,22 @@ Result:
 
 | # | Topic | For doc |
 |---|---|---|
-| K1 | **Over-size multipart and CSRF.** With an upload above 26 MB the container may fail to parse the body before `CsrfFilter` reads `_csrf`, which would give 403 instead of the friendly redirect of §9.3. Doc 11 must test it and, if needed, raise `server.tomcat.max-swallow-size` and/or map the CSRF failure on multipart requests to the same redirect. | 11, 13, 14 |
-| K2 | Auto-login after registration (D46) needs the `SecurityContext` saved explicitly through `SecurityContextRepository` in Spring Security 7, plus a new session id (session fixation). | 11 |
-| K3 | After `POST /verify-mobile` succeeds, the principal in the session still says `mobileVerified = false` until it is refreshed. The controller replaces the `Authentication` with a refreshed `CurrentUser`. | 11 |
-| K4 | `GET /notifications/unread-count` needs its own `AuthenticationEntryPoint` (401 JSON, not a redirect). | 11 |
-| K5 | Expired-session `POST` → stale CSRF token → must go to `/login?expired`, not 403 (§1.6). | 11, 12 |
+| K1 | ~~Over-size multipart and CSRF.~~ **Decided in doc 11 §4.6 (D63):** `UploadSizeGuardFilter` + `max-swallow-size=64MB`. With an upload above 26 MB the container may fail to parse the body before `CsrfFilter` reads `_csrf`, which would give 403 instead of the friendly redirect of §9.3. Doc 11 must test it and, if needed, raise `server.tomcat.max-swallow-size` and/or map the CSRF failure on multipart requests to the same redirect. | 11, 13, 14 |
+| K2 | ~~Auto-login after registration.~~ **Decided in doc 11 §3.9 (D60).** Auto-login after registration (D46) needs the `SecurityContext` saved explicitly through `SecurityContextRepository` in Spring Security 7, plus a new session id (session fixation). | 11 |
+| K3 | ~~Principal refresh.~~ **Decided in doc 11 §3.10 (D59, D60).** After `POST /verify-mobile` succeeds, the principal in the session still says `mobileVerified = false` until it is refreshed. The controller replaces the `Authentication` with a refreshed `CurrentUser`. | 11 |
+| K4 | ~~JSON entry point.~~ **Decided in doc 11 §4.4 (D61).** `GET /notifications/unread-count` needs its own `AuthenticationEntryPoint` (401 JSON, not a redirect). | 11 |
+| K5 | ~~Expired-session POST.~~ **Decided in doc 11 §4.4 (D62).** Expired-session `POST` → stale CSRF token → must go to `/login?expired`, not 403 (§1.6). | 11, 12 |
 | K6 | ~~O2: officer name or role label for citizens.~~ **Decided in doc 10 §7.3 (D48):** citizens see the department / "Grievance Cell", staff see names. Doc 11 tests that no staff name reaches a citizen view. | 11 |
-| K7 | Officers learn that a complaint number exists in another department through the duplicate error message (R-54). Accepted for staff; doc 11 to confirm. | 11 |
+| K7 | ~~Duplicate error reveals existence.~~ **Confirmed in doc 11 §5.5 (D69)**, without any preview of the other department's complaint. Officers learn that a complaint number exists in another department through the duplicate error message (R-54). Accepted for staff; doc 11 to confirm. | 11 |
 | K8 | Message texts in this document are the English defaults. Doc 12 decides whether they move to `messages.properties` and fixes the exact wording. | 12 |
 | K9 | ~~Status badge colours and labels.~~ **Decided in doc 10 §5.1 (D47).** | — |
 | K10 | Admin accounts other than the bootstrap admin have no UI (D45). If the examiners ask for it, it is a new UC with routes `/admin/admins/**`. | future |
 | K11 | Every route row is one MockMvc test (happy path + each error column); workflow rows are also run as each wrong role (403) and as a user who cannot view (404). | 13 |
-| K12 | Properties introduced here: `spring.servlet.multipart.max-file-size=26MB` (D36), `server.tomcat.max-swallow-size` ≥ 26MB, CSV export limit 5,000 (`app.export.max-rows`). | 14 |
+| K12 | Properties introduced here: `spring.servlet.multipart.max-file-size=26MB` (D36), `server.tomcat.max-swallow-size=64MB` (doc 11 §4.6), CSV export limit 5,000 (`app.export.max-rows`). | 14 |
 
 ## Change log
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft: 99 routes, forms, view models, allowed-actions contract, JSON endpoint, upload/download contract, traceability; decisions D30–D46; O1 decided (D34) |
 | 2026-11-22 | Doc 10 alignment: `error/4xx` view, singular master-data form view names (D52), global `activeMenu` (D53), `ActionLink.style` values (D54), `actorLabel` rule (D48); K6 and K9 resolved |
+| 2026-11-22 | Doc 11 alignment: K1–K5 and K7 decided (D59–D63, D69); §9.3 rewritten for `UploadSizeGuardFilter`; login flags `locked`/`inactive` and kept email (R-02, R-03); registration and daily complaint limits (R-06, R-23); §1.6 and §2 CSRF and 413 rows; `TimelineEntry.relatedLinkable`; chart data as a `data-chart` attribute (D64) |

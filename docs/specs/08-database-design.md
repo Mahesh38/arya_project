@@ -248,7 +248,7 @@ Column types are the same on both databases. In MySQL, `BOOLEAN` is stored as `T
 | `active` | BOOLEAN | N | TRUE | | Inactive users cannot log in | FR-05, BR-83 |
 | `mobile_verified` | BOOLEAN | N | FALSE | `ck_app_user_staff_verified` (officers and admins must be TRUE) | Set by OTP verification or by the admin | FR-09, FR-09c, BR-86, BR-87 |
 | `created_at`, `updated_at` | DATETIME | N | App | | | — |
-| `version` | INT | N | 0 | `ck_app_user_version` (≥ 0) | Optimistic lock for admin edits (department change, activate) | ADR-09 |
+| `version` | INT | N | 0 | `ck_app_user_version` (≥ 0) | Optimistic lock for admin edits (department change, activate). **Incremented by every `UPDATE` of the row**, including OTP verification and password changes, so open sessions notice the change (BR-89, doc 11 §3.10) | ADR-09, BR-89 |
 
 ### 3.5 `mobile_otp`
 
@@ -256,7 +256,7 @@ Column types are the same on both databases. In MySQL, `BOOLEAN` is stored as `T
 |---|---|:-:|---|---|---|---|
 | `id` | BIGINT | N | auto | PK | | — |
 | `user_id` | BIGINT | N | | FK → `app_user` | Citizen being verified | FR-09 |
-| `otp_hash` | VARCHAR(100) | N | | | Hash of the 6-digit code, never the code itself | BR-85 |
+| `otp_hash` | VARCHAR(100) | N | | | `Base64(HMAC-SHA256(key, userId:code))` (44 chars), key held only in memory; never the code itself (doc 11 §6.2) | BR-85 |
 | `sent_at` | DATETIME | N | App | | When it was issued. Used for the 60 s cooldown and the 5-per-hour limit. | BR-85 |
 | `expires_at` | DATETIME | N | App | `ck_mobile_otp_expiry` (> `sent_at`) | `sent_at + 5 min` | BR-85 |
 | `attempts` | INT | N | 0 | `ck_mobile_otp_attempts` (≥ 0) | Wrong attempts so far. The limit (3) is configurable, so it is checked in code. | BR-85 |
@@ -777,8 +777,11 @@ UPDATE mobile_otp SET used = TRUE WHERE user_id = :userId AND used = FALSE;
 SELECT id, otp_hash, expires_at, attempts FROM mobile_otp
 WHERE user_id = :userId AND used = FALSE
 ORDER BY sent_at DESC, id DESC LIMIT 1;
--- Wrong code
-UPDATE mobile_otp SET attempts = attempts + 1 WHERE id = :id;
+-- Reserve an attempt BEFORE comparing (doc 11 §6.3); 0 rows = expired, used or no attempts left
+UPDATE mobile_otp SET attempts = attempts + 1
+ WHERE id = :id AND used = FALSE AND attempts < :maxAttempts AND expires_at > :now;
+-- Code matched
+UPDATE mobile_otp SET used = TRUE WHERE id = :id AND used = FALSE;
 ```
 
 ---
@@ -922,3 +925,4 @@ The ER diagram in §2 was rendered with `@mermaid-js/mermaid-cli` without errors
 | 2026-11-22 | Initial draft: ER diagram, data dictionary, constraints and indexes, Flyway V1/V2, key queries, retention, sizing; verified on MySQL 8.0.46 and H2 2.5.252 (D17–D29) |
 | 2026-11-22 | Doc 09 alignment: Q07 status filter is `IN (:statuses)` for status groups, plus optional "not assigned" and overdue lines (D35); O1 decided (D34). The tested Q07 in `verify/key-queries.sql` uses the single-status form, which is the one-element case of the same fragment |
 | 2026-11-22 | O2 decided in doc 10 (D48) |
+| 2026-11-22 | Doc 11 alignment: `app_user.version` incremented by every update (BR-89); `otp_hash` is an HMAC; OTP attempt reserved before comparing (§5.12) |

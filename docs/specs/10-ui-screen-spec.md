@@ -50,8 +50,9 @@ JavaScript is only **progressive enhancement**:
 
 | Enhancement (`static/js/app.js`) | Without JS |
 |---|---|
-| `<html class="no-js">` is switched to `js` by a one-line inline script in `<head>` | `.no-js` CSS rules apply (below) |
-| Navbar collapse and dropdowns (Bootstrap bundle) | A `<noscript><style>` block in `layouts/main.html` shows the collapsed menu expanded and dropdown menus as plain indented lists; the toggler (`.js-only`) is hidden |
+| `<html class="no-js">` is switched to `js` by the one-line file `static/js/early.js`, loaded synchronously in `<head>` (no inline scripts: strict CSP, doc 11 §4.7, D64) | `.no-js` CSS rules apply (below) |
+| Navbar collapse and dropdowns (Bootstrap bundle) | Rules under `.no-js` in `app.css` (not a `<noscript><style>` block, which the CSP would block) show the collapsed menu expanded and dropdown menus as plain indented lists; the toggler (`.js-only`) is hidden (verified in doc 11 §13) |
+| Session warning 5 minutes before the 30-minute timeout, with a "Stay logged in" button that sends one `GET` to R-77 (`<body data-session-timeout>`, U11, D72) | No warning; after a timeout the next POST goes to `/login?expired` |
 | `confirm()` on the three POST-only buttons: Start Review, Unwatch, Watch again (`data-confirm` attribute) | The POST runs directly. All three are harmless to repeat or undo (Watch again undoes Unwatch). |
 | Submit buttons disabled and labelled "Saving…" / "Uploading…" after the first click (`form.is-submitting`), so a double click cannot post twice | Server protection still holds: PRG (§1.2 of doc 09) and the `version` check (BR-71) refuse a second post |
 | File picker pre-check: count, size, extension; lists the chosen files with sizes | Server validation (doc 09 §9.2) shows the same messages after submit |
@@ -185,8 +186,9 @@ These routes end in a redirect, a file, CSV or JSON. They are listed so that eve
 ```text
 <html lang="en" class="no-js" xmlns:layout xmlns:sec xmlns:th>
 <head>  meta viewport · title pattern · bootstrap.min.css · bootstrap-icons.css · app.css
-        inline: document.documentElement.classList.replace('no-js','js')
-        <noscript><style> .navbar-collapse{display:block!important} … </style></noscript>
+        js/early.js (sync): document.documentElement.classList.replace('no-js','js')
+        (no inline <script> or <style>, no style="" attributes: strict CSP, doc 11 §4.7, D64;
+         the no-JS rules are `.no-js …` selectors in app.css)
         layout:fragment="head"        (page extras, rarely used)
 <body>
   a.skip-link → #main
@@ -200,7 +202,8 @@ These routes end in a redirect, a file, CSV or JSON. They are listed so that eve
   </main>
   footer (system name · "Times are shown in IST (Asia/Kolkata)")
   bootstrap.bundle.min.js · app.js (defer)
-  layout:fragment="scripts"                       (dashboard: chart.umd.min.js + inline data)
+  layout:fragment="scripts"                       (dashboard: chart.umd.min.js; data comes from the
+                                                   data-chart attribute of #chart-data, read by app.js)
 ```
 
 **`layouts/public.html`**: same head and footer; navbar with the brand only (and, when logged in, the user's name and a Log out button); a centred `col-sm-10 col-md-6 col-lg-5` card for the content; flash alerts.
@@ -367,7 +370,7 @@ Low-fidelity, desktop width unless marked **[phone]**. `[Button]` = button, `[Li
 └──────────────────────────────────────────────┘
 ```
 
-`autocomplete="username"` / `"current-password"`. The email field keeps its value after `?error` only if doc 11 passes it back (Spring Security does not by default); otherwise it is empty.
+`autocomplete="username"` / `"current-password"`. After `?error` or `?locked` the email field shows the email typed in the failed attempt, once (U6, doc 11 §3.11, D71); the password is always empty. Further alerts: `accountLocked` "Too many failed attempts. Please wait 15 minutes and try again.", `accountInactive` "Your account has been deactivated. Contact the Grievance Cell." (doc 11 §3.4, §3.10).
 
 ### 4.2 SCR-02 Register
 
@@ -390,7 +393,7 @@ Low-fidelity, desktop width unless marked **[phone]**. `[Button]` = button, `[Li
 └──────────────────────────────────────────────────────┘
 ```
 
-Passwords are never sent back after an error (R-VALIDATION). `autocomplete="name" / "email" / "tel-national" / "new-password"`.
+Passwords are never sent back after an error (R-VALIDATION). `autocomplete="name" / "email" / "tel-national" / "new-password"`. Below the button, a short privacy notice (§8.4, doc 11 §10.2, D76).
 
 ### 4.3 SCR-03 Verify mobile
 
@@ -515,6 +518,7 @@ Same layout as SCR-10 with the title "Watching", a one-line explanation and no s
 
 - `enctype="multipart/form-data"`. Dropdowns start with an empty "Select a category" option; inactive values appear only in edit mode for the complaint's current value, labelled "(no longer offered)" (BR-21).
 - No `capture` attribute: on phones the picker offers camera **and** gallery.
+- Above Description, a one-line privacy hint (§8.4 "Complaint privacy hint", doc 11 §10.2, D76).
 - Cancel goes to SCR-10 (new) or SCR-20 (edit).
 - Edit: the remaining-slots text is "You can add {maxFiles − active + removed} more" (computed in the template from `currentAttachments.size()` and `maxFiles`, display only; the server enforces BR-23).
 
@@ -1130,7 +1134,7 @@ The timeline (`fragments/timeline :: timeline(c.timeline)`) is an ordered list, 
 | `STATUS_CHANGED` | to `REJECTED` | Rejected ‹Rejected› | `bi-x-circle` / `is-status` | reason |
 | `STATUS_CHANGED` | to `WITHDRAWN` | Withdrawn by the citizen ‹Withdrawn› | `bi-arrow-return-left` / `is-status` | reason |
 | `DUPLICATE_LINKED` | on B | Marked as a duplicate of {relatedNo} ‹Duplicate› | `bi-link-45deg` / `is-link` | note; `relatedNo` is a link to `/complaints/{relatedNo}` |
-| `DUPLICATE_RECEIVED` | on A, **staff** viewer | {relatedNo} linked as a duplicate | `bi-link-45deg` / `is-link` | link to B |
+| `DUPLICATE_RECEIVED` | on A, **staff** viewer | {relatedNo} linked as a duplicate | `bi-link-45deg` / `is-link` | link to B only when `relatedLinkable` (the viewer can open B); otherwise the number as plain text (U2, D69) |
 | `DUPLICATE_RECEIVED` | on A, **citizen** viewer | Another complaint about the same problem was linked to this one | `bi-link-45deg` / `is-link` | no number (D55) |
 | `EDITED` | | Complaint edited | `bi-pencil` / `is-edit` (dashed) | list of `changes` (§7.2); reason as remark "Reason: …" |
 
@@ -1262,6 +1266,9 @@ JS confirm prompts (POST-only buttons, `data-confirm`):
 | Privacy box (citizen detail) | Only you, the Grievance Cell and the department handling it can see this complaint. Citizens who reported the same problem may follow its updates, but they never see your name. |
 | Demo OTP | Demo mode: no SMS is sent. Your OTP is {code}. |
 | Choose files again | Please choose your files again. For security, browsers do not keep selected files when a form is shown again. |
+| Registration privacy notice (SCR-02) | We use your name, email and mobile number only to handle your complaints. Department officers see your name; your email and mobile number are visible only to the Grievance Cell. Accounts are for adults (18+). |
+| Complaint privacy hint (SCR-12) | Do not include personal details you do not want to share. If other citizens report the same problem, they may see this complaint, its address and photos (but not your name). |
+| Session warning (JS) | Your session will end in 5 minutes because of inactivity. [Stay logged in] |
 
 ### 8.5 Empty states
 
@@ -1375,7 +1382,7 @@ Screenshots (`docs/ui-mockups/screenshots/`, rendered with Chromium via Playwrig
 
 What the review of the screenshots changed: complaint numbers and dates were wrapping in the queue table at 1280 px (now `white-space: nowrap`); on phones the attachments were placed after the long timeline (moved directly below the details); the dashboard overdue table needed sideways scrolling at 360 px (the Department column is hidden below `sm`).
 
-The mock-ups load Bootstrap, Bootstrap Icons and Chart.js from jsDelivr so they open directly in a browser; the application itself serves them locally (ADR-12). The render script answers those requests from local npm packages, so it needs no network.
+The mock-ups load Bootstrap, Bootstrap Icons and Chart.js from jsDelivr so they open directly in a browser, and use a few inline `style` attributes and one inline chart script; the application itself serves the libraries locally (ADR-12) and has no inline scripts or styles (CSP, doc 11 §4.7): those attributes become the classes `.pre-line`, `.thumb-name` and `.chart-box`. The render script answers those requests from local npm packages, so it needs no network.
 
 ---
 
@@ -1400,19 +1407,20 @@ Run on 2026-11-22. All scripts are kept under `docs/specs/verify/` so they can b
 
 | # | Topic | For doc |
 |---|---|---|
-| U1 | **Actor labels must not leak staff names to citizens** (D48): doc 11 adds a test that renders SCR-20 and SCR-60 as owner and as watcher and asserts no officer or admin name appears; notification templates (BR-69) must use department names. | 11, 13 |
-| U2 | `DUPLICATE_RECEIVED` shows B's number only to staff (D55). The link to B gives 404 to an officer of another department; acceptable (BR-63), doc 11 confirms. | 11 |
+| U1 | ~~Staff names.~~ **Decided in doc 11 §10.3 (D70), test SEC-49.** **Actor labels must not leak staff names to citizens** (D48): doc 11 adds a test that renders SCR-20 and SCR-60 as owner and as watcher and asserts no officer or admin name appears; notification templates (BR-69) must use department names. | 11, 13 |
+| U2 | ~~Link to B.~~ **Changed in doc 11 §5.5 (D69):** the number is a link only when the viewer can open B. `DUPLICATE_RECEIVED` shows B's number only to staff (D55). The link to B gives 404 to an officer of another department; acceptable (BR-63), doc 11 confirms. | 11 |
 | U3 | `error/4xx.html` (new) must be reachable for anonymous users (`/error` is public) and must not need `unreadCount`. Doc 12 defines `reference` for SCR-92 and which exceptions map to 400 / 405. | 11, 12 |
 | U4 | Message texts of §8 are the English reference; doc 12 decides `messages.properties` vs. constants and keeps the wording (K8 of doc 09). The JS confirm texts live in `data-confirm` attributes rendered by the server, so they follow the same choice. | 12 |
 | U5 | Form error summary with links to fields (§1.4) needs stable field ids; doc 12 fixes the id scheme (`th:field` produces `id` = field name, except list fields such as `files`). | 12 |
-| U6 | Login page: the typed email is not kept after a failed login by default in Spring Security (§4.1). Doc 11 decides whether to keep it (e.g. a failure handler that redirects with the email in the session). | 11 |
+| U6 | ~~Typed email.~~ **Decided in doc 11 §3.11 (D71): kept once.** Login page: the typed email is not kept after a failed login by default in Spring Security (§4.1). Doc 11 decides whether to keep it (e.g. a failure handler that redirects with the email in the session). | 11 |
 | U7 | `app.js` behaviours (submit disable, confirm, file pre-check, counter, bell refresh) and the no-JS fallback need tests: MockMvc covers no-JS by nature; doc 13 adds a small Playwright smoke test with JS on and off for the submit and duplicate flows. | 13 |
 | U8 | Accessibility checks: doc 13 runs an automated checker (e.g. axe-core through Playwright) on the main screens in addition to the contrast script. | 13 |
 | U9 | Bootstrap Icons and Chart.js versions: pin exact versions (Bootstrap Icons 1.13.1, Chart.js 4.4.7 were used for the mock-ups) and decide WebJar vs. copying into `static/vendor/`. | 14 |
 | U10 | `@fmt` (`DisplayFormat` bean) and `ComplaintStatus.label()/badgeClass()/icon()` are small web-layer additions to the packages of doc 07 §3 (`common.web`, `complaint`). | 07 (updated), 13 |
-| U11 | Session timeout while typing a long complaint: the POST goes to `/login?expired` and the typed text is lost (doc 09 §1.6). Acceptable for this project; the login page says why. | 11 |
+| U11 | ~~Timeout while typing.~~ **Decided in doc 11 §3.12 (D72):** JS warning with "Stay logged in"; no drafts. Session timeout while typing a long complaint: the POST goes to `/login?expired` and the typed text is lost (doc 09 §1.6). Acceptable for this project; the login page says why. | 11 |
 
 ## Change log
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft: 28 screens, layouts and navigation per role, wireframes, visual system (K9 resolved, D47), fragment catalogue, timeline with actor-label decision (O2/K6 resolved, D48), UI copy, traceability, static mock-ups with screenshots, verification; decisions D47–D55 |
+| 2026-11-22 | Doc 11 alignment: no inline script/style (`early.js`, `.no-js` CSS, `data-chart`), session warning, login email kept and new login alerts, privacy notices, `relatedLinkable`; U1, U2, U6, U11 decided (D64, D69–D72, D76) |

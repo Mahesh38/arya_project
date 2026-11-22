@@ -186,7 +186,7 @@ stateDiagram-v2
 
 | ID | Action | From | To | Allowed actor | Guards (all must hold) | Required input | Side effects |
 |---|---|---|---|---|---|---|---|
-| T01 | Submit | — | `SUBMITTED` | Verified citizen (BR-86) | Valid fields and files (BR-20 to BR-27) | form | Generate `complaintNo` (BR-10). Event `CREATED`. Notify owner and admins. |
+| T01 | Submit | — | `SUBMITTED` | Verified citizen (BR-86) | Valid fields and files (BR-20 to BR-27); daily limit (BR-88) | form | Generate `complaintNo` (BR-10). Event `CREATED`. Notify owner and admins. |
 | T02 | Start review | `SUBMITTED` | `UNDER_REVIEW` | Admin | — | — | Event. Notify owner. |
 | T03 | Assign | `UNDER_REVIEW` | `ASSIGNED` | Admin | Department active | department, remark (optional) | Set `department`. Event. Notify owner, watchers, department officers. |
 | T04 | Reassign | `ASSIGNED`, `IN_PROGRESS`, `REOPENED` | `ASSIGNED` | Admin | New department ≠ current, and active | department, **remark** | Event `REASSIGNED`. Notify owner, watchers, new department officers. |
@@ -292,9 +292,11 @@ Remark, reason and note fields are 10–500 characters when required, and at mos
 | BR-82 | The system must always have at least one active Admin, so the last active Admin cannot be deactivated. |
 | BR-83 | Deactivating a user ends their access at the next request. Their existing complaints and history stay unchanged. |
 | BR-84 | Mobile number: 10 digits starting with 6–9, unique across all users. |
-| BR-85 | OTP: 6 digits from `SecureRandom`, stored **hashed** (never in plain text), valid 5 minutes, at most 3 wrong attempts. A new OTP invalidates earlier unused ones. Resend cooldown is 60 seconds, with at most 5 sends per hour per user. |
+| BR-85 | OTP: 6 digits from `SecureRandom`, stored **hashed** (HMAC-SHA256 with an in-memory key, never in plain text, doc 11 §6.2), valid 5 minutes, at most 3 attempts. An attempt is reserved atomically before the code is compared, so parallel guesses cannot exceed the limit (doc 11 §6.3). A new OTP invalidates earlier unused ones. Resend cooldown is 60 seconds, with at most 5 sends per hour per user. |
 | BR-86 | T01 (Submit) additionally requires `owner.mobileVerified = true`. |
 | BR-87 | Officers and Admins are created with `mobileVerified = true`. |
+| BR-88 | A citizen can submit at most **10 complaints in any 24 hours** (`app.complaint.max-per-day`). The 11th submission is refused with a form error. Protects disk space and staff time (doc 11 §7.4, D68). |
+| BR-89 | Every update of a user row increments `app_user.version`; an open session notices the change at its next request (deactivation ends it, other changes refresh it; doc 11 §3.10, D59). |
 
 ---
 
@@ -321,3 +323,4 @@ Remark, reason and note fields are 10–500 characters when required, and at mos
 | 2026-11-22 | Initial draft (includes D13, D14) |
 | 2026-11-22 | Added MobileOtp, BR-84 to BR-87 (D16) |
 | 2026-11-22 | Doc 08 alignment: BR-11 column names `seq_year`, `last_number` (D17); `ComplaintEvent.department` and `relatedComplaint`, `Area.description` (D20) |
+| 2026-11-22 | BR-85 hashing and attempt reservation, new BR-88 (daily complaint limit) and BR-89 (user version), from doc 11 (D59, D66, D68) |

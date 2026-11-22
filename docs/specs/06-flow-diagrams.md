@@ -579,12 +579,17 @@ sequenceDiagram
     participant SH as RoleBasedSuccessHandler
 
     U->>SEC: POST /login {email, password, _csrf}
+    SEC->>SEC: email or IP locked? (LoginAttemptService, doc 11 §3.5)
+    alt locked
+        SEC-->>U: 302 /login?locked
+    end
     SEC->>UDS: loadUserByUsername(email lower-cased)
     UDS->>UR: findByEmail
     UR-->>UDS: user (hash, role, active)
     UDS-->>SEC: UserDetails (enabled = active)
-    SEC->>SEC: BCrypt match + enabled check
+    SEC->>SEC: BCrypt match, then enabled check (D57)
     alt failure
+        SEC->>SEC: count failure (email, IP)
         SEC-->>U: 302 /login?error "Invalid email or password, or account inactive"
     else success
         SEC->>SH: onAuthenticationSuccess
@@ -625,3 +630,4 @@ sequenceDiagram
 |---|---|
 | 2026-11-22 | Initial draft |
 | 2026-11-22 | SD-01 uses the `complaint_sequence` column names of doc 08 (D17, D19) |
+| 2026-11-22 | SD-07: login lock check and check order from doc 11 (D56, D57) |

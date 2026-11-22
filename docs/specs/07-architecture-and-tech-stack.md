@@ -111,15 +111,19 @@ plugin  : spring-boot-maven-plugin
 ```text
 com.smartgrievance
 ├── SmartGrievanceApplication.java
-├── config/            SecurityConfig, WebConfig, AppProperties (@ConfigurationProperties "app"),
+├── config/            SecurityConfig, ProdSafetyCheck, WebConfig, AppProperties (@ConfigurationProperties "app"),
 │                      ClockConfig (Clock bean, Asia/Kolkata), SchedulingConfig
 ├── common/            exceptions (NotFound, InvalidTransition, ConcurrentUpdate, BusinessRule),
 │                      GlobalExceptionHandler (@ControllerAdvice), GlobalModelAdvice (unread count,
 │                      current user), PageResult<T>, Flash helper, TextUtils
 ├── user/              User, Role, UserRepository, CurrentUser (principal), AppUserDetailsService
 ├── auth/              RegistrationController/Service/Form, LoginController,
-│                      RoleBasedSuccessHandler, PasswordController/Service
-├── otp/               OtpService, OtpRepository, OtpSender (interface), DemoOtpSender,
+│                      PasswordController/Service
+├── security/          (doc 11 §4.10) ThrottledAuthenticationProvider, LoginAttemptService, RateLimiter,
+│                      RoleBasedSuccessHandler, LoginFailureHandler, SessionAwareLoginEntryPoint,
+│                      JsonAuthenticationEntryPoint, AppAccessDeniedHandler, AuthSessionService,
+│                      UserStateFilter, SecurityEvents
+├── otp/               OtpService, OtpRepository, OtpHasher (HMAC), OtpSender (interface), DemoOtpSender,
 │                      VerificationController, VerifiedCitizenInterceptor (FR-09a)
 ├── masterdata/        Department, Category, Area + repositories, MasterDataService,
 │                      admin controllers for departments, categories and areas
@@ -136,7 +140,8 @@ com.smartgrievance
 ├── history/           ComplaintEvent, EventType, ComplaintRevision, EventRepository,
 │                      RevisionRepository, TimelineService (merges events + revisions)
 ├── watch/             WatcherRepository, WatchService, WatchController
-├── attachment/        Attachment, AttachmentRepository, AttachmentService, FileStorageService, FileTypeDetector
+├── attachment/        Attachment, AttachmentRepository, AttachmentService, FileStorageService, FileTypeDetector,
+│                      UploadSizeGuardFilter (doc 11 §4.6), FileScanner (no-op, future antivirus)
 │                      (magic bytes), AttachmentController
 ├── notification/      Notification, NotificationRepository, NotificationService
 │                      (recipient rules BR-67..69), NotificationController,
@@ -179,14 +184,17 @@ com.smartgrievance
 
 | Concern | Approach |
 |---|---|
-| Authentication | Form login (`/login`). Username = email, lower-cased. BCrypt `PasswordEncoder`. `UserDetails.enabled = active`. |
-| Landing page | `RoleBasedSuccessHandler`: CITIZEN → `/citizen/complaints`, OFFICER → `/officer/queue`, ADMIN → `/admin/dashboard`. |
-| URL authorization | `/citizen/**` → CITIZEN, `/officer/**` → OFFICER, `/admin/**` → ADMIN. `/verify-mobile/**` → CITIZEN. `/complaints/**`, `/attachments/**`, `/notifications/**` and `/account/**` require any logged-in user. `/`, `/login`, `/register`, `/error`, `/favicon.ico`, `/webjars/**`, `/css/**`, `/js/**` and `/images/**` are public. `GET /notifications/unread-count` answers 401 JSON instead of redirecting to the login page. Full route list: doc 09 §3. |
+| Authentication | Form login (`/login`). Username = email, lower-cased. BCrypt `PasswordEncoder`, strength 12 (D67). `UserDetails.enabled = active`; account-status checks run after the password check (D57). |
+| Brute force | In-memory `LoginAttemptService`: 5 failures per email or 20 per IP in 15 min lock that key for 15 min (D56). |
+| Landing page | `RoleBasedSuccessHandler`: CITIZEN → `/citizen/complaints`, OFFICER → `/officer/queue`, ADMIN → `/admin/dashboard`, or the saved GET page if the role may open it. |
+| URL authorization | `/citizen/**` and `/verify-mobile/**` → CITIZEN, `/officer/**` → OFFICER, `/admin/**` → ADMIN. `/complaints/**`, `/attachments/**`, `/notifications/**` and `/account/**` require any logged-in user. `/`, `/login`, `/register`, `/error`, `/favicon.ico`, `/webjars/**`, `/css/**`, `/js/**`, `/images/**` and `/vendor/**` are public. Anything else: logged in (unknown → 404), guarded by a route-inventory test (D65). No method security. Full rule list: doc 11 §4.2. |
+| Entry points | HTML → `/login`, or `/login?expired` for a dead session; `GET /notifications/unread-count` → 401 JSON (D61). |
 | Object authorization | `ComplaintAccessPolicy` → 404 (ADR-05). |
 | Verified citizen | `VerifiedCitizenInterceptor` sends unverified citizens from `GET /citizen/complaints/new` and `POST /citizen/complaints` to `/verify-mobile` (FR-09a); the service checks BR-86 again. |
-| CSRF | Enabled (default). Thymeleaf `th:action` adds the token automatically. |
-| Session | 30-minute timeout, session fixation protection (default), logout invalidates the session. |
-| Headers | Spring Security defaults (X-Frame-Options DENY, nosniff, cache-control). |
+| CSRF | Enabled (default, session token repository). Thymeleaf `th:action` adds the token automatically. Stale token after expiry → `/login?expired` (D62). |
+| Session | 30-minute timeout, cookie only, `HttpOnly`, `SameSite=Lax`, `Secure` in prod, session id changed on login and registration, logout invalidates the session; no remember-me (D58). `UserStateFilter` ends or refreshes sessions when the user row changes (D59). |
+| Uploads | `UploadSizeGuardFilter` before Spring Security turns over-size uploads into a redirect with a message (D63). |
+| Headers | Strict CSP without inline scripts or styles, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: same-origin`, `Permissions-Policy`, COOP/CORP, no-cache, HSTS on HTTPS only (D64). |
 
 ---
 
@@ -208,7 +216,11 @@ server.servlet.session.timeout=30m
 # per-file 5 MB is checked by FileStorageService (app.upload.max-file-size), see doc 09 §9 (D36)
 spring.servlet.multipart.max-file-size=26MB
 spring.servlet.multipart.max-request-size=26MB
-server.tomcat.max-swallow-size=30MB
+server.tomcat.max-swallow-size=64MB
+server.servlet.session.tracking-modes=cookie
+server.servlet.session.cookie.same-site=lax
+server.error.include-stacktrace=never
+server.error.whitelabel.enabled=false
 spring.thymeleaf.cache=true
 
 app.timezone=Asia/Kolkata
@@ -225,6 +237,8 @@ app.otp.ttl=5m
 app.otp.max-attempts=3
 app.otp.resend-cooldown=60s
 app.otp.max-sends-per-hour=5
+app.complaint.max-per-day=10
+app.security.bcrypt-strength=12
 app.admin.email=admin@example.com
 app.admin.password=${ADMIN_PASSWORD:Admin@1234}
 app.admin.name=System Administrator
@@ -265,7 +279,8 @@ src/main/resources/
 └── static/
     ├── css/app.css
     ├── js/app.js              progressive only (doc 10 §1.3): confirm, submit-disable, file pre-check,
-    │                          character counter, bell refresh; every flow works without it
+    │                          character counter, bell refresh, session warning; every flow works without it
+    ├── js/early.js            one line loaded in <head>: no-js → js (no inline scripts, CSP, doc 11 §4.7)
     └── images/logo.svg
 ```
 
@@ -306,3 +321,4 @@ A throwaway test project with the exact dependency set from §2.2 was built and 
 | 2026-11-22 | Admin name/mobile settings (D26) and `HousekeepingJob` (D28) from doc 08 |
 | 2026-11-22 | Doc 09 alignment: new controllers (`OfficerQueueController`, `AdminComplaintController`, `CitizenWorkflowController`), `Action` enum, `ActionLinks`, `AttachmentService`; `/verify-mobile/**`, `/error` URL rules; multipart per-file limit moved to the service (D36) |
 | 2026-11-22 | Doc 10 alignment: template list (no separate `duplicate-confirm`, singular master-data forms, `error/4xx`), fragment list, `app.js` role, `activeMenu`, `@fmt` (D49–D53) |
+| 2026-11-22 | Doc 11 alignment: §5 security summary rewritten (D56–D65), new `security` package, `ProdSafetyCheck`, `OtpHasher`, `UploadSizeGuardFilter`, `FileScanner`; `max-swallow-size` 30 MB → 64 MB and session/error properties in §6 |

@@ -202,6 +202,11 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | `app.otp.length` / `app.otp.ttl` | 6 / 5m | FR-09 |
 | `app.otp.max-attempts` / `app.otp.resend-cooldown` / `app.otp.max-sends-per-hour` | 3 / 60s / 5 | FR-09 |
 | `app.otp.sender` | `demo` (show on screen + log) | FR-09b |
+| `app.complaint.max-per-day` | 10 | BR-88 (doc 11 §7.4, D68) |
+| `app.security.bcrypt-strength` | 12 | NFR-01 (doc 11 §3.3, D67) |
+| `app.security.login.max-failures-per-account` / `max-failures-per-ip` / `window` / `lock` | 5 / 20 / 15m / 15m | FR-05 (doc 11 §3.5, D56) |
+| `app.security.register.max-per-ip-per-hour` | 10 | FR-01 (doc 11 §3.5) |
+| `server.tomcat.max-swallow-size` | 64MB | FR-11 (doc 11 §4.6, D63) |
 
 ## 4. Seed data (initial)
 
@@ -219,3 +224,4 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | 2026-11-22 | Multiple attachments (JPG/PNG/PDF, ≤ 5 MB, max 5); edit and withdraw with revisions (FR-16 to FR-19) |
 | 2026-11-22 | Added `app.admin.name` / `app.admin.mobile` settings (doc 08, D26) |
 | 2026-11-22 | Added `app.export.max-rows` (doc 09, D43) |
+| 2026-11-22 | Security settings from doc 11 (`app.security.*`, `app.complaint.max-per-day`, `max-swallow-size`) |
