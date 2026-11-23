@@ -34,6 +34,8 @@ public class WorkflowCopy {
                     REASON, "Not a public issue: private society premises.", true, "danger");
             case ASSIGN -> department("Assign to a department", "Assign", "The category’s default department is preselected when available.", false);
             case REASSIGN -> department("Reassign to another department", "Reassign", "", true);
+            case MARK_DUPLICATE -> new Copy("Mark as duplicate", "Link as duplicate", "", "Note to the citizen",
+                    "10–500 characters", true, false, false, "primary", List.of("originalNo", "remark"));
             default -> throw new IllegalArgumentException("No form copy for " + action);
         };
     }

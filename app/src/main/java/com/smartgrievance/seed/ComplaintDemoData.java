@@ -10,6 +10,7 @@ import com.smartgrievance.complaint.ComplaintStatus;
 import com.smartgrievance.history.ComplaintHistory;
 import com.smartgrievance.history.ComplaintHistory.Event;
 import com.smartgrievance.notification.NotificationService;
+import com.smartgrievance.watch.WatcherRepository;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -60,10 +61,11 @@ public class ComplaintDemoData {
     private final NotificationService notifications;
     private final AttachmentService attachments;
     private final Clock clock;
+    private final WatcherRepository watchers;
     private final com.smartgrievance.config.AppProperties.Admin adminProperties;
 
     ComplaintDemoData(JdbcClient jdbc, ComplaintRepository complaints, ComplaintNumberGenerator numbers, ComplaintHistory history,
-                      NotificationService notifications, AttachmentService attachments, Clock clock,
+                      NotificationService notifications, AttachmentService attachments, Clock clock, WatcherRepository watchers,
                       com.smartgrievance.config.AppProperties properties) {
         this.jdbc = jdbc;
         this.complaints = complaints;
@@ -72,6 +74,7 @@ public class ComplaintDemoData {
         this.notifications = notifications;
         this.attachments = attachments;
         this.clock = clock;
+        this.watchers = watchers;
         adminProperties = properties.admin();
     }
 
@@ -109,6 +112,7 @@ public class ComplaintDemoData {
                     .param("resolved", sample.resolvedAge() == 0 ? null : now.minusDays(sample.resolvedAge()))
                     .param("updated", updated).param("version", sample.status() == SUBMITTED ? 0 : 1)
                     .param("id", id).update();
+            if (sample.status() == DUPLICATE) watchers.activateOrInsert(first, owner, updated);
             if (index == 2) {
                 attachments.add(id, owner, AttachmentPurpose.COMPLAINT,
                         List.of(photo("garbage-magarpatta-1.jpg"), photo("garbage-magarpatta-2.jpg")));

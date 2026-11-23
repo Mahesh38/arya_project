@@ -4,6 +4,7 @@
 
 ### Added
 
+- Staff can link duplicate complaints, and citizens can manage updates for complaints they follow.
 - Complaint workflow actions, officer queues, and administrative complaint filters.
 - Complaint tracking lists, role-scoped detail and history, and private attachment downloads.
 - Verified citizens can submit, edit, and withdraw complaints with content-validated attachments and a unique complaint number.

@@ -103,7 +103,7 @@ class ComplaintWorkflowWebTest extends WebTestBase {
     @MethodSource("routes")
     void exactRoutesAndRecipients(Case example) throws Exception {
         var before = complaint(example.no());
-        if (before.number().endsWith("000001") || example.action == ASSIGN) watcher(before.id(), "jayesh");
+        if (example.action == ASSIGN) watcher(before.id(), "jayesh");
         if (example.action != START_REVIEW) {
             var page = mvc.perform(get(example.formPath()).with(appUser(identities, email(example.actor))))
                     .andExpect(status().isOk()).andExpect(view().name("complaint/action-form"))

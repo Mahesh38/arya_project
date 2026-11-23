@@ -16,29 +16,34 @@
 </nav>
 <section layout:fragment="content" class="complaint-edit-form"
          th:with="kind=${action.name()}, copy=${@workflowCopy.forAction(action)}">
-    <div th:replace="~{fragments/complaint-summary :: box(${complaint})}"></div>
-    <h1 class="h3" th:text="${copy.title}"></h1>
-    <p th:if="${!copy.intro.isEmpty()}" th:text="${copy.intro}"></p>
-    <p th:if="${kind == 'REOPEN'}" th:text="|The complaint goes back to ${complaint.departmentName}. You can reopen it ${reopensLeft} more time(s).|"></p>
-    <p th:if="${kind == 'REASSIGN'}" th:text="|Currently with ${complaint.departmentName}.|"></p>
-    <form method="post" th:object="${form}" th:action="@{${postUrl}}" data-submit-text="Saving…"
-          th:attr="enctype=${copy.files ? 'multipart/form-data' : null}">
-        <div th:replace="~{fragments/form :: errorSummary(${copy.fields})}"></div>
-        <p th:if="${copy.required or copy.department}" class="small text-body-secondary">* required</p>
-        <th:block th:if="${copy.department}">
-            <div th:replace="~{fragments/form :: lookupSelect('departmentId', ${kind == 'REASSIGN' ? 'New department' : 'Department'}, ${departments}, 'Select a department', true)}"></div>
-        </th:block>
-        <div th:replace="~{fragments/form :: textarea('remark', ${copy.label}, 4, 500, ${copy.help}, ${copy.required})}"></div>
-        <th:block th:if="${copy.files}">
-            <h2 class="h6">Work done photos</h2>
-            <div th:replace="~{fragments/attachments :: picker(${maxFiles}, ${maxFileSizeMb}, ${#fields.hasAnyErrors()}, 0, false)}"></div>
-        </th:block>
-        <input type="hidden" th:field="*{version}">
-        <button type="submit" class="btn" th:classappend="|btn-${copy.style}|">
-            <span data-submit-label th:text="${copy.submit}"></span>
-        </button>
-        <a class="btn btn-link" th:href="@{${cancelUrl}}">Cancel</a>
-    </form>
+    <th:block th:if="${kind == 'MARK_DUPLICATE'}">
+        <div th:replace="~{fragments/duplicate-form :: duplicateSteps}"></div>
+    </th:block>
+    <th:block th:unless="${kind == 'MARK_DUPLICATE'}">
+        <div th:replace="~{fragments/complaint-summary :: box(${complaint})}"></div>
+        <h1 class="h3" th:text="${copy.title}"></h1>
+        <p th:if="${!copy.intro.isEmpty()}" th:text="${copy.intro}"></p>
+        <p th:if="${kind == 'REOPEN'}" th:text="|The complaint goes back to ${complaint.departmentName}. You can reopen it ${reopensLeft} more time(s).|"></p>
+        <p th:if="${kind == 'REASSIGN'}" th:text="|Currently with ${complaint.departmentName}.|"></p>
+        <form method="post" th:object="${form}" th:action="@{${postUrl}}" data-submit-text="Saving…"
+              th:attr="enctype=${copy.files ? 'multipart/form-data' : null}">
+            <div th:replace="~{fragments/form :: errorSummary(${copy.fields})}"></div>
+            <p th:if="${copy.required or copy.department}" class="small text-body-secondary">* required</p>
+            <th:block th:if="${copy.department}">
+                <div th:replace="~{fragments/form :: lookupSelect('departmentId', ${kind == 'REASSIGN' ? 'New department' : 'Department'}, ${departments}, 'Select a department', true)}"></div>
+            </th:block>
+            <div th:replace="~{fragments/form :: textarea('remark', ${copy.label}, 4, 500, ${copy.help}, ${copy.required})}"></div>
+            <th:block th:if="${copy.files}">
+                <h2 class="h6">Work done photos</h2>
+                <div th:replace="~{fragments/attachments :: picker(${maxFiles}, ${maxFileSizeMb}, ${#fields.hasAnyErrors()}, 0, false)}"></div>
+            </th:block>
+            <input type="hidden" th:field="*{version}">
+            <button type="submit" class="btn" th:classappend="|btn-${copy.style}|">
+                <span data-submit-label th:text="${copy.submit}"></span>
+            </button>
+            <a class="btn btn-link" th:href="@{${cancelUrl}}">Cancel</a>
+        </form>
+    </th:block>
 </section>
 </body>
 </html>

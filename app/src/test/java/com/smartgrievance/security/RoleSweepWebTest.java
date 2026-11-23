@@ -143,8 +143,7 @@ class RoleSweepWebTest extends WebTestBase {
         return csv.lines().skip(1).map(line -> line.split(",", 6))
                 .filter(row -> {
                     int id = Integer.parseInt(row[0].substring(2));
-                    return id <= 12 || (id >= 20 && id <= 31) || (id >= 40 && id <= 53)
-                            || (id >= 56 && id <= 62) || (id >= 65 && id <= 70) || id == 73 || (id >= 80 && id <= 115);
+                    return id <= 12 || (id >= 20 && id <= 31) || (id >= 40 && id <= 72) || id == 73 || (id >= 80 && id <= 115);
                 })
                 .map(row -> new Route(row[1], row[2], row[3], row[4]))
                 .toList();

@@ -104,6 +104,15 @@ public class ComplaintRepository {
                 .param("version", version).param("from", complaint.status().name()).update() == 1;
     }
 
+    public boolean linkDuplicate(Complaint duplicate, long original, int version, LocalDateTime now) {
+        return jdbc.sql("""
+                UPDATE complaint SET status = 'DUPLICATE', duplicate_of_id = :original,
+                    updated_at = :now, version = version + 1
+                WHERE id = :id AND version = :version AND status = :prior
+                """).param("original", original).param("now", now).param("id", duplicate.id())
+                .param("version", version).param("prior", duplicate.status().name()).update() == 1;
+    }
+
     public Long defaultDepartment(long categoryId) {
         return jdbc.sql("""
                 SELECT d.id FROM category ca JOIN department d ON d.id = ca.default_department_id
@@ -147,7 +156,7 @@ public class ComplaintRepository {
                 .param("id", complaint).query(Integer.class).single();
     }
 
-    boolean hasDuplicates(long complaint) {
+    public boolean hasDuplicates(long complaint) {
         return jdbc.sql("SELECT id FROM complaint WHERE duplicate_of_id = :id LIMIT 1")
                 .param("id", complaint).query(Long.class).optional().isPresent();
     }

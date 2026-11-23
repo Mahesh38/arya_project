@@ -74,6 +74,14 @@ public class NotificationService {
         }
     }
 
+    public void duplicateLinked(long duplicate, long event, long owner, List<Long> watchers,
+                                String duplicateNumber, String originalNumber, LocalDateTime now) {
+        write(duplicate, event, owner, now, "notify.duplicate.owner", duplicateNumber, originalNumber);
+        for (long watcher : watchers) {
+            if (watcher != owner) write(duplicate, event, watcher, now, "notify.duplicate.watcher", duplicateNumber, originalNumber);
+        }
+    }
+
     public void autoClosed(WorkflowNotice notice, int days) {
         var recipients = new LinkedHashSet<>(officers(notice.departmentId()));
         recipients.add(notice.ownerId());
