@@ -27,7 +27,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.AbstractMockHttpServletRequestBuilder;
 
 @Import(ErrorTriggerController.class)
 class ErrorMappingWebTest extends WebTestBase {
@@ -124,7 +124,7 @@ class ErrorMappingWebTest extends WebTestBase {
     @Test
     @DisplayName("TC-VE-14 invalid request parameters, parts, and messages use the shared 400 view")
     void frameworkClientErrors() throws Exception {
-        Map<String, MockHttpServletRequestBuilder> requests = Map.of(
+        Map<String, AbstractMockHttpServletRequestBuilder<?>> requests = Map.of(
                 "MissingServletRequestParameterException", get("/test-only/typed"),
                 "MissingServletRequestPartException", multipart("/test-only/multipart").with(csrf()),
                 "HandlerMethodValidationException", get("/test-only/positive").param("value", "0"),
