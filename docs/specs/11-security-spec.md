@@ -149,7 +149,7 @@ Each row names a threat, where it applies and how it is handled. "Test" points t
 | T-14 | Information disclosure | Stored XSS in titles, remarks, file names, category names | AS-7 and everything the victim can see | `th:text` only, no `th:utext`, strict CSP without `'unsafe-inline'` (§4.7, §8.2) | SEC-44, SEC-30 |
 | T-15 | Information disclosure | A malicious upload (HTML/SVG/script disguised as an image) runs in our origin | AS-7 | Only JPG/PNG/PDF by magic bytes; served with the stored type, `nosniff`, CSP; SVG never accepted (§7) | SEC-39 … SEC-41 |
 | T-16 | Information disclosure | Staff names reach citizens (timeline, notifications) | AS-9 | Actor labels built per viewer; notification texts use department names (§10.3) | SEC-49 |
-| T-17 | Information disclosure | Stack traces, SQL or versions in error pages | AS-1…8 | `server.error.include-*` off, own error templates, reference id only (NFR-06) | SEC-32 |
+| T-17 | Information disclosure | Stack traces, SQL or versions in error pages | AS-1…8 | `spring.web.error.include-*` off, own error templates, reference id only (NFR-06) | SEC-32 |
 | T-18 | Information disclosure | Secrets or OTPs in logs | AS-6, AS-8 | Logging rules (§9.4); OTP logged only by the demo sender | SEC-55 |
 | T-19 | Information disclosure | Clickjacking (our page framed by another site) | all | `X-Frame-Options: DENY` + CSP `frame-ancestors 'none'` | SEC-30 |
 | T-20 | Information disclosure | Complaint numbers leaking in the `Referer` header to other sites | AS-3 | `Referrer-Policy: same-origin`; no external links or resources | SEC-30 |
@@ -942,7 +942,7 @@ An `ApplicationRunner` in `config`, active only with the `prod` profile, `@Order
 |---|---|
 | Spring Boot Actuator | Not a dependency. If added later, only `health` may be exposed, and only to `ADMIN` or to localhost. |
 | `spring.h2.console.enabled` | Never (H2 is test-only) |
-| `server.error.include-stacktrace` / `include-message` / `include-binding-errors` / `include-exception` | `never` / `never` / `never` / `false`; `server.error.whitelabel.enabled=false` (NFR-06) |
+| `spring.web.error.include-stacktrace` / `include-message` / `include-binding-errors` / `include-exception` / `include-path` | `never` / `never` / `never` / `false` / `never`; `spring.web.error.whitelabel.enabled=false` (NFR-06). Spring Boot 4 ignores the old `server.error.*` names (doc 12 §6.4, D86) |
 | `spring.mvc.log-request-details`, `CommonsRequestLoggingFilter` with payload | Never (would log passwords and personal data) |
 | `logging.level.org.springframework.security=TRACE/DEBUG` | dev only, never prod |
 | DevTools | Not packaged in the prod JAR (optional dependency, excluded by the Boot plugin) |
@@ -1212,10 +1212,10 @@ The trust-boundary diagram in §2.3 was rendered with `@mermaid-js/mermaid-cli` 
 
 | # | Topic | For doc |
 |---|---|---|
-| K-S1 | Message texts introduced here (locked, inactive, form expired, too many registrations, complaint limit, too common / too long password, session warning, privacy notices) are English references; doc 12 fixes the final wording and the `error/403` CSRF variant. | 12 |
-| K-S2 | `error/4xx` must handle `413` from Tomcat (over-size multipart to a non-upload route) and `400` from the firewall without needing `unreadCount` or a session (U3). | 12 |
+| K-S1 | ~~Message wording.~~ **Decided in doc 12 §8.5 and §6.1 (D90).** Message texts introduced here (locked, inactive, form expired, too many registrations, complaint limit, too common / too long password, session warning, privacy notices) are English references; doc 12 fixes the final wording and the `error/403` CSRF variant. | 12 |
+| K-S2 | ~~Error pages without session.~~ **Decided and verified in doc 12 §5.5, §6.2 (D85).** `error/4xx` must handle `413` from Tomcat (over-size multipart to a non-upload route) and `400` from the firewall without needing `unreadCount` or a session (U3). | 12 |
 | K-S3 | All `SEC-xx` cases go into doc 13; SEC-16 is generated from the route catalogue; SEC-37 needs MySQL (parallel threads); SEC-30a/38b use Playwright, as U7 already plans. | 13 |
-| K-S4 | Properties to fix in doc 14: `server.tomcat.max-swallow-size=64MB`, cookie flags (§4.8) with `COOKIE_SECURE`, `server.error.*`, `app.security.*` (§3.3, §3.5), `app.complaint.max-per-day=10`, `server.forward-headers-strategy` only behind a trusted proxy, HTTPS / reverse proxy set-up, `logs/security.log` rotation for one year, folder permissions for `uploads/`. | 14 |
+| K-S4 | Properties to fix in doc 14: `server.tomcat.max-swallow-size=64MB`, cookie flags (§4.8) with `COOKIE_SECURE`, `spring.web.error.*` (not `server.error.*`, D86), `app.security.*` (§3.3, §3.5), `app.complaint.max-per-day=10`, `server.forward-headers-strategy` only behind a trusted proxy, HTTPS / reverse proxy set-up, `logs/security.log` rotation for one year, folder permissions for `uploads/`. | 14 |
 | K-S5 | Supply chain: add a dependency vulnerability check (e.g. OWASP Dependency-Check or `mvn versions:display-dependency-updates`) to the build and pin Bootstrap Icons and Chart.js versions (U9). | 14 |
 | K-S6 | EXIF metadata (possibly GPS) is not removed from uploaded JPEGs. A future `ExifStripper` can drop `APP1` segments without re-encoding. | future |
 | K-S7 | Antivirus scanning (`FileScanner` + ClamAV) and an image pixel-size check (§7.1) are Could / future. | future |
@@ -1227,3 +1227,4 @@ The trust-boundary diagram in §2.3 was rendered with `@mermaid-js/mermaid-cli` 
 | Date | Change |
 |---|---|
 | 2026-11-22 | Initial draft: threat model (STRIDE, OWASP Top 10:2025), authentication, filter chain with all 99 routes, entry points, CSRF, over-size uploads, headers and CSP, authorization, OTP, uploads, input/output, secrets, privacy (DPDP), security logging, 56 security tests; K1–K5, K7, U1, U2, U6, U11 decided (D56–D76); verified with a prototype (§13) |
+| 2026-11-23 | Doc 12 alignment: error properties are `spring.web.error.*` (D86); K-S1 and K-S2 decided in doc 12 (D85, D90) |

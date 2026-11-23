@@ -57,7 +57,7 @@ The only `GET` with a side effect is `GET /verify-mobile`, which may issue an OT
 | `demoOtp` | `String` | yellow box on the verify page | The demo OTP code, only when `app.otp.sender=demo` (FR-09b, D41) |
 
 - Controllers add flash attributes through the `common.Flash` helper (`Flash.success(redirectAttributes, "…")`), never by name in each controller.
-- The value is the final, human-readable English text. Doc 12 may move the texts to `messages.properties`; the attribute names stay.
+- The value is the final, human-readable English text. Doc 12 (D77) resolves them from `messages.properties` keys (`flash.*`, `error.*`) through the `Flash` helper; the texts in this document are references and doc 12 / `messages.properties.draft` give the final wording; the attribute names stay.
 - `layouts/main.html` and `layouts/public.html` render all three alerts at the top of the content area. A flash message is shown once and is gone on refresh.
 - User-entered text inside a message (e.g. a complaint number typed into the duplicate form) is escaped like everything else (`th:text`, NFR-07).
 
@@ -990,7 +990,7 @@ Result:
 | K5 | ~~Expired-session POST.~~ **Decided in doc 11 §4.4 (D62).** Expired-session `POST` → stale CSRF token → must go to `/login?expired`, not 403 (§1.6). | 11, 12 |
 | K6 | ~~O2: officer name or role label for citizens.~~ **Decided in doc 10 §7.3 (D48):** citizens see the department / "Grievance Cell", staff see names. Doc 11 tests that no staff name reaches a citizen view. | 11 |
 | K7 | ~~Duplicate error reveals existence.~~ **Confirmed in doc 11 §5.5 (D69)**, without any preview of the other department's complaint. Officers learn that a complaint number exists in another department through the duplicate error message (R-54). Accepted for staff; doc 11 to confirm. | 11 |
-| K8 | Message texts in this document are the English defaults. Doc 12 decides whether they move to `messages.properties` and fixes the exact wording. | 12 |
+| K8 | ~~Message texts.~~ **Decided in doc 12 §8 (D77, D78).** Message texts in this document are the English defaults. Doc 12 decides whether they move to `messages.properties` and fixes the exact wording. | 12 |
 | K9 | ~~Status badge colours and labels.~~ **Decided in doc 10 §5.1 (D47).** | — |
 | K10 | Admin accounts other than the bootstrap admin have no UI (D45). If the examiners ask for it, it is a new UC with routes `/admin/admins/**`. | future |
 | K11 | Every route row is one MockMvc test (happy path + each error column); workflow rows are also run as each wrong role (403) and as a user who cannot view (404). | 13 |
@@ -1002,3 +1002,4 @@ Result:
 | 2026-11-22 | Initial draft: 99 routes, forms, view models, allowed-actions contract, JSON endpoint, upload/download contract, traceability; decisions D30–D46; O1 decided (D34) |
 | 2026-11-22 | Doc 10 alignment: `error/4xx` view, singular master-data form view names (D52), global `activeMenu` (D53), `ActionLink.style` values (D54), `actorLabel` rule (D48); K6 and K9 resolved |
 | 2026-11-22 | Doc 11 alignment: K1–K5 and K7 decided (D59–D63, D69); §9.3 rewritten for `UploadSizeGuardFilter`; login flags `locked`/`inactive` and kept email (R-02, R-03); registration and daily complaint limits (R-06, R-23); §1.6 and §2 CSRF and 413 rows; `TimelineEntry.relatedLinkable`; chart data as a `data-chart` attribute (D64) |
+| 2026-11-23 | Doc 12 alignment: K8 decided; flash texts come from `messages.properties` (D77) |

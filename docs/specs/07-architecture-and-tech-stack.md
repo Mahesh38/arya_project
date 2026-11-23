@@ -113,7 +113,7 @@ com.smartgrievance
 ├── SmartGrievanceApplication.java
 ├── config/            SecurityConfig, ProdSafetyCheck, WebConfig, AppProperties (@ConfigurationProperties "app"),
 │                      ClockConfig (Clock bean, Asia/Kolkata), SchedulingConfig
-├── common/            exceptions (NotFound, InvalidTransition, ConcurrentUpdate, BusinessRule),
+├── common/            exception (AppException, NotFound, ActionRefused → InvalidTransition / BusinessRule / ConcurrentUpdate, FormRejected, Storage; doc 12 §5.1), validation (custom validators, doc 12 §4),
 │                      GlobalExceptionHandler (@ControllerAdvice), GlobalModelAdvice (unread count,
 │                      current user), PageResult<T>, Flash helper, TextUtils
 ├── user/              User, Role, UserRepository, CurrentUser (principal), AppUserDetailsService
@@ -219,8 +219,14 @@ spring.servlet.multipart.max-request-size=26MB
 server.tomcat.max-swallow-size=64MB
 server.servlet.session.tracking-modes=cookie
 server.servlet.session.cookie.same-site=lax
-server.error.include-stacktrace=never
-server.error.whitelabel.enabled=false
+# Spring Boot 4 names (server.error.* is ignored), doc 12 §6.4, D86
+spring.web.error.include-stacktrace=never
+spring.web.error.include-message=never
+spring.web.error.include-binding-errors=never
+spring.web.error.include-exception=false
+spring.web.error.include-path=never
+spring.web.error.whitelabel.enabled=false
+spring.messages.fallback-to-system-locale=false
 spring.thymeleaf.cache=true
 
 app.timezone=Asia/Kolkata
@@ -322,3 +328,4 @@ A throwaway test project with the exact dependency set from §2.2 was built and 
 | 2026-11-22 | Doc 09 alignment: new controllers (`OfficerQueueController`, `AdminComplaintController`, `CitizenWorkflowController`), `Action` enum, `ActionLinks`, `AttachmentService`; `/verify-mobile/**`, `/error` URL rules; multipart per-file limit moved to the service (D36) |
 | 2026-11-22 | Doc 10 alignment: template list (no separate `duplicate-confirm`, singular master-data forms, `error/4xx`), fragment list, `app.js` role, `activeMenu`, `@fmt` (D49–D53) |
 | 2026-11-22 | Doc 11 alignment: §5 security summary rewritten (D56–D65), new `security` package, `ProdSafetyCheck`, `OtpHasher`, `UploadSizeGuardFilter`, `FileScanner`; `max-swallow-size` 30 MB → 64 MB and session/error properties in §6 |
+| 2026-11-23 | Doc 12 alignment: error properties renamed to `spring.web.error.*` (Boot 4, D86); `common` exception and validation packages (D82, D81) |

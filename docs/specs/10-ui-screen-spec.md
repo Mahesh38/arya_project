@@ -1184,7 +1184,7 @@ Question: does a citizen see the officer's name, or only a role label?
 - Status names are the labels of §5.1, in Title Case inside sentences: "This action is not allowed when the complaint is In Progress".
 - Buttons start with a verb and name the object when it is not obvious: "Close complaint", "Reopen", "Mark as resolved", "Send back", "Link as duplicate".
 - No emoji, no exclamation marks in system text.
-- Doc 12 decides whether these texts move to `messages.properties` (K8); the wording here is the reference.
+- Texts produced by the server (flashes, errors, notices, confirm prompts, login alerts, error pages) live in `messages.properties` (doc 12 §8, D77) and doc 12 fixes their final wording; static template copy (labels, headings, help, buttons, banners, empty states) stays in the templates.
 
 ### 8.2 Flash and inline messages (collected from docs 04 and 09, plus new ones)
 
@@ -1409,9 +1409,9 @@ Run on 2026-11-22. All scripts are kept under `docs/specs/verify/` so they can b
 |---|---|---|
 | U1 | ~~Staff names.~~ **Decided in doc 11 §10.3 (D70), test SEC-49.** **Actor labels must not leak staff names to citizens** (D48): doc 11 adds a test that renders SCR-20 and SCR-60 as owner and as watcher and asserts no officer or admin name appears; notification templates (BR-69) must use department names. | 11, 13 |
 | U2 | ~~Link to B.~~ **Changed in doc 11 §5.5 (D69):** the number is a link only when the viewer can open B. `DUPLICATE_RECEIVED` shows B's number only to staff (D55). The link to B gives 404 to an officer of another department; acceptable (BR-63), doc 11 confirms. | 11 |
-| U3 | `error/4xx.html` (new) must be reachable for anonymous users (`/error` is public) and must not need `unreadCount`. Doc 12 defines `reference` for SCR-92 and which exceptions map to 400 / 405. | 11, 12 |
-| U4 | Message texts of §8 are the English reference; doc 12 decides `messages.properties` vs. constants and keeps the wording (K8 of doc 09). The JS confirm texts live in `data-confirm` attributes rendered by the server, so they follow the same choice. | 12 |
-| U5 | Form error summary with links to fields (§1.4) needs stable field ids; doc 12 fixes the id scheme (`th:field` produces `id` = field name, except list fields such as `files`). | 12 |
+| U3 | ~~Error pages.~~ **Decided in doc 12 §5.2, §6 (D83, D85).** `error/4xx.html` (new) must be reachable for anonymous users (`/error` is public) and must not need `unreadCount`. Doc 12 defines `reference` for SCR-92 and which exceptions map to 400 / 405. | 11, 12 |
+| U4 | ~~Texts.~~ **Decided in doc 12 §8 (D77).** Message texts of §8 are the English reference; doc 12 decides `messages.properties` vs. constants and keeps the wording (K8 of doc 09). The JS confirm texts live in `data-confirm` attributes rendered by the server, so they follow the same choice. | 12 |
+| U5 | ~~Field ids.~~ **Decided in doc 12 §7.4 (D87).** Form error summary with links to fields (§1.4) needs stable field ids; doc 12 fixes the id scheme (`th:field` produces `id` = field name, except list fields such as `files`). | 12 |
 | U6 | ~~Typed email.~~ **Decided in doc 11 §3.11 (D71): kept once.** Login page: the typed email is not kept after a failed login by default in Spring Security (§4.1). Doc 11 decides whether to keep it (e.g. a failure handler that redirects with the email in the session). | 11 |
 | U7 | `app.js` behaviours (submit disable, confirm, file pre-check, counter, bell refresh) and the no-JS fallback need tests: MockMvc covers no-JS by nature; doc 13 adds a small Playwright smoke test with JS on and off for the submit and duplicate flows. | 13 |
 | U8 | Accessibility checks: doc 13 runs an automated checker (e.g. axe-core through Playwright) on the main screens in addition to the contrast script. | 13 |
@@ -1424,3 +1424,4 @@ Run on 2026-11-22. All scripts are kept under `docs/specs/verify/` so they can b
 |---|---|
 | 2026-11-22 | Initial draft: 28 screens, layouts and navigation per role, wireframes, visual system (K9 resolved, D47), fragment catalogue, timeline with actor-label decision (O2/K6 resolved, D48), UI copy, traceability, static mock-ups with screenshots, verification; decisions D47–D55 |
 | 2026-11-22 | Doc 11 alignment: no inline script/style (`early.js`, `.no-js` CSS, `data-chart`), session warning, login email kept and new login alerts, privacy notices, `relatedLinkable`; U1, U2, U6, U11 decided (D64, D69–D72, D76) |
+| 2026-11-23 | Doc 12 alignment: U3, U4, U5 decided (D77, D83, D85, D87); where texts live (§8.1) |
