@@ -54,3 +54,10 @@ if (warning) {
     });
     restartWarning();
 }
+
+document.addEventListener('submit', event => {
+    const confirmation = event.target.dataset.confirm;
+    if (confirmation && !window.confirm(confirmation)) {
+        event.preventDefault();
+    }
+});

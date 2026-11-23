@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="masterList(title, kind, base)">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h1 class="h3 mb-0" th:text="${title}"></h1>
+        <a class="btn btn-primary" th:href="@{${base + '/new'}}">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> <span th:text="${'Add ' + kind}"></span>
+        </a>
+    </div>
+    <form method="get" th:action="@{${base}}" class="card card-body mb-3" role="search"
+          th:attr="aria-label=${'Filter ' + title.toLowerCase()}">
+        <div class="row g-2">
+            <div th:replace="~{fragments/admin-controls :: filterStatus(${filter.active})}"></div>
+            <div th:replace="~{fragments/admin-controls :: filterButtons(${base})}"></div>
+        </div>
+        <input type="hidden" name="size" th:value="${page.size}">
+    </form>
+    <p th:replace="~{fragments/admin-controls :: count(${page})}"></p>
+    <p th:if="${page.items.isEmpty()}" th:text="${filter.active == null
+            ? 'No ' + title.toLowerCase() + ' yet.' : 'No ' + title.toLowerCase() + ' match the filter.'}"></p>
+    <div class="table-responsive" th:unless="${page.items.isEmpty()}">
+        <table class="table table-hover align-middle">
+            <caption class="visually-hidden" th:text="${title}"></caption>
+            <thead><tr>
+                <th scope="col">Name</th>
+                <th scope="col" th:text="${kind == 'category' ? 'Default department' : (kind == 'area' ? 'Ward office' : 'Description')}"></th>
+                <th scope="col" th:if="${kind == 'category'}">SLA days</th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
+            </tr></thead>
+            <tbody><tr th:each="row : ${page.items}" th:with="itemUrl=${base + '/' + row.id}">
+                <th scope="row" th:text="${row.name}"></th>
+                <td th:if="${kind == 'category'}">
+                    <span th:text="${row.defaultDepartmentName ?: 'Admin decides'}"></span>
+                    <span class="badge text-bg-warning"
+                          th:if="${row.defaultDepartmentName != null and !row.defaultDepartmentActive}">Inactive</span>
+                </td>
+                <td th:unless="${kind == 'category'}" th:text="${row.description ?: '—'}"></td>
+                <td th:if="${kind == 'category'}" th:text="${row.slaDays}"></td>
+                <td><span th:replace="~{fragments/admin-controls :: status(${row.active})}"></span></td>
+                <td class="text-nowrap">
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-secondary" th:href="@{${itemUrl + '/edit'}}">
+                            <i class="bi bi-pencil" aria-hidden="true"></i> Edit
+                        </a>
+                        <form th:replace="~{fragments/admin-controls :: toggle(${itemUrl + (row.active ? '/deactivate' : '/activate')}, ${row.active}, ${row.name}, null)}"></form>
+                    </div>
+                </td>
+            </tr></tbody>
+        </table>
+    </div>
+    <nav th:replace="~{fragments/admin-controls :: pager(${page}, ${pageLinks})}"></nav>
+</section>
+<section th:fragment="masterForm(title, kind, base)" th:with="editing=${mode == 'EDIT'}">
+    <nav aria-label="Breadcrumb">
+        <ol class="breadcrumb"><li class="breadcrumb-item"><a th:href="@{${base}}" th:text="${title}"></a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${editing ? 'Edit ' + (form.name ?: kind) : 'Add ' + kind}"></li></ol>
+    </nav>
+    <h1 class="h3 mb-3" th:text="${editing ? 'Edit ' + kind : 'Add ' + kind}"></h1>
+    <form class="admin-edit-form" method="post" th:object="${form}" th:action="@{${editing ? base + '/' + id : base}}">
+        <div th:replace="~{fragments/form :: errorSummary(${ kind == 'category' ? {'name', 'defaultDepartmentId', 'slaDays'} : {'name', 'description'} })}"></div>
+        <p class="small text-body-secondary">* required</p>
+        <div th:replace="~{fragments/form :: accountField('name', 'Name', 'text', 'The name must be unique.', true, null, 100, null)}"></div>
+        <th:block th:if="${kind == 'category'}">
+            <div th:replace="~{fragments/form :: select('defaultDepartmentId', 'Default department', ${departments}, 'Admin decides', false)}"></div>
+            <div th:replace="~{fragments/form :: accountField('slaDays', 'SLA days', 'number', '1–90 days before a complaint is overdue', true, null, null, null)}"></div>
+        </th:block>
+        <th:block th:unless="${kind == 'category'}">
+            <div th:replace="~{fragments/form :: accountField('description', ${kind == 'area' ? 'Ward office' : 'Description'}, 'text', 'Optional, up to 255 characters', false, null, 255, null)}"></div>
+        </th:block>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg" aria-hidden="true"></i> Save</button>
+        <a class="btn btn-link" th:href="@{${base}}">Cancel</a>
+    </form>
+</section>
+</body>
+</html>

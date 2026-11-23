@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="userList(title, base, staff)">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h1 class="h3 mb-0" th:text="${title}"></h1>
+        <a th:if="${staff}" class="btn btn-primary" th:href="@{/admin/officers/new}">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> Add officer
+        </a>
+    </div>
+    <form method="get" th:action="@{${base}}" class="card card-body mb-3" role="search"
+          th:attr="aria-label=${'Filter ' + title.toLowerCase()}">
+        <div class="row g-2">
+            <div th:if="${staff}" class="col-6 col-md-auto">
+                <label class="form-label small" for="filter-department">Department</label>
+                <select class="form-select" id="filter-department" name="departmentId">
+                    <option value="">All</option>
+                    <option th:each="department : ${departments}" th:value="${department.id}"
+                            th:selected="${filter.departmentId == department.id}"
+                            th:text="${department.name + (department.active ? '' : ' (inactive)')}"></option>
+                </select>
+            </div>
+            <div th:replace="~{fragments/admin-controls :: filterStatus(${filter.active})}"></div>
+            <div th:unless="${staff}" class="col-6 col-md-auto">
+                <label for="filter-verified" class="form-label small">Mobile</label>
+                <select class="form-select" id="filter-verified" name="verified">
+                    <option value="">All</option>
+                    <option value="true" th:selected="${filter.verified == true}">Verified</option>
+                    <option value="false" th:selected="${filter.verified == false}">Not verified</option>
+                </select>
+            </div>
+            <div class="col-12 col-md">
+                <label class="form-label small" for="filter-user-search"
+                       th:text="${staff ? 'Search by name or email' : 'Search by name, email or mobile'}"></label>
+                <input class="form-control" type="search" id="filter-user-search" name="q" maxlength="100" th:value="${filter.q}">
+            </div>
+            <div th:replace="~{fragments/admin-controls :: filterButtons(${base})}"></div>
+        </div>
+        <input type="hidden" name="size" th:value="${page.size}">
+    </form>
+    <p th:replace="~{fragments/admin-controls :: count(${page})}"></p>
+    <p th:if="${page.items.isEmpty()}" th:text="${'No ' + title.toLowerCase() + ' match the current filters.'}"></p>
+    <div class="table-responsive" th:unless="${page.items.isEmpty()}">
+        <table class="table table-hover align-middle">
+            <caption class="visually-hidden" th:text="${title}"></caption>
+            <thead><tr>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Mobile</th>
+                <th scope="col" th:text="${staff ? 'Department' : 'Registered'}"></th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
+            </tr></thead>
+            <tbody>
+            <tr th:each="row : ${page.items}" th:with="itemUrl=${base + '/' + row.id}">
+                <th scope="row" th:text="${row.fullName}"></th>
+                <td th:text="${row.email}"></td>
+                <td>
+                    <span th:text="${row.mobile}"></span>
+                    <span th:if="${!staff and !row.mobileVerified}" class="badge text-bg-warning">
+                        <i class="bi bi-phone" aria-hidden="true"></i> Not verified
+                    </span>
+                </td>
+                <td th:if="${staff}" th:text="${row.departmentName ?: '—'}"></td>
+                <td th:unless="${staff}" th:text="${@fmt.date(row.createdAt.toLocalDate())}"></td>
+                <td><span th:replace="~{fragments/admin-controls :: status(${row.active})}"></span></td>
+                <td class="text-nowrap">
+                    <div class="d-flex gap-2">
+                        <a th:if="${staff}" class="btn btn-sm btn-outline-secondary" th:href="@{${itemUrl + '/edit'}}">
+                            <i class="bi bi-pencil" aria-hidden="true"></i> Edit
+                        </a>
+                        <form th:if="${!staff and !row.mobileVerified}" method="post" th:action="@{${itemUrl + '/verify'}}"
+                              th:attr="data-confirm=${#messages.msg('confirm.markVerified', row.fullName)}">
+                            <input type="hidden" name="version" th:value="${row.version}">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-phone" aria-hidden="true"></i> Mark verified
+                            </button>
+                        </form>
+                        <a class="btn btn-sm btn-outline-secondary" th:href="@{${itemUrl + '/password'}}">
+                            <i class="bi bi-key" aria-hidden="true"></i> Reset password
+                        </a>
+                        <form th:replace="~{fragments/admin-controls :: toggle(${itemUrl + (row.active ? '/deactivate' : '/activate')}, ${row.active}, ${row.fullName}, ${row.version})}"></form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <nav th:replace="~{fragments/admin-controls :: pager(${page}, ${pageLinks})}"></nav>
+</section>
+</body>
+</html>

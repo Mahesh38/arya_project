@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<span th:fragment="status(active)" class="badge"
+      th:classappend="${active ? 'text-bg-success' : 'text-bg-secondary'}"
+      th:text="${active ? 'Active' : 'Inactive'}"></span>
+<form th:fragment="toggle(url, active, name, version)" method="post" th:action="@{${url}}"
+      th:attr="data-confirm=${active ? #messages.msg(version == null ? 'confirm.deactivate.masterdata' : 'confirm.deactivate.user', name) : null}">
+    <input th:if="${version != null}" type="hidden" name="version" th:value="${version}">
+    <button type="submit" class="btn btn-sm"
+            th:classappend="${active ? 'btn-outline-danger' : 'btn-outline-secondary'}">
+        <i class="bi" th:classappend="${active ? 'bi-slash-circle' : 'bi-check-circle'}" aria-hidden="true"></i>
+        <span th:text="${active ? 'Deactivate' : 'Activate'}"></span>
+    </button>
+</form>
+<div th:fragment="filterStatus(selected)" class="col-6 col-md-auto">
+    <label class="form-label small" for="filter-active">Status</label>
+    <select class="form-select" id="filter-active" name="active">
+        <option value="">All</option>
+        <option value="true" th:selected="${selected == true}">Active</option>
+        <option value="false" th:selected="${selected == false}">Inactive</option>
+    </select>
+</div>
+<div th:fragment="filterButtons(url)" class="col-12 col-md-auto d-flex align-items-end gap-2">
+    <button class="btn btn-primary" type="submit"><i class="bi bi-funnel" aria-hidden="true"></i> Apply</button>
+    <a th:href="@{${url}}" class="btn btn-link">Clear</a>
+</div>
+<p th:fragment="count(result)" class="small text-body-secondary" aria-live="polite"
+   th:if="${result.totalItems > 0}"
+   th:text="|Showing ${result.firstItemNumber()}–${result.lastItemNumber()} of ${result.totalItems}|"></p>
+<nav th:fragment="pager(result, links)" th:if="${result.totalPages() > 1}" aria-label="Pagination">
+    <ul class="pagination flex-wrap mb-0">
+        <li class="page-item" th:classappend="${links.previous == null ? 'disabled' : null}">
+            <a class="page-link" th:if="${links.previous != null}" th:href="@{${links.previous}}">‹ Previous</a>
+            <span class="page-link" th:if="${links.previous == null}">‹ Previous</span>
+        </li>
+        <li class="page-item" th:each="link : ${links.pages}" th:classappend="${link.current ? 'active' : 'd-none d-sm-block'}">
+            <span class="page-link" th:if="${link.current}" aria-current="page" th:text="${link.number}"></span>
+            <a class="page-link" th:unless="${link.current}" th:href="@{${link.url}}" th:text="${link.number}"></a>
+        </li>
+        <li class="page-item" th:classappend="${links.next == null ? 'disabled' : null}">
+            <a class="page-link" th:if="${links.next != null}" th:href="@{${links.next}}">Next ›</a>
+            <span class="page-link" th:if="${links.next == null}">Next ›</span>
+        </li>
+    </ul>
+</nav>
+</body>
+</html>

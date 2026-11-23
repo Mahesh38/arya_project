@@ -29,6 +29,15 @@ public class AccountService {
 
     @Transactional
     public Account register(String name, String email, String mobile, String password) {
+        return create(name, email, mobile, password, Role.CITIZEN, null);
+    }
+
+    @Transactional
+    public Account createOfficer(String name, String email, String mobile, String password, long departmentId) {
+        return create(name, email, mobile, password, Role.OFFICER, departmentId);
+    }
+
+    private Account create(String name, String email, String mobile, String password, Role role, Long departmentId) {
         var errors = new ArrayList<FormError>();
         if (users.byEmail(email).isPresent()) errors.add(new FormError("email", "validation.email.taken"));
         if (users.mobileTaken(mobile)) errors.add(new FormError("mobile", "validation.mobile.taken"));
@@ -37,7 +46,7 @@ public class AccountService {
         }
         if (!errors.isEmpty()) throw new FormRejectedException(errors);
         try {
-            long id = users.insert(name, email, mobile, encoder.encode(password), Role.CITIZEN, null, true, false,
+            long id = users.insert(name, email, mobile, encoder.encode(password), role, departmentId, true, role != Role.CITIZEN,
                     LocalDateTime.now(clock));
             return users.byId(id).orElseThrow();
         } catch (DuplicateKeyException ex) {

@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.smartgrievance.seed.DemoData;
 import com.smartgrievance.testsupport.WebTestBase;
@@ -29,6 +31,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 class RoleSweepWebTest extends WebTestBase {
+    private static final Pattern ROUTE_ALTERNATIVES = Pattern.compile("\\{[A-Za-z]+:([a-z-]+(?:\\|[a-z-]+)+)}");
     @Autowired private AccountBootstrap admin;
     @Autowired private DemoData demo;
     @Autowired private AppUserDetailsService users;
@@ -42,13 +45,17 @@ class RoleSweepWebTest extends WebTestBase {
     }
 
     @Test
-    @DisplayName("TC-RT-G1 every M1 citizen-only route rejects both staff roles without changing state")
+    @DisplayName("TC-RT-G1 citizen and admin routes reject the other roles without changing state")
     void wrongRole() throws Exception {
         var before = entries();
         for (Route route : routes()) {
-            if (!route.role().equals("CITIZEN")) continue;
-            for (String email : List.of("admin@example.com", "anita.deshmukh@example.com")) {
-                mvc.perform(request(HttpMethod.valueOf(route.method()), route.path())
+            var wrongAccounts = switch (route.role()) {
+                case "CITIZEN" -> List.of("admin@example.com", "anita.deshmukh@example.com");
+                case "ADMIN" -> List.of("mahesh@example.com", "anita.deshmukh@example.com");
+                default -> List.<String>of();
+            };
+            for (String email : wrongAccounts) {
+                mvc.perform(request(HttpMethod.valueOf(route.method()), route.samplePath())
                                 .with(appUser(users, email)).with(csrf()).param("code", "123456"))
                         .andExpect(status().isForbidden());
             }
@@ -66,11 +73,11 @@ class RoleSweepWebTest extends WebTestBase {
     }
 
     @Test
-    @DisplayName("TC-RT-G3 the anonymous sweep visits every protected M1 endpoint")
+    @DisplayName("TC-RT-G3 the anonymous sweep visits every implemented protected endpoint")
     void anonymous() throws Exception {
         for (Route route : routes()) {
             if (route.role().equals("PUBLIC")) continue;
-            mvc.perform(request(HttpMethod.valueOf(route.method()), route.path()).with(csrf()))
+            mvc.perform(request(HttpMethod.valueOf(route.method()), route.samplePath()).with(csrf()))
                     .andExpect(redirectedUrl("/login"));
         }
         var count = mvc.perform(get("/notifications/unread-count")).andExpect(status().isUnauthorized()).andReturn();
@@ -78,7 +85,7 @@ class RoleSweepWebTest extends WebTestBase {
     }
 
     @Test
-    @DisplayName("TC-RT-G4 all M1 routes agree with the documented method and path inventory")
+    @DisplayName("TC-RT-G4 the implemented routes match the documented method and path inventory")
     void routeInventory() throws IOException {
         var documented = routes().stream().map(Route::key).collect(Collectors.toSet());
         var interimRoutes = Set.of("GET /citizen/complaints", "GET /citizen/complaints/new", "GET /officer/queue",
@@ -86,6 +93,7 @@ class RoleSweepWebTest extends WebTestBase {
         var actual = mappings.getHandlerMethods().entrySet().stream()
                 .filter(mapping -> mapping.getValue().getBeanType().getPackageName().startsWith("com.smartgrievance"))
                 .flatMap(mapping -> mapping.getKey().getPatternValues().stream()
+                        .flatMap(RoleSweepWebTest::expandAlternatives)
                         .flatMap(path -> mapping.getKey().getMethodsCondition().getMethods().stream()
                                 .map(method -> method.name() + " " + path)))
                 .filter(endpoint -> !interimRoutes.contains(endpoint))
@@ -117,28 +125,50 @@ class RoleSweepWebTest extends WebTestBase {
     }
 
     @Test
-    @DisplayName("TC-SEC-19 only documented M1 role prefixes are exposed")
+    @DisplayName("TC-SEC-19 only documented account and admin role prefixes are exposed")
     void knownPrefixes() throws IOException {
         assertThat(routes().stream().filter(route -> !route.role().equals("PUBLIC")))
-                .allSatisfy(route -> assertThat(route.path()).matches("/(logout|account/[^/]+|verify-mobile(?:/[^/]+)?)"));
+                .allSatisfy(route -> assertThat(route.path()).matches(
+                        "/(logout|account/[^/]+|verify-mobile(?:/[^/]+)?|admin/(departments|categories|areas|officers|citizens)(?:/.*)?)"));
     }
 
     private List<?> entries() {
-        return jdbc.sql("""
-                SELECT id, active, mobile_verified, version, department_id, password_hash
-                FROM app_user ORDER BY id
-                """).query().listOfRows();
+        return Stream.of("app_user", "mobile_otp", "department", "category", "area")
+                .map(table -> jdbc.sql("SELECT * FROM " + table + " ORDER BY id").query().listOfRows())
+                .toList();
     }
 
     private static List<Route> routes() throws IOException {
         String csv = new ClassPathResource("routes.csv").getContentAsString(StandardCharsets.UTF_8);
         return csv.lines().skip(1).map(line -> line.split(",", 6))
-                .filter(row -> Integer.parseInt(row[0].substring(2)) <= 12)
-                .map(row -> new Route(row[1], row[2], row[3]))
+                .filter(row -> {
+                    int id = Integer.parseInt(row[0].substring(2));
+                    return id <= 12 || (id >= 80 && id <= 115);
+                })
+                .map(row -> new Route(row[1], row[2], row[3], row[4]))
                 .toList();
     }
 
-    private record Route(String method, String path, String role) {
+    private static Stream<String> expandAlternatives(String path) {
+        var match = ROUTE_ALTERNATIVES.matcher(path);
+        if (!match.find()) return Stream.of(path);
+        String prefix = path.substring(0, match.start());
+        String suffix = path.substring(match.end());
+        return Stream.of(match.group(1).split("\\|"))
+                .flatMap(option -> expandAlternatives(prefix + option + suffix));
+    }
+
+    private record Route(String method, String path, String role, String variables) {
         String key() { return method + " " + path; }
+
+        String samplePath() {
+            String result = path;
+            for (String entry : variables.split(";")) {
+                if (entry.isEmpty()) continue;
+                String[] parts = entry.split("=", 2);
+                result = result.replace("{" + parts[0] + "}", parts[1]);
+            }
+            return result;
+        }
     }
 }

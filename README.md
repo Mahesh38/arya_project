@@ -13,7 +13,7 @@ cd app
 java -jar target/smart-grievance.jar --spring.profiles.active=dev
 ```
 
-Use `mvnw.cmd` on Windows. Open `http://localhost:8080/` to register or sign in. The development profile seeds the accounts listed in [Appendix A](docs/specs/appendix-a-seed-and-demo-data.md#4-users). The mobile verification page displays the demo OTP when it issues a new code.
+Use `mvnw.cmd` on Windows. Open `http://localhost:8080/` to register or sign in. The development profile seeds the accounts listed in [Appendix A](docs/specs/appendix-a-seed-and-demo-data.md#4-users). The mobile verification page displays the demo OTP when it issues a new code. Administrators use the Master data and Users menus to manage departments, categories, areas, officers, and citizens.
 
 Run `./mvnw verify -Pmysql` against the local MySQL test database. For Playwright, install Node.js and run `npm ci` followed by `npx playwright install chromium` in `app/e2e`. Then run `./mvnw verify -Pe2e -De2e.skip.npm.install=true` from `app`.
 
