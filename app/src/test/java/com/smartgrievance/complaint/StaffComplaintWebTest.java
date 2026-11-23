@@ -10,6 +10,7 @@ import com.smartgrievance.user.Account;
 import com.smartgrievance.user.AccountBootstrap;
 import com.smartgrievance.user.AppUserDetailsService;
 import com.smartgrievance.user.CurrentUser;
+import com.smartgrievance.user.CurrentAccountService;
 import com.smartgrievance.user.Role;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,6 +32,7 @@ class StaffComplaintWebTest extends WebTestBase {
     private static final String ANITA = "anita.deshmukh@example.com";
     @Autowired JdbcClient jdbc;
     @Autowired AppUserDetailsService identities;
+    @Autowired CurrentAccountService accounts;
     @Autowired AccountBootstrap bootstrap;
     @Autowired DemoData users;
     @Autowired ComplaintDemoData complaints;
@@ -127,8 +129,10 @@ class StaffComplaintWebTest extends WebTestBase {
     @Test
     @DisplayName("TC-UC-30c officer without a department sees the specified empty-state error")
     void missingDepartmentCannotReadUnscopedQueue() throws Exception {
-        var malformed = new CurrentUser(new Account(99, "Queue Officer", "queue@example.test", "9000000333", "fixture-hash",
-                Role.OFFICER, null, null, true, true, 0));
+        users.seedUsers();
+        var stored = accounts.find(identities.loadUserByUsername(ANITA).id()).orElseThrow();
+        var malformed = new CurrentUser(new Account(stored.id(), stored.fullName(), stored.email(), stored.mobile(),
+                stored.passwordHash(), Role.OFFICER, null, null, true, true, stored.version()));
         var result = mvc.perform(get(QUEUE).with(user(malformed))).andExpect(status().isOk()).andReturn();
         assertThat(page(result).totalItems()).isZero();
         assertThat(html(result).text("main")).contains("Your account has no department; contact the admin.");
