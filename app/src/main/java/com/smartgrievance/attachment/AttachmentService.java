@@ -1,29 +1,63 @@
 package com.smartgrievance.attachment;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
+import com.smartgrievance.access.ComplaintAccessPolicy;
 import com.smartgrievance.common.exception.NotFoundException;
+import com.smartgrievance.complaint.ComplaintVisibility;
+import com.smartgrievance.user.CurrentUser;
+import com.smartgrievance.user.Role;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class AttachmentService {
+    private static final Logger LOG = LoggerFactory.getLogger(AttachmentService.class);
     private final AttachmentRepository data;
     private final FileStorageService storage;
     private final Clock clock;
+    private final ComplaintVisibility visibility;
 
-    AttachmentService(AttachmentRepository data, FileStorageService storage, Clock clock) {
+    AttachmentService(AttachmentRepository data, FileStorageService storage, Clock clock, ComplaintVisibility visibility) {
         this.data = data;
         this.storage = storage;
         this.clock = clock;
+        this.visibility = visibility;
     }
 
     public List<AttachmentView> active(long complaintId, AttachmentPurpose purpose) {
-        return data.active(complaintId, purpose);
+        return visible(complaintId, purpose, false);
+    }
+
+    public List<AttachmentView> visible(long complaintId, AttachmentPurpose purpose, boolean includeDeleted) {
+        return data.visible(complaintId, purpose, includeDeleted);
+    }
+
+    @Transactional(readOnly = true)
+    public AttachmentContent load(long id, CurrentUser viewer) {
+        var file = data.download(id).orElseThrow(() -> missing(id));
+        var relation = visibility.relation(viewer, file.complaintId(), file.ownerId(), file.departmentId());
+        if (!ComplaintAccessPolicy.canView(relation) || file.deleted() && viewer.role() != Role.ADMIN) {
+            throw missing(id);
+        }
+        try {
+            var path = storage.resolveForRead(file.storedName());
+            return new AttachmentContent(file.name(), file.contentType(), file.size(),
+                    new InputStreamResource(Files.newInputStream(path)));
+        } catch (IOException failure) {
+            LOG.error("ATTACHMENT_UNAVAILABLE id={} complaintId={} reason={}", id, file.complaintId(),
+                    failure.getClass().getSimpleName());
+            throw missing(id);
+        }
     }
 
     @Transactional
@@ -47,7 +81,7 @@ public class AttachmentService {
                 file.image(), file.sizeLabel(), file.purpose(), file.uploadedAt(), true, now)).toList();
     }
 
-    private static NotFoundException missing(long complaintId) {
-        return new NotFoundException("attachment", Long.toString(complaintId), true);
+    private static NotFoundException missing(long id) {
+        return new NotFoundException("attachment", Long.toString(id), true);
     }
 }

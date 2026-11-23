@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head><title th:text="${c.complaintNo}">Complaint detail</title></head>
+<body>
+<nav layout:fragment="breadcrumb" aria-label="Breadcrumb" th:with="role=${#authentication.principal.role().name()}">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a th:if="${role == 'CITIZEN'}" th:href="@{/citizen/complaints}">My Complaints</a>
+            <a th:if="${role == 'OFFICER'}" th:href="@{/officer/queue}">Department Queue</a>
+            <a th:if="${role == 'ADMIN'}" th:href="@{/admin/dashboard}">Dashboard</a></li>
+        <li class="breadcrumb-item active complaint-no" aria-current="page" th:text="${c.complaintNo}"></li>
+    </ol>
+</nav>
+<section layout:fragment="content" th:with="staff=${#authentication.principal.role().name() != 'CITIZEN'}">
+    <header class="mb-3">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <span class="complaint-no fw-semibold" th:text="${c.complaintNo}"></span>
+            <span th:replace="~{fragments/status-badge :: badge(${c.status})}"></span>
+            <span th:if="${staff and c.overdue}" class="badge text-bg-danger">Overdue</span>
+        </div>
+        <h1 class="h3" th:text="${c.title}"></h1>
+        <div class="text-body-secondary small" th:text="|${c.categoryName} · ${c.areaName} · Filed ${@fmt.dateTime(c.createdAt)}| "></div>
+        <div th:if="${c.updatedAt != c.createdAt}" class="small text-body-secondary"
+             th:text="|Updated ${@fmt.dateTime(c.updatedAt)}|"></div>
+        <p th:if="${staff and c.ownerName != null}" class="small text-body-secondary mb-0" th:text="|Filed by ${c.ownerName}|"></p>
+        <p th:if="${staff and c.linkedDuplicateCount > 0}" class="small text-body-secondary mb-0"
+           th:text="|${c.linkedDuplicateCount} duplicates linked|"></p>
+    </header>
+    <aside th:if="${c.duplicateOf != null}" class="alert alert-info">
+        This complaint is linked to <a class="alert-link complaint-no" th:href="@{/complaints/{no}(no=${c.duplicateOf.complaintNo})}"
+                                     th:text="${c.duplicateOf.complaintNo}"></a>
+        <span th:text="${c.duplicateOf.title}"></span>, which is already being handled. Updates are posted there.
+    </aside>
+    <aside th:if="${c.isResolved() and c.reviewDeadline != null}" class="alert alert-info"
+           th:with="deadline=${@fmt.date(c.reviewDeadline.toLocalDate())}, resolved=${@fmt.date(c.resolvedAt.toLocalDate())}">
+        <span th:if="${staff}" th:text="|Awaiting citizen review until ${deadline}.|"></span>
+        <th:block th:if="${c.can('CLOSE') or c.can('REOPEN')}">
+            <strong th:text="|Please review the resolution by ${deadline}.|"></strong>
+            <span th:text="|${c.departmentName} marked this complaint resolved on ${resolved}. If you do nothing, it will close automatically on ${deadline}.|"></span>
+            <span th:if="${c.can('REOPEN')}" th:text="|You can reopen this complaint ${c.maxReopens - c.reopenCount} more time(s).|"></span>
+        </th:block>
+        <span th:if="${!staff and c.viewerRelation.name() != 'OWNER'}"
+              th:text="|Resolved on ${resolved}. The person who filed it has until ${deadline} to review it.|"></span>
+        <span th:if="${c.viewerRelation.name() == 'OWNER' and !c.can('CLOSE') and !c.can('REOPEN')}"
+              th:text="|Resolved on ${resolved}.|"></span>
+    </aside>
+    <aside th:if="${c.viewerRelation.name() == 'WATCHER' or c.can('UNWATCH')}" class="alert alert-info">
+        You are watching this complaint. You get its updates, but only the person who filed it can close or reopen it.
+    </aside>
+    <aside th:if="${c.can('WATCH')}" class="alert alert-info">You stopped watching this complaint. Watch again to get its updates.</aside>
+    <aside th:if="${c.isFinal() and c.duplicateOf == null}" class="alert alert-secondary">
+        <th:block th:if="${!c.timeline.isEmpty()}" th:with="last=${c.timeline.getLast()},
+                  label=${last.type.name() == 'AUTO_CLOSED' ? 'Closed automatically' : c.status.label}">
+            <span class="fw-semibold" th:text="|${label} on ${@fmt.dateTime(last.createdAt)}|"></span><span th:if="${last.remark != null}" th:text="|: ${last.remark}|"></span>.
+        </th:block>
+        <div>This complaint is finished.</div>
+    </aside>
+    <div th:replace="~{fragments/complaint-actions :: bar(${actionLinks}, ${c.complaintNo}, ${c.version})}"></div>
+    <ul th:unless="${c.notices.isEmpty()}" class="small text-body-secondary">
+        <li th:each="notice : ${c.notices}" th:text="${notice}"></li>
+    </ul>
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <section class="card mb-3"><div class="card-body">
+                <h2 class="h5">Details</h2>
+                <p class="pre-line" th:text="${c.description}"></p>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Address</dt><dd class="col-sm-8" th:text="${c.address}"></dd>
+                    <dt class="col-sm-4">Area</dt><dd class="col-sm-8" th:text="${c.areaName}"></dd>
+                    <dt class="col-sm-4">Category</dt><dd class="col-sm-8" th:text="${c.categoryName}"></dd>
+                    <dt class="col-sm-4">Department</dt><dd class="col-sm-8" th:text="${c.departmentName ?: 'Not assigned yet'}"></dd>
+                </dl>
+            </div></section>
+            <section class="card mb-3" aria-labelledby="complaint-attachments"><div class="card-body">
+                <h2 class="h5" id="complaint-attachments">Attachments</h2>
+                <p th:if="${c.attachments.isEmpty()}" class="text-body-secondary mb-0">No attachments</p>
+                <div th:replace="~{fragments/attachments :: downloadList(${c.attachments})}"></div>
+                <th:block th:unless="${c.resolutionAttachments.isEmpty()}">
+                    <h3 class="h6 mt-3">Work done</h3>
+                    <div th:replace="~{fragments/attachments :: downloadList(${c.resolutionAttachments})}"></div>
+                </th:block>
+            </div></section>
+            <section class="card"><div class="card-body">
+                <h2 class="h5">History</h2>
+                <ol th:replace="~{fragments/timeline :: timelineEntries(${c.timeline})}"></ol>
+            </div></section>
+        </div>
+        <aside class="col-lg-4">
+            <section class="card"><div class="card-body">
+                <h2 class="h5" th:text="${staff ? 'Service level' : 'About this page'}"></h2>
+                <p th:unless="${staff}" class="mb-0">The Grievance Cell and the department handling it can see this complaint. Citizens who reported the same problem may follow its updates without seeing the complainant’s name.</p>
+                <p th:if="${staff and c.dueAt != null}" class="mb-0" th:text="|Due ${@fmt.date(c.dueAt.toLocalDate())}|"></p>
+                <p th:if="${staff and c.overdue}" class="mb-0" th:text="|${c.daysOverdue} days overdue|"></p>
+            </div></section>
+        </aside>
+    </div>
+</section>
+</body>
+</html>

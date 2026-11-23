@@ -78,6 +78,29 @@ class FoundationScanTest {
         });
     }
 
+    @Test
+    @DisplayName("TC-BR-25 complaint events and revisions are insert-only")
+    void complaintHistoryIsAppendOnly() throws IOException {
+        var write = Pattern.compile("(?i)\\b(?:update|delete\\s+from)\\s+complaint_(?:event|revision)\\b");
+        for (Path source : sources(JAVA, ".java")) {
+            assertThat(Files.readString(source)).as(source.toString()).doesNotContainPattern(write);
+        }
+        for (Path source : sources(APP.resolve("resources"), ".sql")) {
+            assertThat(Files.readString(source)).as(source.toString()).doesNotContainPattern(write);
+        }
+    }
+
+    @Test
+    @DisplayName("TC-SCAN-02 complaint action controls use the server-provided links")
+    void complaintActionsUsePolicyResults() throws IOException {
+        var actions = Files.readString(TEMPLATES.resolve("fragments/complaint-actions.html"));
+        assertThat(actions).contains("${actionLinks}").doesNotContain("c.status", "sec:authorize", "#authentication");
+        var detail = Jsoup.parse(Files.readString(TEMPLATES.resolve("complaint/detail.html")));
+        assertThat(detail.select("button, form")).isEmpty();
+        assertThat(detail.select("[th:replace]").stream().map(element -> element.attr("th:replace")))
+                .anyMatch(fragment -> fragment.contains("complaint-actions :: bar(${actionLinks}"));
+    }
+
     private static double luminance(String rgb) {
         return 0.2126 * channel(rgb.substring(0, 2))
                 + 0.7152 * channel(rgb.substring(2, 4)) + 0.0722 * channel(rgb.substring(4, 6));

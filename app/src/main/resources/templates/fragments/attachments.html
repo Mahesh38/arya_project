@@ -39,11 +39,20 @@
          th:text="|You can add ${maxFiles - activeCount} more.|"></div>
     <ul class="small list-unstyled mt-2 mb-0 js-only" data-upload-summary aria-live="polite"></ul>
 </div>
-<ul th:fragment="names(items)" th:unless="${items.isEmpty()}" class="list-unstyled">
-    <li th:each="file : ${items}" class="py-1">
-        <i class="bi" th:classappend="${file.image ? 'bi-image' : 'bi-file-earmark-pdf'}" aria-hidden="true"></i>
-        <span th:text="${file.originalName}"></span>
-        <small class="text-body-secondary" th:text="${file.sizeLabel}"></small>
+<ul th:fragment="downloadList(items)" th:unless="${items.isEmpty()}" class="list-unstyled d-flex flex-wrap gap-3 mb-0">
+    <li th:each="file : ${items}" class="attachment-card border rounded p-2" th:classappend="${file.deleted ? 'bg-light' : null}">
+        <a th:href="@{/attachments/{id}(id=${file.id})}" class="d-block">
+            <img th:if="${file.image}" class="attachment-thumbnail rounded d-block mb-2" loading="lazy" alt=""
+                 th:src="@{/attachments/{id}(id=${file.id})}">
+            <i th:unless="${file.image}" class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+            <span th:text="${file.originalName}"></span>
+        </a>
+        <div class="small d-flex gap-2 flex-wrap">
+            <span class="text-body-secondary" th:text="${file.sizeLabel}"></span>
+            <a th:href="@{/attachments/{id}(id=${file.id},download=true)}"
+               th:attr="aria-label=|Download ${file.originalName}|">Download</a>
+        </div>
+        <small th:if="${file.deleted}" class="text-body-secondary" th:text="|Removed on ${@fmt.date(file.deletedAt.toLocalDate())}|"></small>
     </li>
 </ul>
 </body>

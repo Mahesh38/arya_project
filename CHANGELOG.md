@@ -4,6 +4,7 @@
 
 ### Added
 
+- Complaint tracking lists, role-scoped detail and history, and private attachment downloads.
 - Verified citizens can submit, edit, and withdraw complaints with content-validated attachments and a unique complaint number.
 - Administration for departments, categories, areas, officers, and citizens, including account activation, password reset, and manual mobile verification.
 - Citizen registration, role-based sign-in and sign-out, and password changes.
