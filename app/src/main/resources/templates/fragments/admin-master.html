@@ -20,7 +20,7 @@
     <p th:if="${page.items.isEmpty()}" th:text="${filter.active == null
             ? 'No ' + title.toLowerCase() + ' yet.' : 'No ' + title.toLowerCase() + ' match the filter.'}"></p>
     <div class="table-responsive" th:unless="${page.items.isEmpty()}">
-        <table class="table table-hover align-middle">
+        <table class="table table-hover align-middle table-stack">
             <caption class="visually-hidden" th:text="${title}"></caption>
             <thead><tr>
                 <th scope="col">Name</th>
@@ -31,16 +31,16 @@
             </tr></thead>
             <tbody><tr th:each="row : ${page.items}" th:with="itemUrl=${base + '/' + row.id}">
                 <th scope="row" th:text="${row.name}"></th>
-                <td th:if="${kind == 'category'}">
+                <td th:if="${kind == 'category'}" data-label="Default department">
                     <span th:text="${row.defaultDepartmentName ?: 'Admin decides'}"></span>
                     <span class="badge text-bg-warning"
                           th:if="${row.defaultDepartmentName != null and !row.defaultDepartmentActive}">Inactive</span>
                 </td>
-                <td th:unless="${kind == 'category'}" th:text="${row.description ?: '—'}"></td>
-                <td th:if="${kind == 'category'}" th:text="${row.slaDays}"></td>
-                <td><span th:replace="~{fragments/admin-controls :: status(${row.active})}"></span></td>
-                <td class="text-nowrap">
-                    <div class="d-flex gap-2">
+                <td th:unless="${kind == 'category'}" th:attr="data-label=${kind == 'area' ? 'Ward office' : 'Description'}" th:text="${row.description ?: '—'}"></td>
+                <td th:if="${kind == 'category'}" data-label="SLA days" th:text="${row.slaDays}"></td>
+                <td data-label="Status"><span th:replace="~{fragments/admin-controls :: status(${row.active})}"></span></td>
+                <td class="text-nowrap table-stack-actions">
+                    <div class="d-flex flex-wrap gap-2">
                         <a class="btn btn-sm btn-outline-secondary" th:href="@{${itemUrl + '/edit'}}">
                             <i class="bi bi-pencil" aria-hidden="true"></i> Edit
                         </a>

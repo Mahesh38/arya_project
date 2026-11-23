@@ -52,10 +52,10 @@
                 </div>
                 <p class="card-body pt-0 mb-0 text-body-secondary" th:if="${dash.overdue.isEmpty()}">No overdue complaints.</p>
                 <div class="table-responsive" th:unless="${dash.overdue.isEmpty()}">
-                    <table class="table table-sm mb-0 table-complaints">
+                    <table class="table table-sm mb-0 table-complaints table-stack">
                         <thead class="table-light"><tr>
                             <th scope="col">Complaint</th>
-                            <th scope="col" class="d-none d-sm-table-cell">Department</th>
+                            <th scope="col">Department</th>
                             <th scope="col">Status</th>
                             <th scope="col" class="text-end"><abbr title="Days since submission / SLA days">Days / SLA</abbr></th>
                         </tr></thead>
@@ -63,11 +63,11 @@
                         <tr th:each="item : ${dash.overdue}">
                             <td><a class="complaint-no" th:href="@{/complaints/{no}(no=${item.complaintNo})}" th:text="${item.complaintNo}">GRV</a>
                                 <div class="small text-body-secondary" th:text="${item.title}">Title</div></td>
-                            <td class="d-none d-sm-table-cell">
+                            <td data-label="Department">
                                 <span th:if="${item.departmentName != null}" th:text="${item.departmentName}">Department</span>
                                 <em th:unless="${item.departmentName != null}">Not assigned</em></td>
-                            <td><span th:replace="~{fragments/status-badge :: badge(${item.status})}"></span></td>
-                            <td class="text-end"><span class="badge-status badge-overdue"
+                            <td data-label="Status"><span th:replace="~{fragments/status-badge :: badge(${item.status})}"></span></td>
+                            <td class="text-end" data-label="Days / SLA"><span class="badge-status badge-overdue"
                                     th:text="|${item.daysElapsed} / ${item.slaDays}|"
                                     th:title="|${item.daysOverdue} days overdue|">0 / 0</span></td>
                         </tr>

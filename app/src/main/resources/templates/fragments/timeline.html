@@ -43,19 +43,20 @@
         <small th:if="${iteration.last and next == 'RESOLVED' and c.reviewDeadline != null}" class="text-body-secondary"
                th:text="|Review by ${@fmt.date(c.reviewDeadline.toLocalDate())}|"></small>
         <ul th:unless="${event.changes.isEmpty()}" class="mb-0 mt-1">
-            <li th:each="change : ${event.changes}" th:switch="${change.field}">
-                <div th:case="'description'">
+            <!-- th:if, not th:switch: a switch on the same element as th:each left every item empty (FR-17) -->
+            <li th:each="change : ${event.changes}">
+                <div th:if="${change.field == 'description'}">
                     <span>Description changed</span>
                     <details><summary>Show old and new text</summary>
                         <p class="pre-line" th:text="${change.oldValue}"></p>
                         <p class="pre-line" th:text="${change.newValue}"></p>
                     </details>
                 </div>
-                <div th:case="'attachment'">
+                <div th:if="${change.field == 'attachment'}">
                     <th:block th:if="${change.newValue == null}">Attachment removed <del th:text="${change.oldValue}"></del></th:block>
                     <th:block th:if="${change.oldValue == null}">Attachment added <ins th:text="${change.newValue}"></ins></th:block>
                 </div>
-                <div th:case="'*'">
+                <div th:unless="${change.field == 'description' or change.field == 'attachment'}">
                     <span th:text="|${#strings.capitalize(change.field)} changed from|"></span>
                     <del th:text="${change.oldValue}"></del> to <ins th:text="${change.newValue}"></ins>
                 </div>

@@ -41,7 +41,7 @@
     <p th:replace="~{fragments/admin-controls :: count(${page})}"></p>
     <p th:if="${page.items.isEmpty()}" th:text="${'No ' + title.toLowerCase() + ' match the current filters.'}"></p>
     <div class="table-responsive" th:unless="${page.items.isEmpty()}">
-        <table class="table table-hover align-middle">
+        <table class="table table-hover align-middle table-stack">
             <caption class="visually-hidden" th:text="${title}"></caption>
             <thead><tr>
                 <th scope="col">Name</th>
@@ -54,18 +54,18 @@
             <tbody>
             <tr th:each="row : ${page.items}" th:with="itemUrl=${base + '/' + row.id}">
                 <th scope="row" th:text="${row.fullName}"></th>
-                <td th:text="${row.email}"></td>
-                <td>
+                <td data-label="Email" class="text-break" th:text="${row.email}"></td>
+                <td data-label="Mobile">
                     <span th:text="${row.mobile}"></span>
                     <span th:if="${!staff and !row.mobileVerified}" class="badge text-bg-warning">
                         <i class="bi bi-phone" aria-hidden="true"></i> Not verified
                     </span>
                 </td>
-                <td th:if="${staff}" th:text="${row.departmentName ?: '—'}"></td>
-                <td th:unless="${staff}" th:text="${@fmt.date(row.createdAt.toLocalDate())}"></td>
-                <td><span th:replace="~{fragments/admin-controls :: status(${row.active})}"></span></td>
-                <td class="text-nowrap">
-                    <div class="d-flex gap-2">
+                <td th:if="${staff}" data-label="Department" th:text="${row.departmentName ?: '—'}"></td>
+                <td th:unless="${staff}" data-label="Registered" th:text="${@fmt.date(row.createdAt.toLocalDate())}"></td>
+                <td data-label="Status"><span th:replace="~{fragments/admin-controls :: status(${row.active})}"></span></td>
+                <td class="text-nowrap table-stack-actions">
+                    <div class="d-flex flex-wrap gap-2">
                         <a th:if="${staff}" class="btn btn-sm btn-outline-secondary" th:href="@{${itemUrl + '/edit'}}">
                             <i class="bi bi-pencil" aria-hidden="true"></i> Edit
                         </a>

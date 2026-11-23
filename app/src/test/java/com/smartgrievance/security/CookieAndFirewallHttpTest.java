@@ -79,6 +79,18 @@ class CookieAndFirewallHttpTest extends HttpTestBase {
     }
 
     @Test
+    @DisplayName("TC-SEC-33 encoded slashes, encoded dot segments and double slashes get the application's 400 page")
+    void suspiciousPathsGetTheApplicationPage() throws Exception {
+        for (String path : new String[] {"/complaints/a%2fb", "/complaints/a%2Fb", "/complaints/%2e%2e/admin/dashboard",
+                "/admin//dashboard"}) {
+            var response = http.get(path);
+            assertThat(response.statusCode()).as(path).isEqualTo(400);
+            assertThat(Html.of(response.body()).text("h1")).as(path).isEqualTo("Request not accepted");
+            assertThat(response.body()).as(path).doesNotContain("Apache Tomcat", "HTTP Status 400");
+        }
+    }
+
+    @Test
     @DisplayName("TC-VE-18 a multipart body above the configured limit is rejected")
     void multipartLimit() throws Exception {
         var request = http.multipart("/login", java.util.Map.of(), "sample.txt", "text/plain",

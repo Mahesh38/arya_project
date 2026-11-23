@@ -100,3 +100,8 @@ Target: under 2,000 ms (NFR-10). Repeat `./mvnw verify -Pmysql` on the reference
 ## Open defects
 
 None known.
+
+## Re-validation after the validation fixes (23-Nov-2026)
+
+The independent validation (`docs/validation/validation-report.md`) found three defects (V-1 timeline revisions, V-2 encoded-slash 400 page, V-3 admin tables on phones); all were fixed with regression checks. Re-run afterwards: `./mvnw clean verify -Pmysql` **1,403 H2 + 117 MySQL tests**, 0 failed, coverage gates met; `-Pe2e` **81 passed**, 15 skipped, 0 failed; walkthrough **94/94**.
+

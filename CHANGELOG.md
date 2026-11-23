@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- The complaint timeline now lists every edited field with its old and new value; the edit entry was empty before (FR-17).
+- An encoded slash in the URL now gets the application's own 400 page instead of the server's plain one.
+- Admin lists (officers, citizens, departments, categories, areas) and the dashboard's overdue list stack as labelled cards on phones, so every column and action button stays on screen.
+
+### Added
+
+- Independent validation: an end-to-end walkthrough of all 30 use cases, the error pages and every screen at 360 and 1280 px against the demo data on MySQL, with its report and screenshots in `docs/validation/`.
+
 ## [1.0.0] — 23-Nov-2026 (M9)
 
 ### Added
