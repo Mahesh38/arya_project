@@ -20,7 +20,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(verifiedCitizen).addPathPatterns("/citizen/complaints/new");
+        registry.addInterceptor(verifiedCitizen).addPathPatterns("/citizen/complaints/new", "/citizen/complaints");
     }
 
     @Bean

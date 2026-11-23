@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head><title>Complaint registered</title></head>
+<body>
+<nav layout:fragment="breadcrumb" aria-label="Breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a th:href="@{/citizen/complaints}">My Complaints</a></li>
+        <li class="breadcrumb-item active" aria-current="page">New complaint</li>
+    </ol>
+</nav>
+<section layout:fragment="content" class="card complaint-confirmation mx-auto">
+    <div class="card-body p-4 text-center">
+        <i class="bi bi-check-circle-fill text-success display-5" aria-hidden="true"></i>
+        <h1 class="h3 mt-3">Your complaint has been registered</h1>
+        <p class="small text-body-secondary mb-1">Complaint number</p>
+        <p class="complaint-no fs-3 font-monospace fw-semibold mb-3" th:text="${complaint.complaintNo}"></p>
+        <p class="fw-semibold mb-1" th:text="${complaint.title}"></p>
+        <div class="d-flex justify-content-center mb-3">
+            <div th:replace="~{fragments/complaint-summary :: meta(${complaint})}"></div>
+        </div>
+        <p>Note this number. You will get a notification each time the status changes.</p>
+        <div class="d-flex justify-content-center flex-wrap gap-2">
+            <a class="btn btn-primary" th:href="@{/complaints/{no}(no=${complaint.complaintNo})}">
+                <i class="bi bi-eye" aria-hidden="true"></i> View complaint
+            </a>
+            <a class="btn btn-outline-secondary" th:href="@{/citizen/complaints}">
+                <i class="bi bi-list-ul" aria-hidden="true"></i> My Complaints
+            </a>
+        </div>
+    </div>
+</section>
+</body>
+</html>

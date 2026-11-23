@@ -63,7 +63,7 @@
         <p class="small text-body-secondary">* required</p>
         <div th:replace="~{fragments/form :: accountField('name', 'Name', 'text', 'The name must be unique.', true, null, 100, null)}"></div>
         <th:block th:if="${kind == 'category'}">
-            <div th:replace="~{fragments/form :: select('defaultDepartmentId', 'Default department', ${departments}, 'Admin decides', false)}"></div>
+            <div th:replace="~{fragments/form :: lookupSelect('defaultDepartmentId', 'Default department', ${departments}, 'Admin decides', false)}"></div>
             <div th:replace="~{fragments/form :: accountField('slaDays', 'SLA days', 'number', '1–90 days before a complaint is overdue', true, null, null, null)}"></div>
         </th:block>
         <th:block th:unless="${kind == 'category'}">

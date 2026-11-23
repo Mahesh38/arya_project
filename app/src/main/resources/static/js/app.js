@@ -55,9 +55,93 @@ if (warning) {
     restartWarning();
 }
 
+for (const picker of document.querySelectorAll('[data-upload-limit]')) {
+    const input = picker.querySelector('input[type="file"]');
+    const form = input.form;
+    const maxFiles = Number(picker.dataset.uploadLimit);
+    const maxSizeMiB = Number(picker.dataset.uploadSizeMib);
+    const existing = Number(picker.dataset.uploadExisting);
+    const maxBytes = maxSizeMiB * 1024 * 1024;
+    const summary = picker.querySelector('[data-upload-summary]');
+    const slotsLabel = picker.querySelector('[data-upload-slots]');
+
+    const updateFiles = () => {
+        const removed = form.querySelectorAll('[data-remove-upload]:checked').length;
+        const slots = Math.max(0, maxFiles - existing + removed);
+        const problems = [];
+        summary.replaceChildren();
+        if (slotsLabel) {
+            slotsLabel.textContent = `You can add ${slots} more.`;
+        }
+        if (input.files.length > slots) {
+            const item = document.createElement('li');
+            const message = `You can add at most ${slots} files. You selected ${input.files.length}.`;
+            item.className = 'text-danger';
+            item.textContent = message;
+            summary.append(item);
+            problems.push(message);
+        }
+        for (const file of input.files) {
+            const item = document.createElement('li');
+            const size = file.size >= 1024 * 1024
+                ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+                : `${Math.max(1, Math.round(file.size / 1024))} KB`;
+            let error = '';
+            if (file.size > maxBytes) {
+                error = `larger than ${maxSizeMiB} MB`;
+            } else if (!/\.(?:jpe?g|png|pdf)$/i.test(file.name)) {
+                error = 'only JPG, PNG or PDF files are allowed';
+            }
+            item.textContent = `${file.name} · ${size}${error ? ' · ' + error : ' · ✓'}`;
+            if (error) {
+                item.className = 'text-danger';
+                problems.push(`${file.name}: ${error}`);
+            }
+            summary.append(item);
+        }
+        input.setCustomValidity(problems[0] ?? '');
+    };
+
+    input.addEventListener('change', updateFiles);
+    for (const checkbox of form.querySelectorAll('[data-remove-upload]')) {
+        checkbox.addEventListener('change', updateFiles);
+    }
+    updateFiles();
+}
+
 document.addEventListener('submit', event => {
-    const confirmation = event.target.dataset.confirm;
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    const confirmation = form.dataset.confirm;
     if (confirmation && !window.confirm(confirmation)) {
         event.preventDefault();
+        return;
+    }
+    if (event.defaultPrevented || !form.dataset.submitText) return;
+    if (form.classList.contains('is-submitting')) {
+        event.preventDefault();
+        return;
+    }
+    form.classList.add('is-submitting');
+    if (event.submitter instanceof HTMLButtonElement) {
+        const button = event.submitter;
+        const label = button.querySelector('[data-submit-label]');
+        if (label) {
+            button.dataset.savedLabel = label.textContent;
+            label.textContent = form.dataset.submitText;
+        }
+        button.disabled = true;
+    }
+});
+
+window.addEventListener('pageshow', event => {
+    if (!event.persisted) return;
+    for (const form of document.querySelectorAll('form.is-submitting')) {
+        form.classList.remove('is-submitting');
+        for (const button of form.querySelectorAll('[data-saved-label]')) {
+            button.querySelector('[data-submit-label]').textContent = button.dataset.savedLabel;
+            delete button.dataset.savedLabel;
+            button.disabled = false;
+        }
     }
 });

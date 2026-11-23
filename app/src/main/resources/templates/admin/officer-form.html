@@ -25,7 +25,7 @@
             <div th:replace="~{fragments/form :: accountField('email', 'Email', 'email', null, true, 'email', 254, null)}"></div>
         </th:block>
         <div th:replace="~{fragments/form :: accountField('mobile', 'Mobile number', 'tel', '10 digits, starting with 6–9', true, 'tel-national', null, 'numeric')}"></div>
-        <div th:replace="~{fragments/form :: select('departmentId', 'Department', ${departments}, 'Select a department', true)}"></div>
+        <div th:replace="~{fragments/form :: lookupSelect('departmentId', 'Department', ${departments}, 'Select a department', true)}"></div>
         <th:block th:unless="${editing}">
             <div th:replace="~{fragments/form :: password('password', 'Initial password', 'At least 8 characters with a letter and a digit', 'new-password')}"></div>
             <div th:replace="~{fragments/form :: password('confirmPassword', 'Confirm password', null, 'new-password')}"></div>

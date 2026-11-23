@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="meta(complaint)" class="d-flex align-items-center flex-wrap gap-2">
+    <span th:text="${complaint.categoryName}"></span>
+    <span aria-hidden="true">·</span>
+    <span th:text="${complaint.areaName}"></span>
+    <th:block th:if="${complaint.departmentName != null}">
+        <span aria-hidden="true">·</span>
+        <span th:text="${complaint.departmentName}"></span>
+    </th:block>
+    <span th:replace="~{fragments/status-badge :: badge(${complaint.status})}"></span>
+</div>
+<div th:fragment="box(complaint)" class="border rounded p-3 mb-3">
+    <p class="complaint-no font-monospace fw-semibold mb-1" th:text="${complaint.complaintNo}"></p>
+    <p class="fw-semibold mb-1" th:text="${complaint.title}"></p>
+    <div th:replace="~{:: meta(${complaint})}"></div>
+</div>
+</body>
+</html>
