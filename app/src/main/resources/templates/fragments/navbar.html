@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<a th:fragment="home" class="navbar-brand" th:href="@{${homeUrl ?: '/'}}">
+    <i class="bi bi-megaphone-fill" aria-hidden="true"></i> Smart Grievance
+</a>
+<form th:fragment="logout" method="post" th:action="@{/logout}">
+    <button type="submit" class="btn btn-outline-light btn-sm">Log out</button>
+</form>
+<nav th:fragment="brand(showLogout)" class="navbar navbar-dark bg-dark" aria-label="Main">
+    <div class="container-lg">
+        <a th:replace="~{:: home}"></a>
+        <div class="d-flex gap-3 align-items-center text-light" th:if="${currentUser != null}">
+            <span th:text="${currentUser.fullName}"></span>
+            <th:block th:if="${showLogout}"><form th:replace="~{:: logout}"></form></th:block>
+        </div>
+    </div>
+</nav>
+<li th:fragment="navItem(url, label, menu)" class="nav-item">
+    <a class="nav-link" th:href="@{${url}}" th:text="${label}"
+       th:classappend="${activeMenu == menu ? 'active' : null}"
+       th:attr="aria-current=${activeMenu == menu ? 'page' : null}"></a>
+</li>
+<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark" aria-label="Main">
+    <div class="container-lg">
+        <a th:replace="~{:: home}"></a>
+        <div class="d-flex align-items-center gap-2 order-lg-last">
+            <a class="nav-link text-light" th:href="@{/notifications}"
+               th:attr="aria-label=${unreadCount != null and unreadCount > 0 ? 'Notifications, ' + unreadCount + ' unread' : 'Notifications, no unread'},
+                        aria-current=${activeMenu == 'notifications' ? 'page' : null}">
+                <i class="bi bi-bell-fill" aria-hidden="true"></i>
+                <span id="bell-count" class="badge rounded-pill text-bg-danger" aria-hidden="true"
+                      th:hidden="${unreadCount == null or unreadCount == 0}"
+                      th:text="${unreadCount != null and unreadCount > 99 ? '99+' : unreadCount}"></span>
+            </a>
+            <button class="navbar-toggler js-only" type="button" data-bs-toggle="collapse" data-bs-target="#main-menu"
+                    aria-controls="main-menu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+        <div class="collapse navbar-collapse" id="main-menu">
+            <ul class="navbar-nav me-auto">
+                <th:block sec:authorize="hasRole('CITIZEN')">
+                    <li th:replace="~{:: navItem('/citizen/complaints', 'My Complaints', 'my')}"></li>
+                    <li th:replace="~{:: navItem('/citizen/watching', 'Watching', 'watching')}"></li>
+                    <li th:replace="~{:: navItem('/citizen/complaints/new', '+ New Complaint', 'new')}"></li>
+                </th:block>
+                <th:block sec:authorize="hasRole('OFFICER')">
+                    <li th:replace="~{:: navItem('/officer/queue', 'Department Queue', 'queue')}"></li>
+                </th:block>
+                <th:block sec:authorize="hasRole('ADMIN')">
+                    <li th:replace="~{:: navItem('/admin/dashboard', 'Dashboard', 'dashboard')}"></li>
+                    <li th:replace="~{:: navItem('/admin/complaints', 'All Complaints', 'complaints')}"></li>
+                    <li class="nav-item dropdown">
+                        <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                                aria-expanded="false" th:classappend="${activeMenu == 'masterdata' ? 'active' : null}"
+                                th:attr="aria-current=${activeMenu == 'masterdata' ? 'page' : null}">Master data</button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" th:href="@{/admin/departments}">Departments</a></li>
+                            <li><a class="dropdown-item" th:href="@{/admin/categories}">Categories</a></li>
+                            <li><a class="dropdown-item" th:href="@{/admin/areas}">Areas</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                                aria-expanded="false" th:classappend="${activeMenu == 'users' ? 'active' : null}"
+                                th:attr="aria-current=${activeMenu == 'users' ? 'page' : null}">Users</button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" th:href="@{/admin/officers}">Officers</a></li>
+                            <li><a class="dropdown-item" th:href="@{/admin/citizens}">Citizens</a></li>
+                        </ul>
+                    </li>
+                </th:block>
+            </ul>
+            <div class="dropdown" th:if="${currentUser != null}">
+                <button type="button" class="btn btn-dark dropdown-toggle" data-bs-toggle="dropdown"
+                        aria-expanded="false" th:text="${currentUser.departmentName == null ? currentUser.fullName : currentUser.fullName + ' · ' + currentUser.departmentName}"></button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li sec:authorize="hasRole('CITIZEN')" th:if="${!currentUser.mobileVerified}">
+                        <a class="dropdown-item" th:href="@{/verify-mobile}">Verify mobile</a>
+                    </li>
+                    <li><a class="dropdown-item" th:href="@{/account/password}">Change password</a></li>
+                    <li><form method="post" th:action="@{/logout}">
+                        <button type="submit" class="dropdown-item">Log out</button>
+                    </form></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</nav>
+</body>
+</html>

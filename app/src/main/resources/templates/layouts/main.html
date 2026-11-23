@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <th:block th:replace="~{fragments/shell :: assets}"></th:block>
+    <title layout:title-pattern="$CONTENT_TITLE · $LAYOUT_TITLE">Smart Grievance</title>
+    <th:block layout:fragment="head"></th:block>
+</head>
+<body class="d-flex flex-column min-vh-100" th:attr="data-session-timeout=${currentUser != null ? 1800 : null}">
+<a th:replace="~{fragments/shell :: skipLink}"></a>
+<nav th:replace="~{fragments/navbar :: navbar}"></nav>
+<div th:replace="~{fragments/alerts :: verifyBanner}"></div>
+<main id="main" class="container-lg py-3" tabindex="-1">
+    <th:block layout:fragment="breadcrumb"></th:block>
+    <th:block th:replace="~{fragments/alerts :: flash}"></th:block>
+    <th:block layout:fragment="content"></th:block>
+</main>
+<footer th:replace="~{fragments/shell :: footer}"></footer>
+<th:block th:replace="~{fragments/shell :: scripts}"></th:block>
+<th:block layout:fragment="scripts"></th:block>
+</body>
+</html>
