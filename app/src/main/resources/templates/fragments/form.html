@@ -19,20 +19,23 @@
     <div th:if="${#fields.hasErrors(field)}" class="invalid-feedback d-block" th:id="${field + '-error'}"
          th:errors="*{__${field}__}"></div>
 </th:block>
-<div class="mb-3" th:fragment="text(field, label, type, help, required)">
+<th:block th:fragment="text(field, label, type, help, required)">
+    <div th:replace="~{:: accountField(${field}, ${label}, ${type}, ${help}, ${required}, null, null, null)}"></div>
+</th:block>
+<div class="mb-3" th:fragment="accountField(field, label, type, help, required, autocomplete, max, inputMode)">
     <label class="form-label" th:for="${field}">
         <span th:text="${label}"></span><span th:if="${required}" aria-hidden="true"> *</span>
     </label>
     <input class="form-control" th:type="${type}" th:field="*{__${field}__}"
-           th:required="${required}" th:errorclass="is-invalid"
-           th:attr="aria-invalid=${#fields.hasErrors(field) ? 'true' : null},
+           th:required="${required}" th:errorclass="is-invalid" th:maxlength="${max}"
+           th:attr="autocomplete=${autocomplete}, inputmode=${inputMode}, aria-invalid=${#fields.hasErrors(field) ? 'true' : null},
                     aria-describedby=${help != null and !help.isEmpty() ? field + '-help' + (#fields.hasErrors(field) ? ' ' + field + '-error' : '') : (#fields.hasErrors(field) ? field + '-error' : null)}">
     <th:block th:replace="~{:: helpText(${field}, ${help})}"></th:block>
 </div>
 <div class="mb-3" th:fragment="password(field, label, help, autocomplete)">
     <label class="form-label" th:for="${field}"><span th:text="${label}"></span> <span aria-hidden="true">*</span></label>
-    <input type="password" class="form-control" th:id="${field}" th:name="${field}" th:autocomplete="${autocomplete}"
-           required th:classappend="${#fields.hasErrors(field) ? 'is-invalid' : null}"
+    <input type="password" class="form-control" th:field="*{__${field}__}" th:autocomplete="${autocomplete}"
+           required th:maxlength="${autocomplete == 'new-password' ? 128 : null}" th:errorclass="is-invalid"
            th:attr="aria-invalid=${#fields.hasErrors(field) ? 'true' : null},
                     aria-describedby=${help != null and !help.isEmpty() ? field + '-help' + (#fields.hasErrors(field) ? ' ' + field + '-error' : '') : (#fields.hasErrors(field) ? field + '-error' : null)}">
     <th:block th:replace="~{:: helpText(${field}, ${help})}"></th:block>

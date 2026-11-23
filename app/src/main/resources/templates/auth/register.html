@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/public}">
+<head>
+    <title th:text="${#fields.hasErrors('${form.*}') ? #messages.msg('form.errors.pageTitle', 'Create a citizen account') : 'Create a citizen account'}">Create a citizen account</title>
+</head>
+<body>
+<div class="card-body p-4" layout:fragment="content">
+    <h1 class="h3 mb-3">Create a citizen account</h1>
+    <form method="post" th:action="@{/register}" th:object="${form}">
+        <div th:replace="~{fragments/form :: errorSummary(${ {'fullName', 'email', 'mobile', 'password', 'confirmPassword'} })}"></div>
+        <p class="small text-body-secondary">* required</p>
+        <div th:replace="~{fragments/form :: accountField('fullName', 'Full name', 'text', null, true, 'name', 100, null)}"></div>
+        <div th:replace="~{fragments/form :: accountField('email', 'Email', 'email', null, true, 'email', 254, null)}"></div>
+        <div th:replace="~{fragments/form :: accountField('mobile', 'Mobile number', 'tel', '10 digits, starting with 6–9', true, 'tel-national', null, 'numeric')}"></div>
+        <div th:replace="~{fragments/form :: password('password', 'Password', 'At least 8 characters with a letter and a digit', 'new-password')}"></div>
+        <div th:replace="~{fragments/form :: password('confirmPassword', 'Confirm password', null, 'new-password')}"></div>
+        <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-person-plus" aria-hidden="true"></i> Create account
+        </button>
+    </form>
+    <p class="mt-3 mb-2">After registering you will verify your mobile number with a one-time password (OTP).</p>
+    <p class="small text-body-secondary mb-2">
+        We use your name, email and mobile number only to handle your complaints. Department officers see your name.
+        Your email and mobile number are visible only to the Grievance Cell. Accounts are for adults (18+).
+    </p>
+    <p class="mb-0">Already registered? <a th:href="@{/login}">Log in</a></p>
+</div>
+</body>
+</html>

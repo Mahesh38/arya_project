@@ -23,6 +23,7 @@ class MessageCatalogueScanTest {
     private static final String KEY = "(?:(?:validation|error|flash|login|notice|confirm|notify|page|form)"
             + "\\.[a-z][A-Za-z0-9]*(?:\\.[A-Za-z0-9]+)*|typeMismatch(?:\\.[A-Za-z0-9]+)*)";
     private static final Pattern LITERAL = Pattern.compile("(?:#?\\{|\")(" + KEY + ")(?:}|\")");
+    private static final Pattern TEMPLATE_MESSAGE = Pattern.compile("#\\{(" + KEY + ")(?:}|\\()");
     private static final int COMPLAINT_NUMBER = 15;
     private static final int DEPARTMENT = 100;
     private static final int REMARK = 121;
@@ -84,7 +85,7 @@ class MessageCatalogueScanTest {
         }
         assertThat(keys).hasSize(182);
         for (Path source : FoundationScanTest.sources(RESOURCES.resolve("templates"), ".html")) {
-            assertThat(LITERAL.matcher(Files.readString(source)).results().map(match -> match.group(1)))
+            assertThat(TEMPLATE_MESSAGE.matcher(Files.readString(source)).results().map(match -> match.group(1)))
                     .allSatisfy(key -> assertThat(keys).as(source.toString()).contains(key));
         }
         for (Path source : FoundationScanTest.sources(JAVA, ".java")) {

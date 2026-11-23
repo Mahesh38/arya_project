@@ -124,3 +124,16 @@ form.is-submitting [type=submit] { pointer-events: none; opacity: .65; }
 .app-navbar .nav-link.active { color: #fff; font-weight: 600; box-shadow: inset 0 -3px 0 #ffc107; }
 .bell-count { font-size: .7rem; position: absolute; top: .15rem; left: 1.35rem; }
 .mockup-note { font-size: .75rem; color: #5c636a; }
+
+.demo-otp {
+    border-style: dashed;
+}
+
+.session-warning {
+    position: fixed;
+    bottom: 1rem;
+    inset-inline: 1rem;
+    max-width: 36rem;
+    margin: 0 auto;
+    z-index: 1050;
+}

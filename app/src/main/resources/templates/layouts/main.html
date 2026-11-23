@@ -6,7 +6,8 @@
     <title layout:title-pattern="$CONTENT_TITLE · $LAYOUT_TITLE">Smart Grievance</title>
     <th:block layout:fragment="head"></th:block>
 </head>
-<body class="d-flex flex-column min-vh-100" th:attr="data-session-timeout=${currentUser != null ? 1800 : null}">
+<body class="d-flex flex-column min-vh-100" th:attr="data-session-timeout=${currentUser != null ? (sessionTimeoutSeconds ?: 1800) : null},
+               data-unread-count-url=@{/notifications/unread-count}">
 <a th:replace="~{fragments/shell :: skipLink}"></a>
 <nav th:replace="~{fragments/navbar :: navbar}"></nav>
 <div th:replace="~{fragments/alerts :: verifyBanner}"></div>
@@ -15,6 +16,13 @@
     <th:block th:replace="~{fragments/alerts :: flash}"></th:block>
     <th:block layout:fragment="content"></th:block>
 </main>
+<aside th:if="${currentUser != null}" hidden data-session-warning
+       class="session-warning alert alert-warning shadow" role="status">
+    <span data-session-warning-message>Your session will end soon because of inactivity.</span>
+    <button type="button" class="btn btn-outline-dark btn-sm ms-1" data-stay-logged-in>
+        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Stay logged in
+    </button>
+</aside>
 <footer th:replace="~{fragments/shell :: footer}"></footer>
 <th:block th:replace="~{fragments/shell :: scripts}"></th:block>
 <th:block layout:fragment="scripts"></th:block>

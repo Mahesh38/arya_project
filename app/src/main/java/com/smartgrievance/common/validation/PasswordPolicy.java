@@ -5,6 +5,10 @@ import java.util.Locale;
 public final class PasswordPolicy {
     private PasswordPolicy() {}
 
+    public static boolean isStrong(String value) {
+        return value != null && StrongPasswordValidator.failedRule(value) == null;
+    }
+
     public static boolean containsPersonalData(String password, String email, String mobile) {
         String normalized = password.toLowerCase(Locale.ROOT);
         int at = email.indexOf('@');

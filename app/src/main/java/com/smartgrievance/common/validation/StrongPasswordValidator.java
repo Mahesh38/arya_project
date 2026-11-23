@@ -27,7 +27,7 @@ public class StrongPasswordValidator implements ConstraintValidator<StrongPasswo
         return false;
     }
 
-    private static String failedRule(String value) {
+    static String failedRule(String value) {
         int length = value.codePointCount(0, value.length());
         if (length < 8) return "tooShort";
         if (length > 64 || value.getBytes(StandardCharsets.UTF_8).length > 72) return "tooLong";
