@@ -2,6 +2,7 @@ package com.smartgrievance.complaint;
 
 import com.smartgrievance.seed.ComplaintDemoData;
 import com.smartgrievance.seed.DemoData;
+import com.smartgrievance.testsupport.Html;
 import com.smartgrievance.testsupport.Logins;
 import com.smartgrievance.testsupport.TestDatabase;
 import com.smartgrievance.testsupport.WebTestBase;
@@ -14,6 +15,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -51,7 +54,7 @@ class ComplaintSubmissionWebTest extends WebTestBase {
     }
 
     @Test
-    @DisplayName("TC-RT-22, TC-RT-23, TC-RT-24, TC-BR-34 verified submission and owner confirmation")
+    @DisplayName("TC-RT-22, TC-RT-23, TC-RT-24, TC-BR-34, TC-UC-10a verified submission and owner confirmation")
     void createAndConfirmationRequireVerifiedCitizenAndOwnerRespectively() throws Exception {
         demo.seed();
         jdbc.sql("UPDATE category SET active = FALSE WHERE name = 'Garbage'").update();
@@ -161,10 +164,6 @@ class ComplaintSubmissionWebTest extends WebTestBase {
         assertThat(current.status()).isEqualTo(ComplaintStatus.RESOLVED);
         assertThat(current.version()).isEqualTo(prior.version() + 1);
         assertThat(current.resolvedAt()).isEqualTo(now);
-        int nextExistingYear = transaction.execute(status -> numbers.next(2026));
-        int nextNewYear = transaction.execute(status -> numbers.next(2027));
-        assertThat(nextExistingYear).isEqualTo(14);
-        assertThat(nextNewYear).isEqualTo(1);
     }
 
     @Test
@@ -190,16 +189,25 @@ class ComplaintSubmissionWebTest extends WebTestBase {
     }
 
     @Test
-    @DisplayName("TC-RT-25, TC-RT-26, TC-BR-04, TC-BR-10 edit choices, no-op and optimistic lock")
+    @DisplayName("TC-RT-25, TC-RT-26, TC-BR-03, TC-BR-04, TC-BR-10, TC-UC-11a, TC-UC-11d edit choices, no-op and optimistic lock")
     void editRetainsInactiveCurrentChoiceTracksRevisionsAndRejectsStaleUpdates() throws Exception {
         mvc.perform(complaint(multipart(BASE).file(photo()), "mahesh", TITLE)).andExpect(status().isFound());
         jdbc.sql("UPDATE category SET active = FALSE WHERE name IN ('Garbage', 'Streetlight')").update();
+        jdbc.sql("UPDATE area SET active = FALSE WHERE name IN ('Kothrud', 'Aundh')").update();
         jdbc.sql("UPDATE complaint SET status = 'UNDER_REVIEW'").update();
         var edit = BASE + "/" + FIRST + "/edit";
         mvc.perform(get(edit).with(Logins.appUser(identities, "mahesh@example.com")))
                 .andExpect(status().isOk()).andExpect(model().attribute("mode", "EDIT"))
                 .andExpect(content().string(containsString(TITLE)))
-                .andExpect(content().string(containsString("photo.png")));
+                .andExpect(content().string(containsString("photo.png")))
+                .andExpect(content().string(containsString("Garbage (no longer offered)")))
+                .andExpect(content().string(containsString("Kothrud (no longer offered)")));
+        mvc.perform(post(edit).with(Logins.appUser(identities, "mahesh@example.com")).with(csrf())
+                        .param("categoryId", lookup("category", "Streetlight")).param("areaId", lookup("area", "Aundh"))
+                        .param("title", TITLE).param("description", DESCRIPTION).param("address", ADDRESS).param("version", "0"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrorCode("form", "categoryId", "validation.categoryId.inactive"))
+                .andExpect(model().attributeHasFieldErrorCode("form", "areaId", "validation.areaId.inactive"));
         mvc.perform(complaint(post(edit), "mahesh", TITLE).param("version", "0")
                         .param("removeAttachmentIds", "999999"))
                 .andExpect(redirectedUrl("/complaints/" + FIRST));
@@ -220,14 +228,27 @@ class ComplaintSubmissionWebTest extends WebTestBase {
         assertThat(count("complaint_revision")).isEqualTo(1);
         mvc.perform(complaint(post(edit), "mahesh", TITLE).param("version", "bad"))
                 .andExpect(status().isOk()).andExpect(model().attributeHasFieldErrors("form", "version"));
+        mvc.perform(complaint(post(edit), "mahesh", "Corrected report about the water main").param("version", "1"))
+                .andExpect(redirectedUrl("/complaints/" + FIRST));
+        assertThat(jdbc.sql("SELECT complaint_no, version FROM complaint").query().singleRow())
+                .containsEntry("complaint_no", FIRST).containsEntry("version", 2);
+        assertThatThrownBy(() -> jdbc.sql("""
+                INSERT INTO complaint (complaint_no, owner_id, category_id, area_id, title, description, address,
+                                       status, created_at, updated_at)
+                SELECT complaint_no, owner_id, category_id, area_id, title, description, address,
+                       status, created_at, updated_at FROM complaint
+                """).update()).isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("uq_complaint_no");
     }
 
     @Test
-    @DisplayName("TC-RT-27, TC-RT-28, TC-UC-12b withdrawal validates reason and notifies recipients")
+    @DisplayName("TC-SM-19, TC-RT-27, TC-RT-28, TC-UC-12a, TC-UC-12b withdrawal validates reason and notifies recipients")
     void withdrawValidatesReasonAndNotifiesOnlyAdminsAndAssignedOfficers() throws Exception {
         demo.seed();
         String submitted = "GRV-2026-000003";
         String assigned = "GRV-2026-000005";
+        String underReview = "GRV-2026-000008";
+        jdbc.sql("UPDATE complaint SET department_id = :department WHERE complaint_no = :no")
+                .param("department", lookup("department", "Water Supply")).param("no", assigned).update();
         String withdrawal = BASE + "/" + submitted + "/withdraw";
         mvc.perform(get(withdrawal).with(Logins.appUser(identities, "sneha@example.com")))
                 .andExpect(status().isOk()).andExpect(view().name("complaint/action-form"))
@@ -241,26 +262,76 @@ class ComplaintSubmissionWebTest extends WebTestBase {
         mvc.perform(post(BASE + "/" + assigned + "/withdraw").with(Logins.appUser(identities, "jayesh@example.com"))
                         .with(csrf()).param("version", "1").param("remark", "Problem solved by neighbours"))
                 .andExpect(redirectedUrl("/complaints/" + assigned));
+        mvc.perform(post(BASE + "/" + underReview + "/withdraw").with(Logins.appUser(identities, "sneha@example.com"))
+                        .with(csrf()).param("version", "1").param("remark", "Problem solved by neighbours"))
+                .andExpect(redirectedUrl("/complaints/" + underReview));
+        assertThat(emailRecipients(underReview, "STATUS_CHANGED")).containsExactly(properties.admin().email());
         assertThat(emailRecipients(submitted, "STATUS_CHANGED")).containsExactly(properties.admin().email());
         assertThat(emailRecipients(assigned, "STATUS_CHANGED")).containsExactlyInAnyOrder(
-                properties.admin().email(), "vikram.jadhav@example.com");
-        assertThat(jdbc.sql("SELECT status FROM complaint WHERE complaint_no IN (:first, :second)")
-                .param("first", submitted).param("second", assigned).query(String.class).list())
-                .containsExactly("WITHDRAWN", "WITHDRAWN");
+                properties.admin().email(), "anita.deshmukh@example.com", "rohan.kulkarni@example.com");
+        assertThat(jdbc.sql("""
+                SELECT e.from_status, e.remark FROM complaint_event e JOIN complaint c ON c.id = e.complaint_id
+                WHERE c.complaint_no IN (:numbers) AND c.status = 'WITHDRAWN' AND e.to_status = 'WITHDRAWN'
+                """).param("numbers", List.of(submitted, assigned, underReview)).query().listOfRows())
+                .hasSize(3).allSatisfy(row -> assertThat(row).containsEntry("remark", "Problem solved by neighbours"))
+                .extracting(row -> row.get("from_status")).containsExactlyInAnyOrder("SUBMITTED", "ASSIGNED", "UNDER_REVIEW");
     }
 
     @Test
-    @DisplayName("TC-BR-09 replacement records both revisions and preserves the old file")
-    void replacingAnAttachmentRecordsBothRevisionsAndPreservesTheRemovedFile() throws Exception {
+    @DisplayName("TC-RT-25, TC-RT-27, TC-RT-28 owner-action guards refuse visible non-owners, wrong statuses and stale forms")
+    void editAndWithdrawalRefusalsPreserveState() throws Exception {
+        demo.seed();
+        var owner = Logins.appUser(identities, "mahesh@example.com");
+        var duplicateOwner = Logins.appUser(identities, "jayesh@example.com");
+        var detail = "/complaints/" + FIRST;
+        var edit = BASE + "/" + FIRST + "/edit";
+        var withdraw = BASE + "/" + FIRST + "/withdraw";
+        String reason = "Problem solved by neighbours";
+        long countBefore = count("complaint_event");
+        mvc.perform(get(edit).with(duplicateOwner)).andExpect(redirectedUrl(detail))
+                .andExpect(flash().attributeExists("flashError"));
+        mvc.perform(get(edit).with(owner)).andExpect(redirectedUrl(detail))
+                .andExpect(flash().attributeExists("flashError"));
+        mvc.perform(get(withdraw).with(owner)).andExpect(redirectedUrl(detail))
+                .andExpect(flash().attributeExists("flashError"));
+        mvc.perform(post(withdraw).with(owner).with(csrf()).param("version", "1").param("remark", reason))
+                .andExpect(redirectedUrl(detail)).andExpect(flash().attributeExists("flashError"));
+        jdbc.sql("UPDATE complaint SET status = 'SUBMITTED', department_id = NULL WHERE complaint_no = :no")
+                .param("no", FIRST).update();
+        mvc.perform(get(withdraw).with(owner)).andExpect(redirectedUrl(detail))
+                .andExpect(flash().attribute("flashError", "Other citizens are following this complaint; it cannot be withdrawn."));
+        mvc.perform(post(withdraw).with(owner).with(csrf()).param("version", "1").param("remark", reason))
+                .andExpect(redirectedUrl(detail))
+                .andExpect(flash().attribute("flashError", "Other citizens are following this complaint; it cannot be withdrawn."));
+        var other = BASE + "/GRV-2026-000003/withdraw";
+        mvc.perform(post(other).with(Logins.appUser(identities, "sneha@example.com")).with(csrf())
+                        .param("version", "1").param("remark", reason))
+                .andExpect(redirectedUrl("/complaints/GRV-2026-000003")).andExpect(flash().attributeExists("flashError"));
+        assertThat(count("complaint_event")).isEqualTo(countBefore);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SUBMITTED", "UNDER_REVIEW"})
+    @DisplayName("TC-SM-20, TC-BR-09, TC-UC-11b edit records revisions and preserves the removed file")
+    void editUpdatesFieldsAndRetainsTheRemovedFile(String status) throws Exception {
         mvc.perform(complaint(multipart(BASE).file(photo()), "mahesh", TITLE)).andExpect(status().isFound());
+        jdbc.sql("UPDATE complaint SET status = :status").param("status", status).update();
         long old = jdbc.sql("SELECT id FROM attachment").query(Long.class).single();
         var pdf = new MockMultipartFile("files", "report.pdf", "application/pdf",
                 new ClassPathResource("files/doc.pdf").getContentAsByteArray());
-        mvc.perform(complaint(multipart(BASE + "/" + FIRST + "/edit").file(pdf), "mahesh", TITLE)
-                        .param("version", "0").param("removeAttachmentIds", Long.toString(old)))
+        String title = "Updated report about the water main";
+        String address = "Near the south junction in Kothrud";
+        mvc.perform(multipart(BASE + "/" + FIRST + "/edit").file(pdf)
+                        .with(Logins.appUser(identities, "mahesh@example.com")).with(csrf())
+                        .param("categoryId", lookup("category", "Garbage")).param("areaId", lookup("area", "Kothrud"))
+                        .param("title", title).param("description", DESCRIPTION).param("address", address)
+                        .param("version", "0").param("removeAttachmentIds", Long.toString(old))
+                        .param("changeReason", "Clarified the location"))
                 .andExpect(redirectedUrl("/complaints/" + FIRST));
-        assertThat(jdbc.sql("SELECT old_value, new_value FROM complaint_revision WHERE field_name = 'attachment' ORDER BY id")
+        assertThat(jdbc.sql("SELECT old_value, new_value FROM complaint_revision ORDER BY id")
                 .query().listOfRows()).satisfiesExactly(
+                        changed -> assertThat(changed).containsEntry("old_value", TITLE).containsEntry("new_value", title),
+                        changed -> assertThat(changed).containsEntry("old_value", ADDRESS).containsEntry("new_value", address),
                         removed -> assertThat(removed).containsEntry("old_value", "photo.png").containsEntry("new_value", null),
                         added -> assertThat(added).containsEntry("old_value", null).containsEntry("new_value", "report.pdf"));
         assertThat(jdbc.sql("SELECT deleted, deleted_by, deleted_at FROM attachment WHERE id = :old")
@@ -269,6 +340,61 @@ class ComplaintSubmissionWebTest extends WebTestBase {
                         identities.loadUserByUsername("mahesh@example.com").id()))
                 .hasEntrySatisfying("deleted_at", at -> assertThat(at).isNotNull());
         assertThat(uploadedFileCount()).isEqualTo(2);
+        assertThat(jdbc.sql("SELECT status, version FROM complaint").query().singleRow())
+                .containsEntry("status", status).containsEntry("version", 1);
+        assertThat(jdbc.sql("SELECT remark FROM complaint_event WHERE event_type = 'EDITED'").query(String.class).single())
+                .isEqualTo("Clarified the location");
+        assertThat(emailRecipients(FIRST, "EDITED")).containsExactly(properties.admin().email());
+    }
+
+    @Test
+    @DisplayName("TC-SM-01 the created event belongs to the verified owner and only active admins are notified")
+    void recordsCreatedEventAndNotifiesActiveRecipients() throws Exception {
+        for (boolean active : List.of(true, false)) {
+            jdbc.sql("""
+                    INSERT INTO app_user (full_name, email, mobile, password_hash, role, active, mobile_verified, created_at, updated_at)
+                    SELECT full_name, :email, :mobile, password_hash, role, :active, TRUE, created_at, updated_at
+                    FROM app_user WHERE email = :primary
+                    """).param("email", active ? "active.admin@example.test" : "inactive.admin@example.test")
+                    .param("mobile", active ? "7992000111" : "7992000112").param("active", active)
+                    .param("primary", properties.admin().email()).update();
+        }
+        mvc.perform(complaint(multipart(BASE).file(photo()), "mahesh", TITLE))
+                .andExpect(redirectedUrl(BASE + "/" + FIRST + "/submitted"));
+        assertThat(jdbc.sql("SELECT last_number FROM complaint_sequence WHERE seq_year = 2026")
+                .query(Integer.class).single()).isEqualTo(1);
+        assertThat(jdbc.sql("SELECT event_type, from_status, to_status, actor_id FROM complaint_event").query().singleRow())
+                .containsEntry("event_type", "CREATED").containsEntry("from_status", null)
+                .containsEntry("to_status", "SUBMITTED")
+                .containsEntry("actor_id", identities.loadUserByUsername("mahesh@example.com").id());
+        assertThat(emailRecipients(FIRST, "CREATED")).containsExactlyInAnyOrder(
+                "mahesh@example.com", properties.admin().email(), "active.admin@example.test");
+        assertThat(count("attachment")).isEqualTo(1);
+        assertThat(uploadedFileCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("TC-Q-22, TC-Q-23 allocation continues an existing year and starts a new year at one")
+    void sequenceRowsForExistingAndNewYears() {
+        jdbc.sql("INSERT INTO complaint_sequence (seq_year, last_number) VALUES (2026, 13)").update();
+        List<Integer> allocated = transaction.execute(status -> List.of(numbers.next(2026), numbers.next(2027)));
+        assertThat(allocated).containsExactly(14, 1);
+        assertThat(jdbc.sql("SELECT last_number FROM complaint_sequence ORDER BY seq_year").query(Integer.class).list())
+                .containsExactly(14, 1);
+    }
+
+    @Test
+    @DisplayName("TC-VE-10 missing and invalid versions have a summary message without a link")
+    void editVersionErrorsAppearOnlyInSummary() throws Exception {
+        mvc.perform(complaint(multipart(BASE), "mahesh", TITLE)).andExpect(status().isFound());
+        for (String version : List.of("", "x")) {
+            var result = mvc.perform(complaint(multipart(BASE + "/" + FIRST + "/edit"), "mahesh", TITLE)
+                            .param("version", version))
+                    .andExpect(status().isOk()).andExpect(model().attributeHasFieldErrors("form", "version")).andReturn();
+            var page = Html.of(result.getResponse().getContentAsString());
+            assertThat(page.text("#error-summary li")).isEqualTo("This page is out of date. Reload it and try again.");
+            assertThat(page.document().select("#error-summary a, #version-error")).isEmpty();
+        }
     }
 
     private AbstractMockHttpServletRequestBuilder<?> complaint(AbstractMockHttpServletRequestBuilder<?> request, String user, String title) {
