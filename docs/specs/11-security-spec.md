@@ -1214,7 +1214,7 @@ The trust-boundary diagram in §2.3 was rendered with `@mermaid-js/mermaid-cli` 
 |---|---|---|
 | K-S1 | ~~Message wording.~~ **Decided in doc 12 §8.5 and §6.1 (D90).** Message texts introduced here (locked, inactive, form expired, too many registrations, complaint limit, too common / too long password, session warning, privacy notices) are English references; doc 12 fixes the final wording and the `error/403` CSRF variant. | 12 |
 | K-S2 | ~~Error pages without session.~~ **Decided and verified in doc 12 §5.5, §6.2 (D85).** `error/4xx` must handle `413` from Tomcat (over-size multipart to a non-upload route) and `400` from the firewall without needing `unreadCount` or a session (U3). | 12 |
-| K-S3 | All `SEC-xx` cases go into doc 13; SEC-16 is generated from the route catalogue; SEC-37 needs MySQL (parallel threads); SEC-30a/38b use Playwright, as U7 already plans. | 13 |
+| K-S3 | ~~SEC tests in doc 13.~~ **Decided in doc 13 §3.5 and 13a §E:** every SEC-xx has its `TC-SEC` row; SEC-16/19 generated from `routes.csv` (D98), SEC-37 on MySQL (D105), SEC-30a/38b in Playwright (D99). All `SEC-xx` cases go into doc 13; SEC-16 is generated from the route catalogue; SEC-37 needs MySQL (parallel threads); SEC-30a/38b use Playwright, as U7 already plans. | 13 |
 | K-S4 | Properties to fix in doc 14: `server.tomcat.max-swallow-size=64MB`, cookie flags (§4.8) with `COOKIE_SECURE`, `spring.web.error.*` (not `server.error.*`, D86), `app.security.*` (§3.3, §3.5), `app.complaint.max-per-day=10`, `server.forward-headers-strategy` only behind a trusted proxy, HTTPS / reverse proxy set-up, `logs/security.log` rotation for one year, folder permissions for `uploads/`. | 14 |
 | K-S5 | Supply chain: add a dependency vulnerability check (e.g. OWASP Dependency-Check or `mvn versions:display-dependency-updates`) to the build and pin Bootstrap Icons and Chart.js versions (U9). | 14 |
 | K-S6 | EXIF metadata (possibly GPS) is not removed from uploaded JPEGs. A future `ExifStripper` can drop `APP1` segments without re-encoding. | future |
@@ -1228,3 +1228,4 @@ The trust-boundary diagram in §2.3 was rendered with `@mermaid-js/mermaid-cli` 
 |---|---|
 | 2026-11-22 | Initial draft: threat model (STRIDE, OWASP Top 10:2025), authentication, filter chain with all 99 routes, entry points, CSRF, over-size uploads, headers and CSP, authorization, OTP, uploads, input/output, secrets, privacy (DPDP), security logging, 56 security tests; K1–K5, K7, U1, U2, U6, U11 decided (D56–D76); verified with a prototype (§13) |
 | 2026-11-23 | Doc 12 alignment: error properties are `spring.web.error.*` (D86); K-S1 and K-S2 decided in doc 12 (D85, D90) |
+| 2026-11-23 | Doc 13 alignment: K-S3 decided; all 62 SEC tests mapped in 13a §E |

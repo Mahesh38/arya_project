@@ -36,7 +36,7 @@ Each one builds on the ones before it. We do them one at a time.
 | 10 | **UI / Screen Spec** | What users see | Screen inventory, navigation map, low-fi wireframes, Thymeleaf layout/fragment plan |
 | 11 | **Security Spec** | Access control | Spring Security config, role-to-URL matrix, BCrypt passwords, CSRF, ownership checks, safe file upload |
 | 12 | **Validation & Error Handling** | Consistent behaviour | Field rules, error messages, global exception handling, 403/404/500 pages |
-| 13 | **Test Spec & Traceability** | Proof it works | Given/When/Then acceptance criteria per UC, test plan (unit, MVC slice, integration), FR → UC → Route → Table → Test matrix |
+| 13 | **Test Spec & Traceability** | Proof it works | Given/When/Then acceptance criteria per UC, test plan (unit, MVC slice, integration), FR → UC → Route → Table → Test matrix; the full catalogue is the appendix `13a-test-catalogue.md` |
 | 14 | **Build & Deployment** | Running it | Maven build, profiles (dev/prod), `application.properties`, run via `spring-boot:run` or deploy WAR/JAR on Tomcat, file-storage location |
 
 > On "API contracts" with Thymeleaf: the app is server-rendered, so most contracts are **MVC route contracts** (form POST → redirect/view), not REST/JSON. Doc 09 covers both kinds.
@@ -162,6 +162,21 @@ arya_project/
 | D89 | Notification texts? | `notify.*` templates rendered once with `Locale.ENGLISH` by `NotificationMessages`; remark excerpts ≤ 120 and title excerpts ≤ 100 characters, so every template fits `VARCHAR(300)` (worst case 257, checked by script). |
 | D90 | Doc 11 message wording (K-S1)? | Final texts for locked, inactive, expired (also covers password change and lost typing), form expired (403 CSRF variant), registration limit, BR-88, password too long / common / personal, session warning and privacy notices: doc 12 §8.5. |
 | D91 | Logging of errors? | ERROR only for unexpected failures (with reference and stack trace); refusals one INFO `REFUSED` line; client errors DEBUG; never rejected values, `BindingResult`s, passwords, OTPs or translated constraint messages (they contain PII). |
+| D92 | Test levels and where they run? (doc 13) | Unit, Repo (`@JdbcTest` + Flyway on H2), Flow and Web (`@SpringBootTest` + MockMvc on the **full context with real services**; no `@WebMvcTest` slices), HTTP (`RANDOM_PORT`) and Scan tests run in `mvn test` with JDK 25 only. `-Pmysql` (failsafe `*MySqlIT`, MySQL 8.4) runs concurrency, MySQL-only and NFR-10 tests; `-Pe2e` runs the browser tests. Added test tools: jsoup 1.24.1, JaCoCo 0.8.14. |
+| D93 | Test IDs and naming? | `TC-<group>-<n>` (`SM`, `BR`, `UC`, `RT`, `SEC`, `VE`, `SC`, `Q`, `NF`, `UT`, `SCAN`), all listed in `13a-test-catalogue.md`; every `@DisplayName` starts with its ID; class suffix by level (`…Test`, `…RepositoryTest`, `…FlowTest`, `…WebTest`/`…RouteTest`/`…AcceptanceTest`, `…HttpTest`, `…ScanTest`, `…MySqlIT`); JUnit tags `unit`, `repo`, `flow`, `web`, `http`, `scan`, `mysql`, `slow`. |
+| D94 | Time in tests? | One `@Primary` `TestClock` (fixed, movable) starting **23-Nov-2026 10:00 IST**, reset before each test; scheduled jobs disabled with cron `-` and called directly; no `sleep`. |
+| D95 | Isolation between tests? | No test-transaction rollback (it would hide `REQUIRES_NEW`, rollback file clean-up and identity counters): `TestDatabase.reset()` before each test deletes all rows in FK order, restarts identity counters, re-inserts V2, empties the test upload dir and the throttling maps. JUnit parallel execution off (the in-memory H2 is shared by every cached context). Doc 08 `sample-data.sql` is reused unchanged as the query fixture. |
+| D96 | Security test helpers? | `@WithAppUser` and `appUser()` load the real `app_user` row as `CurrentUser`; `@WithMockUser` is not used (`UserStateFilter` would end its session); `Sessions.requestedSession()` is mandatory for reused MockMvc sessions (doc 11 §12 note). |
+| D97 | State-machine oracle? | An expected matrix (15 actions × 10 statuses, relations owner / watcher / duplicate owner / department officer / admin; 58 allowed cells) written from doc 05 §3 in 13a §A.2 and stored as `transition-matrix.csv`; a 720-case test runs `TransitionRules.decide` against it, plus one Flow test per transition row and actor; `check-13-traceability.py` compares the matrix with doc 05. |
+| D98 | K11: route tests? | `routes.csv` (doc 09 §3 as data) drives four generated sweeps: wrong role → 403 (SEC-16), not visible / unknown → identical 404, anonymous → login (R-77: 401), and the route inventory compared both ways (SEC-19). Each route row also has its own hand-written test (happy path + its specific errors). |
+| D99 | U7 / U8: browser tests? | Node `@playwright/test` + `@axe-core/playwright` in `app/e2e/`, against the JAR started by `-Pe2e` (profiles `dev,e2e`, H2 from the test classpath). Projects `js-on` and `js-off`, viewports 360 and 1280 px; axe-core only with JS on (it never finishes with JS disabled, found in the prototype); zero violations for the WCAG 2.1 A/AA tags. |
+| D100 | Test fixtures? | `TestData` builders insert consistent rows in any state; `DemoWorld` builds Appendix A with the same code as the `dev` profile: the seeding logic moves to `seed.DemoData` (no profile), which `DevDataSeeder` calls. |
+| D101 | T-3: message checks in the build? | `MessageCatalogueScanTest` and `ConstraintMessageScanTest` (JUnit) run in `mvn test`; the documentation scripts `check-09/10/12/13` run on CI, so students need no Python to build. |
+| D102 | Coverage targets? | JaCoCo: `TransitionRules` and `ComplaintAccessPolicy` 100 % branch; packages `workflow`, `access` 90 % line / 85 % branch from the start; services and `common` 80 % / 70 % and the bundle 75 % / 60 %, enforced after M7. |
+| D103 | When is testing done? | Defect severities S1–S4, a GitHub-issue template with related IDs and a regression test for every fixed S1/S2; exit criteria of doc 13 §7.4 (verify green, every Must test passing, `-Pmysql` and `-Pe2e` run within 7 days, coverage met, no open S1/S2, the check scripts pass, demo checklist ticked). |
+| D104 | Notifications in S1 and S4 (found while writing tests)? | The T01 confirmation to the owner (FR-15) is the one deliberate exception to BR-68 ("the actor is never notified"). S1: Mahesh receives **5** notifications (registration + 4 status changes). S4: the watcher is notified of the new In Progress and Resolved steps, **not** of reopen or close, which go to staff (FR-70). Doc 05 corrected. |
+| D105 | Concurrency tests? | Only on MySQL (H2 locks differently): SEC-37 with 10 threads, the number generator (8 × 50 and 16 × 25), S10 with two threads, and BR-88 asserted as a soft limit (≤ limit + 1, doc 12 T-6). On H2 the same cases are sequential stale-version tests. |
+| D106 | Auto-close during the demo? | The `dev` profile runs the auto-close job every 5 minutes (`0 */5 * * * *`, set in doc 14), so GRV-…-000011 is visibly auto-closed at viva time; `prod` stays hourly. |
 
 ## Status
 
@@ -181,4 +196,5 @@ arya_project/
 | 10 UI / Screen Spec | Draft |
 | 11 Security Spec | Draft |
 | 12 Validation & Error Handling | Draft |
-| 13–14 | Not started |
+| 13 Test Spec & Traceability (+ 13a Test Catalogue) | Draft |
+| 14 Build & Deployment | Not started |

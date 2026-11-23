@@ -989,12 +989,12 @@ The two Mermaid diagrams (§5.1, §6.2) were rendered with `@mermaid-js/mermaid-
 
 | # | Topic | For doc |
 |---|---|---|
-| T-1 | Scan test: every constraint annotation on a form class has `message = "{key}"` and the key exists in `messages.properties` (§4.6). | 13 |
-| T-2 | Turn the prototype tests of §11.1 into the real test suite; one test per row of §3 (each message), §5.2 (each mapping) and §6.1 (each page); real-Tomcat tests send `Accept: text/html` (F-3). | 13 |
-| T-3 | Run `check-12-messages.py` in the build (or port it to a JUnit test reading `messages.properties`) so a new key without text, or a text change without doc update, is caught. | 13, 14 |
-| T-4 | Template scan: every page with a bound form includes `errorSummary` with a field list that matches its inputs; no hand-written `id` on `th:field` inputs (§7.4). | 13 |
-| T-5 | Playwright: focus moves to `#error-summary` with JS on; summary links move focus to the field; axe-core finds no issues on a form with errors (doc 10 U7, U8). | 13 |
-| T-6 | The BR-88 count can be exceeded by one with two parallel submissions (§5.4). Accepted; doc 13 should not assert a hard limit under concurrency. | 13 |
+| T-1 | **Decided in doc 13 (TC-VE-26).** Scan test: every constraint annotation on a form class has `message = "{key}"` and the key exists in `messages.properties` (§4.6). | 13 |
+| T-2 | **Decided in doc 13 (doc 13 §3.6).** Turn the prototype tests of §11.1 into the real test suite; one test per row of §3 (each message), §5.2 (each mapping) and §6.1 (each page); real-Tomcat tests send `Accept: text/html` (F-3). | 13 |
+| T-3 | **Decided in doc 13 (TC-VE-27, D101).** Run `check-12-messages.py` in the build (or port it to a JUnit test reading `messages.properties`) so a new key without text, or a text change without doc update, is caught. | 13, 14 |
+| T-4 | **Decided in doc 13 (TC-VE-28).** Template scan: every page with a bound form includes `errorSummary` with a field list that matches its inputs; no hand-written `id` on `th:field` inputs (§7.4). | 13 |
+| T-5 | **Decided in doc 13 (TC-VE-29, D99).** Playwright: focus moves to `#error-summary` with JS on; summary links move focus to the field; axe-core finds no issues on a form with errors (doc 10 U7, U8). | 13 |
+| T-6 | **Decided in doc 13 (TC-VE-30, D105).** The BR-88 count can be exceeded by one with two parallel submissions (§5.4). Accepted; doc 13 should not assert a hard limit under concurrency. | 13 |
 | B-1 | `application.properties`: `spring.web.error.*` (§6.4), `spring.messages.*` (§8.1), `spring.mvc.problemdetails.enabled=false`; never the old `server.error.*` names. | 14 |
 | B-2 | Logback: pattern with `%X{ref:-}`, application log retention 90 days (doc 11 §10.4); support guide: how to find a reference id in the log. | 14 |
 | B-3 | Copy `messages.properties.draft` to `src/main/resources/messages.properties` unchanged (UTF-8, no BOM) and `common-passwords.txt` to `common/validation/`. | 14 |
@@ -1003,3 +1003,4 @@ The two Mermaid diagrams (§5.1, §6.2) were rendered with `@mermaid-js/mermaid-
 | Date | Change |
 |---|---|
 | 2026-11-23 | Initial draft: validation layers, field catalogue for every form, custom validators, exception hierarchy and mapping, error pages with reference id, flash and form-error conventions with the field id scheme, message catalogue (`messages.properties.draft`, 182 keys), logging rules, traceability; K8, U3, U4, U5, K-S1, K-S2 decided (D77–D91); verified with a prototype (20 tests) and `check-12-messages.py` |
+| 2026-11-23 | Doc 13 alignment: T-1 … T-6 decided (D99, D101, D105) |

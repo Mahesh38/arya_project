@@ -272,7 +272,7 @@ Remark, reason and note fields are 10–500 characters when required, and at mos
 | ID | Rule |
 |---|---|
 | BR-67 | Recipients are listed per transition in §3. "Department officers" means the **active** officers of the complaint's current department. "Admins" means all **active** admins. |
-| BR-68 | The actor is never notified of their own action. Each recipient gets at most one notification per event, even if they qualify in more than one way. |
+| BR-68 | The actor is never notified of their own action, with one deliberate exception: the owner's confirmation of T01 Submit (FR-15, D104). Each recipient gets at most one notification per event, even if they qualify in more than one way. |
 | BR-69 | Message templates are fixed, e.g. "`{complaintNo}` is now **In Progress**: {remark}". Each notification links to the complaint detail page. |
 
 ### 4.8 Integrity & concurrency
@@ -304,10 +304,10 @@ Remark, reason and note fields are 10–500 characters when required, and at mos
 
 | # | Scenario | Expected |
 |---|---|---|
-| S1 | Mahesh submits, the admin reviews and assigns to Water Supply, an officer starts work, then resolves | `GRV-2026-000001`. Timeline: CREATED → UNDER_REVIEW → ASSIGNED → IN_PROGRESS → RESOLVED. Mahesh gets 4 notifications. |
+| S1 | Mahesh submits, the admin reviews and assigns to Water Supply, an officer starts work, then resolves | `GRV-2026-000001`. Timeline: CREATED → UNDER_REVIEW → ASSIGNED → IN_PROGRESS → RESOLVED. Mahesh gets 5 notifications: the registration confirmation and 4 status changes (D104). |
 | S2 | Jayesh submits the same leak. The admin assigns it to Water Supply. An officer marks it a duplicate of 000001 | 000002 is `DUPLICATE`. Jayesh is an active watcher of 000001. Event `DUPLICATE_RECEIVED` on 000001. |
 | S3 | The officer resolves 000001 | Mahesh and Jayesh are notified. Only Mahesh sees Close and Reopen. |
-| S4 | Mahesh reopens, then the officer starts work and resolves it again, then Mahesh closes it | `reopenCount = 1`. Final status `CLOSED`. Jayesh is notified each time. |
+| S4 | Mahesh reopens, then the officer starts work and resolves it again, then Mahesh closes it | `reopenCount = 1`. Final status `CLOSED`. Jayesh is notified of the new In Progress and Resolved steps; reopen and close go to staff only (FR-70, D104). |
 | S5 | Jayesh unwatches 000001, then opens it via 000002 | No more notifications. He can still view it and **Watch again**. |
 | S6 | Mahesh tries to withdraw 000001 while it is `ASSIGNED`, with 000002 linked | Refused (BR-47). |
 | S7 | An officer of Sanitation opens `/complaints/GRV-2026-000001` | 404. |
@@ -324,3 +324,4 @@ Remark, reason and note fields are 10–500 characters when required, and at mos
 | 2026-11-22 | Added MobileOtp, BR-84 to BR-87 (D16) |
 | 2026-11-22 | Doc 08 alignment: BR-11 column names `seq_year`, `last_number` (D17); `ComplaintEvent.department` and `relatedComplaint`, `Area.description` (D20) |
 | 2026-11-22 | BR-85 hashing and attempt reservation, new BR-88 (daily complaint limit) and BR-89 (user version), from doc 11 (D59, D66, D68) |
+| 2026-11-23 | Doc 13 alignment: BR-68 names the T01 owner confirmation as its one exception; expected results of S1 (5 notifications) and S4 (watcher not notified of reopen/close) corrected (D104) |

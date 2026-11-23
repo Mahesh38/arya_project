@@ -100,8 +100,8 @@ compile : spring-boot-starter-webmvc, spring-boot-starter-thymeleaf, spring-boot
 runtime : com.mysql:mysql-connector-j
 dev     : spring-boot-devtools (optional, auto-restart)
 test    : spring-boot-starter-webmvc-test, spring-boot-starter-security-test,
-          spring-boot-starter-jdbc-test, com.h2database:h2
-plugin  : spring-boot-maven-plugin
+          spring-boot-starter-jdbc-test, com.h2database:h2, org.jsoup:jsoup 1.24.1 (doc 13 §2.1)
+plugin  : spring-boot-maven-plugin, jacoco-maven-plugin 0.8.14, maven-failsafe-plugin (profile mysql) (doc 13 §2.1, §6.1)
 ```
 
 ---
@@ -148,7 +148,8 @@ com.smartgrievance
 │                      HousekeepingJob (daily purge of old notifications and OTPs, FR-73, D28)
 ├── dashboard/         DashboardRepository (aggregate SQL), DashboardService,
 │                      AdminDashboardController, OfficerSummary
-└── seed/              AdminBootstrap (FR-07, all profiles), DevDataSeeder (@Profile("dev"))
+└── seed/              AdminBootstrap (FR-07, all profiles), DemoData (the Appendix A seeding logic, no profile, also used by
+                       the tests, D100), DevDataSeeder (@Profile("dev") runner that calls DemoData)
 ```
 
 **Rule:** a feature package may use another feature's **service** or **domain records**, but never its repository directly. The one exception is `access` and `dashboard`, which only read.
@@ -205,7 +206,7 @@ com.smartgrievance
 | `application.properties` | Shared defaults: `app.*` values from doc 03 §3, multipart limits, Thymeleaf settings, session timeout, `spring.profiles.default=dev` |
 | `application-dev.properties` | Local MySQL `grievance_dev`, Thymeleaf cache off, `app.otp.sender=demo`, DevDataSeeder enabled, DEBUG logging for `com.smartgrievance` |
 | `application-prod.properties` | DB URL, user and password **from environment variables**, Thymeleaf cache on, admin password from env (required), INFO logging |
-| `src/test/resources/application-test.properties` | H2 `jdbc:h2:mem:test;MODE=MySQL;DATABASE_TO_LOWER=TRUE`, fixed clock where needed |
+| `src/test/resources/application-test.properties` | H2 `jdbc:h2:mem:test;MODE=MySQL;DATABASE_TO_LOWER=TRUE`, BCrypt strength 4, jobs off; the fixed `TestClock` comes from a test configuration (full content: doc 13 §2.2, D94) |
 
 Sketch of `application.properties` (final values come in doc 14):
 
@@ -329,3 +330,4 @@ A throwaway test project with the exact dependency set from §2.2 was built and 
 | 2026-11-22 | Doc 10 alignment: template list (no separate `duplicate-confirm`, singular master-data forms, `error/4xx`), fragment list, `app.js` role, `activeMenu`, `@fmt` (D49–D53) |
 | 2026-11-22 | Doc 11 alignment: §5 security summary rewritten (D56–D65), new `security` package, `ProdSafetyCheck`, `OtpHasher`, `UploadSizeGuardFilter`, `FileScanner`; `max-swallow-size` 30 MB → 64 MB and session/error properties in §6 |
 | 2026-11-23 | Doc 12 alignment: error properties renamed to `spring.web.error.*` (Boot 4, D86); `common` exception and validation packages (D82, D81) |
+| 2026-11-23 | Doc 13 alignment: test dependencies and plugins (jsoup, JaCoCo, failsafe), `seed.DemoData` split from `DevDataSeeder` (D100), test properties (D94) |

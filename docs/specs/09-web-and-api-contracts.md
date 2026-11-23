@@ -993,7 +993,7 @@ Result:
 | K8 | ~~Message texts.~~ **Decided in doc 12 §8 (D77, D78).** Message texts in this document are the English defaults. Doc 12 decides whether they move to `messages.properties` and fixes the exact wording. | 12 |
 | K9 | ~~Status badge colours and labels.~~ **Decided in doc 10 §5.1 (D47).** | — |
 | K10 | Admin accounts other than the bootstrap admin have no UI (D45). If the examiners ask for it, it is a new UC with routes `/admin/admins/**`. | future |
-| K11 | Every route row is one MockMvc test (happy path + each error column); workflow rows are also run as each wrong role (403) and as a user who cannot view (404). | 13 |
+| K11 | ~~Route tests.~~ **Decided in doc 13 §3.4 (D98):** one test per route row (13a §D) plus sweeps generated from `routes.csv` for wrong role (403), not visible / unknown (404), anonymous and the route inventory. Every route row is one MockMvc test (happy path + each error column); workflow rows are also run as each wrong role (403) and as a user who cannot view (404). | 13 |
 | K12 | Properties introduced here: `spring.servlet.multipart.max-file-size=26MB` (D36), `server.tomcat.max-swallow-size=64MB` (doc 11 §4.6), CSV export limit 5,000 (`app.export.max-rows`). | 14 |
 
 ## Change log
@@ -1003,3 +1003,4 @@ Result:
 | 2026-11-22 | Doc 10 alignment: `error/4xx` view, singular master-data form view names (D52), global `activeMenu` (D53), `ActionLink.style` values (D54), `actorLabel` rule (D48); K6 and K9 resolved |
 | 2026-11-22 | Doc 11 alignment: K1–K5 and K7 decided (D59–D63, D69); §9.3 rewritten for `UploadSizeGuardFilter`; login flags `locked`/`inactive` and kept email (R-02, R-03); registration and daily complaint limits (R-06, R-23); §1.6 and §2 CSRF and 413 rows; `TimelineEntry.relatedLinkable`; chart data as a `data-chart` attribute (D64) |
 | 2026-11-23 | Doc 12 alignment: K8 decided; flash texts come from `messages.properties` (D77) |
+| 2026-11-23 | Doc 13 alignment: K11 decided (D98) |
