@@ -1,6 +1,14 @@
 package com.smartgrievance.notification;
 
+import com.smartgrievance.common.PageRequest;
+import com.smartgrievance.common.PageResult;
+import com.smartgrievance.common.exception.NotFoundException;
+import com.smartgrievance.user.CurrentUser;
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -13,10 +21,40 @@ public class NotificationService {
     private final JdbcClient jdbc;
     private final NotificationMessages messages;
 
-    public NotificationService(JdbcClient jdbc, NotificationMessages messages) {
+    private final NotificationRepository repository;
+    private final Clock clock;
+
+    public NotificationService(JdbcClient jdbc, NotificationMessages messages, NotificationRepository repository, Clock clock) {
         this.jdbc = jdbc;
         this.messages = messages;
+        this.repository = repository;
+        this.clock = clock;
     }
+
+    @Transactional(readOnly = true)
+    public PageResult<NotificationItem> list(CurrentUser user, PageRequest page) {
+        return repository.list(user.id(), page);
+    }
+
+    @Transactional(readOnly = true)
+    public long unreadCount(CurrentUser user) {
+        return repository.unreadCount(user.id());
+    }
+
+    @Transactional
+    public Optional<String> open(long id, CurrentUser user) {
+        repository.markRead(id, user.id(), now());
+        var item = repository.find(id, user.id())
+                .orElseThrow(() -> new NotFoundException("notification", Long.toString(id), true));
+        return Optional.ofNullable(item.complaintNo());
+    }
+
+    @Transactional
+    public void markAllRead(CurrentUser user) {
+        repository.markAllRead(user.id(), now());
+    }
+
+    private LocalDateTime now() { return LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS); }
 
     public void submitted(long complaint, long event, long owner, String number, String title, LocalDateTime now) {
         write(complaint, event, owner, now, "notify.submitted.owner", number);

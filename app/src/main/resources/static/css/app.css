@@ -226,3 +226,8 @@ form.is-submitting [type=submit] { pointer-events: none; opacity: .65; }
     height: 7rem;
     object-fit: cover;
 }
+
+.notification-unread {
+    border-inline-start: 4px solid #084298;
+    background: #f3f7ff;
+}

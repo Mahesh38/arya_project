@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head><title>Notifications</title></head>
+<body>
+<section layout:fragment="content">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h1 class="h3 mb-0">Notifications</h1>
+        <form th:if="${unreadCount > 0}" method="post" th:action="@{/notifications/read-all}">
+            <button type="submit" class="btn btn-outline-secondary">
+                <i class="bi bi-check2-all" aria-hidden="true"></i> Mark all as read
+            </button>
+        </form>
+    </div>
+    <div th:if="${page.items.isEmpty()}" class="card p-4 text-center">
+        <i class="bi bi-bell fs-3 text-body-secondary" aria-hidden="true"></i>
+        <h2 class="h5 mt-2">No notifications yet.</h2>
+        <p class="mb-0">You will be notified here when something changes on your complaints.</p>
+    </div>
+    <div th:replace="~{fragments/admin-controls :: count(${page})}"></div>
+    <ol th:unless="${page.items.isEmpty()}" class="list-group list-unstyled mb-3">
+        <li th:each="item : ${page.items}">
+            <form method="post" th:action="@{/notifications/{id}/open(id=${item.id})}">
+                <button type="submit" class="list-group-item list-group-item-action text-start w-100 py-3"
+                        th:classappend="${item.read ? null : 'notification-unread'}"
+                        th:attr="aria-describedby=|notice-${item.id}|,
+                                 aria-label=${item.complaintNo == null ? 'Open notification' : 'Open complaint ' + item.complaintNo}">
+                    <span th:id="|notice-${item.id}|" class="d-block mb-1" th:classappend="${item.read ? null : 'fw-semibold'}"
+                          th:text="${item.message}"></span>
+                    <span class="d-flex align-items-center gap-2 small text-body-secondary">
+                        <time th:datetime="${item.createdAt}" th:text="${@fmt.dateTime(item.createdAt)}"></time>
+                        <span th:unless="${item.read}" class="badge text-bg-primary" aria-label="Unread">New</span>
+                    </span>
+                </button>
+            </form>
+        </li>
+    </ol>
+    <nav th:replace="~{fragments/admin-controls :: pager(${page}, ${pageLinks})}"></nav>
+</section>
+</body>
+</html>

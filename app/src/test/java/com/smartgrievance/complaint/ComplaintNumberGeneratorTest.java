@@ -13,6 +13,9 @@ class ComplaintNumberGeneratorTest {
         assertThat(ComplaintNumberGenerator.format(2026, 1)).isEqualTo("GRV-2026-000001");
         assertThat(ComplaintNumberGenerator.format(2026, 123)).isEqualTo("GRV-2026-000123");
         assertThat(ComplaintNumberGenerator.format(2026, 999999)).isEqualTo("GRV-2026-999999");
+        assertThatIllegalArgumentException().isThrownBy(() -> ComplaintNumberGenerator.format(1999, 1));
+        assertThatIllegalArgumentException().isThrownBy(() -> ComplaintNumberGenerator.format(10000, 1));
+        assertThatIllegalArgumentException().isThrownBy(() -> ComplaintNumberGenerator.format(2026, 0));
         assertThatIllegalArgumentException().isThrownBy(() -> ComplaintNumberGenerator.format(2026, 1000000));
     }
 }

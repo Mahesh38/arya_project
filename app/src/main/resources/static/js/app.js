@@ -26,9 +26,7 @@ if (warning) {
         warningTimer = setTimeout(() => { warning.hidden = false; }, warningDelay);
     };
 
-    const stayLoggedIn = warning.querySelector('[data-stay-logged-in]');
-    stayLoggedIn.addEventListener('click', async () => {
-        stayLoggedIn.disabled = true;
+    const refreshBell = async () => {
         try {
             const response = await fetch(document.body.dataset.unreadCountUrl, {
                 headers: { Accept: 'application/json' },
@@ -38,19 +36,31 @@ if (warning) {
                 window.location.reload();
                 return;
             }
-            if (response.ok) {
-                const { unread: count } = await response.json();
-                const badge = document.getElementById('bell-count');
-                badge.hidden = count === 0;
-                badge.textContent = count > 99 ? '99+' : String(count);
-                badge.closest('a').setAttribute('aria-label', count ? `Notifications, ${count} unread` : 'Notifications, no unread');
-                restartWarning();
-            }
+            if (!response.ok) return;
+            const { unread: count } = await response.json();
+            const badge = document.getElementById('bell-count');
+            badge.hidden = count === 0;
+            badge.textContent = count > 99 ? '99+' : String(count);
+            badge.closest('a').setAttribute('aria-label', count ? `Notifications, ${count} unread` : 'Notifications, no unread');
+            restartWarning();
         } catch {
-            // Keep the warning visible so the user can retry after a connection failure.
+            // Leave the rendered count and warning available when the network is unavailable.
+        }
+    };
+    const stayLoggedIn = warning.querySelector('[data-stay-logged-in]');
+    stayLoggedIn.addEventListener('click', async () => {
+        stayLoggedIn.disabled = true;
+        try {
+            await refreshBell();
         } finally {
             stayLoggedIn.disabled = false;
         }
+    });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') refreshBell();
+    });
+    window.addEventListener('pageshow', event => {
+        if (event.persisted) refreshBell();
     });
     restartWarning();
 }
