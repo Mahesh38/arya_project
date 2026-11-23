@@ -2,6 +2,7 @@ package com.smartgrievance.complaint;
 
 import com.smartgrievance.masterdata.LookupOption;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class ComplaintRepository {
     public enum Lookup {
-        CATEGORY("category"), AREA("area");
+        CATEGORY("category"), AREA("area"), DEPARTMENT("department");
         private final String table;
         Lookup(String table) { this.table = table; }
     }
@@ -25,7 +26,7 @@ public class ComplaintRepository {
 
     public ComplaintRepository(JdbcClient jdbc) { this.jdbc = jdbc; }
 
-    Optional<Complaint> find(String number, boolean lock) {
+    public Optional<Complaint> find(String number, boolean lock) {
         if (lock && jdbc.sql("SELECT id FROM complaint WHERE complaint_no = :number FOR UPDATE")
                 .param("number", number).query(Long.class).optional().isEmpty()) return Optional.empty();
         return jdbc.sql("""
@@ -57,7 +58,7 @@ public class ComplaintRepository {
                 .param("id", owner).param("cutoff", cutoff).query(Long.class).single();
     }
 
-    Optional<LookupOption> lookup(Lookup lookup, long id, boolean lock) {
+    public Optional<LookupOption> lookup(Lookup lookup, long id, boolean lock) {
         return jdbc.sql("SELECT id, name, active FROM " + lookup.table + " WHERE id = :id" + (lock ? " FOR UPDATE" : ""))
                 .param("id", id).query((row, i) -> new LookupOption(row.getLong("id"), row.getString("name"),
                         row.getBoolean("active"))).optional();
@@ -90,6 +91,42 @@ public class ComplaintRepository {
                 WHERE id = :id AND version = :version AND status = :fromStatus
                 """).param("id", id).param("version", version).param("fromStatus", fromStatus.name())
                 .param("toStatus", toStatus.name()).param("now", now).update() == 1;
+    }
+
+    public boolean updateWorkflow(Complaint complaint, int version, ComplaintStatus to, Long department,
+                                  LocalDateTime resolvedAt, int reopenCount, LocalDateTime now) {
+        return jdbc.sql("""
+                UPDATE complaint SET status = :to, department_id = :department, resolved_at = :resolved,
+                    reopen_count = :reopens, updated_at = :now, version = version + 1
+                WHERE id = :id AND version = :version AND status = :from
+                """).param("to", to.name()).param("department", department).param("resolved", resolvedAt)
+                .param("reopens", reopenCount).param("now", now).param("id", complaint.id())
+                .param("version", version).param("from", complaint.status().name()).update() == 1;
+    }
+
+    public Long defaultDepartment(long categoryId) {
+        return jdbc.sql("""
+                SELECT d.id FROM category ca JOIN department d ON d.id = ca.default_department_id
+                WHERE ca.id = :id AND d.active = TRUE
+                """).param("id", categoryId).query(Long.class).optional().orElse(null);
+    }
+
+    public record Expired(long id, String number, int version, Long departmentId, long ownerId, LocalDateTime resolvedAt) {}
+
+    public List<Expired> findExpiredResolved(LocalDateTime cutoff, int limit, Expired after) {
+        String cursor = after == null ? "" : " AND (resolved_at > :previous OR (resolved_at = :previous AND id > :previousId))";
+        var statement = jdbc.sql("""
+                SELECT id, complaint_no, version, department_id, owner_id, resolved_at FROM complaint
+                WHERE status = 'RESOLVED' AND resolved_at < :cutoff
+                """ + cursor + " ORDER BY resolved_at, id LIMIT :limit").param("cutoff", cutoff).param("limit", limit);
+        if (after != null) statement.param("previous", after.resolvedAt()).param("previousId", after.id());
+        return statement.query((row, i) -> new Expired(row.getLong("id"), row.getString("complaint_no"),
+                row.getInt("version"), row.getObject("department_id", Long.class), row.getLong("owner_id"),
+                row.getObject("resolved_at", LocalDateTime.class))).list();
+    }
+
+    public boolean autoClose(Expired expired, LocalDateTime now) {
+        return updateStatus(expired.id(), expired.version(), ComplaintStatus.RESOLVED, ComplaintStatus.CLOSED, now);
     }
 
     record ViewerFacts(boolean watching, boolean linked) {}

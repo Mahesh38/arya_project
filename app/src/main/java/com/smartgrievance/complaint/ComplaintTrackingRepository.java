@@ -1,6 +1,7 @@
 package com.smartgrievance.complaint;
 
 import com.smartgrievance.common.PageResult;
+import com.smartgrievance.common.TextUtils;
 import java.time.LocalDateTime;
 import java.util.Locale;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -25,8 +26,7 @@ class ComplaintTrackingRepository {
         String query = watching || filter.q() == null ? "" : filter.q().strip();
         String search = query.isEmpty() ? "" : " AND (c.complaint_no = :number OR LOWER(c.title) LIKE :q ESCAPE '!')";
         String where = from + " JOIN category k ON k.id = c.category_id WHERE " + scope + statusClause + search;
-        String value = "%" + query.toLowerCase(Locale.ROOT)
-                .replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+        String value = TextUtils.likeContains(query);
         var names = statuses.stream().map(Enum::name).toList();
         long total = parameters("SELECT COUNT(*)" + where, citizen, statusClause, names, search, value, query.toUpperCase(Locale.ROOT))
                 .query(Long.class).single();

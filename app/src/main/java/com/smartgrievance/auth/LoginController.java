@@ -46,7 +46,7 @@ public class LoginController {
         return "auth/login";
     }
 
-    @GetMapping({"/officer/queue", "/admin/dashboard"})
+    @GetMapping("/admin/dashboard")
     String roleHome(@AuthenticationPrincipal CurrentUser user, Model model) {
         model.addAttribute("pageTitle", user.role().title());
         return "auth/role-home";

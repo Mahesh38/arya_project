@@ -149,7 +149,7 @@ public class CitizenComplaintController {
 
     private static String withdrawalPage(Model model, ComplaintSummary complaint) {
         model.addAttribute("complaint", complaint);
-        model.addAttribute("action", "WITHDRAW");
+        model.addAttribute("action", com.smartgrievance.workflow.TransitionRules.Action.WITHDRAW);
         model.addAttribute("postUrl", CITIZEN + "/" + complaint.complaintNo() + "/withdraw");
         model.addAttribute("cancelUrl", "/complaints/" + complaint.complaintNo());
         return ACTION;

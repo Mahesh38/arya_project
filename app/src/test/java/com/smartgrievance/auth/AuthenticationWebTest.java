@@ -58,7 +58,7 @@ class AuthenticationWebTest extends WebTestBase {
     @ParameterizedTest
     @CsvSource({
             "MAHESH@EXAMPLE.COM,Demo@1234,/citizen/complaints,citizen/my-complaints",
-            "ANITA.DESHMUKH@EXAMPLE.COM,Demo@1234,/officer/queue,auth/role-home",
+            "ANITA.DESHMUKH@EXAMPLE.COM,Demo@1234,/officer/queue,officer/queue",
             "ADMIN@EXAMPLE.COM,Admin@1234,/admin/dashboard,auth/role-home"})
     @DisplayName("TC-SEC-04 login normalizes email and sends each role to its home")
     void roleLanding(String email, String password, String expected, String homeView) throws Exception {

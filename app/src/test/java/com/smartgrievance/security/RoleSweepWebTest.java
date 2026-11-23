@@ -51,6 +51,7 @@ class RoleSweepWebTest extends WebTestBase {
         for (Route route : routes()) {
             var wrongAccounts = switch (route.role()) {
                 case "CITIZEN" -> List.of("admin@example.com", "anita.deshmukh@example.com");
+                case "OFFICER" -> List.of("mahesh@example.com", "admin@example.com");
                 case "ADMIN" -> List.of("mahesh@example.com", "anita.deshmukh@example.com");
                 default -> List.<String>of();
             };
@@ -88,8 +89,7 @@ class RoleSweepWebTest extends WebTestBase {
     @DisplayName("TC-RT-G4 the implemented routes match the documented method and path inventory")
     void routeInventory() throws IOException {
         var documented = routes().stream().map(Route::key).collect(Collectors.toSet());
-        var interimRoutes = Set.of("GET /officer/queue",
-                "GET /admin/dashboard", "GET /notifications/unread-count");
+        var interimRoutes = Set.of("GET /admin/dashboard", "GET /notifications/unread-count");
         var actual = mappings.getHandlerMethods().entrySet().stream()
                 .filter(mapping -> mapping.getValue().getBeanType().getPackageName().startsWith("com.smartgrievance"))
                 .flatMap(mapping -> mapping.getKey().getPatternValues().stream()
@@ -129,7 +129,7 @@ class RoleSweepWebTest extends WebTestBase {
     void knownPrefixes() throws IOException {
         assertThat(routes().stream().filter(route -> !route.role().equals("PUBLIC")))
                 .allSatisfy(route -> assertThat(route.path()).matches(
-                        "/(logout|account/[^/]+|verify-mobile(?:/[^/]+)?|citizen/(?:complaints(?:/.*)?|watching)|complaints/[^/]+|attachments/[^/]+|admin/(departments|categories|areas|officers|citizens)(?:/.*)?)"));
+                        "/(logout|account/[^/]+|verify-mobile(?:/[^/]+)?|citizen/(?:complaints(?:/.*)?|watching)|complaints/[^/]+|attachments/[^/]+|officer/(queue|complaints)(?:/.*)?|admin/(complaints|departments|categories|areas|officers|citizens)(?:/.*)?)"));
     }
 
     private List<?> entries() {
@@ -143,7 +143,8 @@ class RoleSweepWebTest extends WebTestBase {
         return csv.lines().skip(1).map(line -> line.split(",", 6))
                 .filter(row -> {
                     int id = Integer.parseInt(row[0].substring(2));
-                    return id <= 12 || (id >= 20 && id <= 29) || id == 73 || (id >= 80 && id <= 115);
+                    return id <= 12 || (id >= 20 && id <= 31) || (id >= 40 && id <= 53)
+                            || (id >= 56 && id <= 62) || (id >= 65 && id <= 70) || id == 73 || (id >= 80 && id <= 115);
                 })
                 .map(row -> new Route(row[1], row[2], row[3], row[4]))
                 .toList();

@@ -137,6 +137,25 @@ class TransitionRulesTest {
     }
 
     @Test
+    @DisplayName("TC-SM-41 watchers and linked owners receive the precise owner-only refusal")
+    void viewersNeverTakeOwnerActions() {
+        var ownerActions = EnumSet.of(EDIT, WITHDRAW, CLOSE, REOPEN);
+        for (var viewer : VIEWERS.stream().filter(candidate -> candidate.watching() || candidate.ownsDuplicate()).toList()) {
+            for (ComplaintStatus status : ComplaintStatus.values()) {
+                var facts = new ComplaintFacts(status, OWNER.userId(), OFFICER.departmentId(), 0,
+                        NOW.minusDays(1), false, viewer.watching(), viewer.ownsDuplicate());
+                for (Action action : ownerActions) {
+                    if (TransitionRules.allows(action, status, ComplaintAccessPolicy.Relation.OWNER)) {
+                        var decision = TransitionRules.decide(action, viewer.actor(), facts, NOW, 7, 2);
+                        assertThat(decision.allowed()).isFalse();
+                        assertThat(decision.refusal()).isEqualTo("error.owner.only");
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     @DisplayName("TC-UT-01 view access distinguishes owner, watched and linked cases and the current department")
     void viewAccess() {
         for (var viewer : VIEWERS) {

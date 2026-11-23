@@ -30,6 +30,8 @@ public class MasterDataService {
     PageResult<MasterDataRepository.Row> list(MasterType type, MasterDataFilter filter) { return data.list(type, filter); }
 
     public List<LookupOption> departments() { return data.options(MasterType.DEPARTMENT, false); }
+    public List<LookupOption> categories() { return data.options(MasterType.CATEGORY, false); }
+    public List<LookupOption> areas() { return data.options(MasterType.AREA, false); }
     public List<LookupOption> activeDepartments() { return data.options(MasterType.DEPARTMENT, true); }
     public List<LookupOption> activeCategories() { return data.options(MasterType.CATEGORY, true); }
     public List<LookupOption> activeAreas() { return data.options(MasterType.AREA, true); }
