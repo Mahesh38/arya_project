@@ -155,3 +155,33 @@ window.addEventListener('pageshow', event => {
         }
     }
 });
+
+// Admin dashboard chart (FR-64). The numbers come from the data-chart attribute, so the strict CSP needs no inline
+// script (D64). Chart.js is loaded only on the dashboard and after this file, hence the window load event.
+window.addEventListener('load', () => {
+    const holder = document.getElementById('chart-data');
+    const canvas = document.getElementById('department-chart');
+    if (!holder || !canvas || typeof window.Chart !== 'function') return;
+    let data;
+    try {
+        data = JSON.parse(holder.dataset.chart);
+    } catch {
+        return;
+    }
+    new window.Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: data.labels,
+            datasets: [
+                { label: 'Open', data: data.open, backgroundColor: '#0a58ca' },
+                { label: 'Closed', data: data.closed, backgroundColor: '#6c757d' },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
+        },
+    });
+});

@@ -4,6 +4,8 @@
 
 ### Added
 
+- Admin dashboard with status cards, open and closed counts by department, category and area, the overdue list, and a department chart; every number links to the matching complaint list.
+- CSV export of the filtered complaint list for administrators, capped at the configured row limit.
 - In-app notifications, unread counts, and scheduled housekeeping.
 - Staff can link duplicate complaints, and citizens can manage updates for complaints they follow.
 - Complaint workflow actions, officer queues, and administrative complaint filters.
@@ -16,6 +18,7 @@
 
 ### Security
 
+- CSV export escapes cells that spreadsheets could run as formulas and leaves out email addresses and mobile numbers.
 - Per-account and per-network login limits, BCrypt password storage, HMAC-protected OTPs, and session refresh when account state changes.
 
 ## [0.0.1] — 23-Nov-2026 (M0)
