@@ -23,7 +23,7 @@ test('the bell reflects unread notices, opening marks one read, and mark-all cle
   await expect(bell).toHaveAccessibleName(/Notifications, [1-9][0-9]* unread/);
   await bell.click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Notifications');
-  const readFirst = page.getByRole('button', { name: `Open complaint ${first.no}`, exact: true });
+  const readFirst = page.getByRole('button', { name: new RegExp(`^Open complaint ${first.no}:`) });
   await readFirst.click();
   await expect(page).toHaveURL(new RegExp(`${first.url}$`));
   await bell.click();
