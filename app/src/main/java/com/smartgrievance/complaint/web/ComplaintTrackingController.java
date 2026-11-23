@@ -8,10 +8,8 @@ import com.smartgrievance.complaint.ComplaintQueryService;
 import com.smartgrievance.complaint.ComplaintStatus;
 import com.smartgrievance.complaint.StatusGroup;
 import com.smartgrievance.user.CurrentUser;
-import com.smartgrievance.workflow.TransitionRules.Action;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -23,8 +21,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 public class ComplaintTrackingController {
     public record StatusOption(String value, String label) {}
-
-    private static final Set<Action> DEFERRED_ACTIONS = Set.of(Action.MARK_DUPLICATE, Action.WATCH, Action.UNWATCH);
 
     static final List<StatusOption> STATUS_OPTIONS = Stream.concat(
             Arrays.stream(StatusGroup.values()).map(group -> new StatusOption(group.name(), group.label())),
@@ -57,8 +53,7 @@ public class ComplaintTrackingController {
     String detail(@PathVariable String no, @AuthenticationPrincipal CurrentUser user, Model model) {
         var complaint = complaints.detail(no, user);
         model.addAttribute("c", complaint);
-        model.addAttribute("actionLinks", ActionLinks.forComplaint(complaint.complaintNo(), user.role(), complaint.actions())
-                .stream().filter(link -> !DEFERRED_ACTIONS.contains(link.action())).toList());
+        model.addAttribute("actionLinks", ActionLinks.forComplaint(complaint.complaintNo(), user.role(), complaint.actions()));
         return "complaint/detail";
     }
 

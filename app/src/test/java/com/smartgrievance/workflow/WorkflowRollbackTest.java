@@ -1,6 +1,7 @@
 package com.smartgrievance.workflow;
 
 import com.smartgrievance.complaint.ComplaintRepository;
+import com.smartgrievance.duplicate.DuplicateService;
 import com.smartgrievance.history.ComplaintHistory;
 import com.smartgrievance.history.ComplaintHistory.Event;
 import com.smartgrievance.notification.NotificationService;
@@ -42,6 +43,7 @@ class WorkflowRollbackTest extends FlowTestBase {
     @Autowired ComplaintDemoData demo;
     @Autowired AppUserDetailsService identities;
     @Autowired ComplaintWorkflowService workflow;
+    @Autowired DuplicateService duplicates;
     @Autowired AutoCloseJob job;
     @Autowired JdbcClient jdbc;
     @MockitoSpyBean ComplaintRepository complaints;
@@ -76,6 +78,23 @@ class WorkflowRollbackTest extends FlowTestBase {
         assertThat(complaints.find(FIRST, false)).contains(before);
         assertThat(snapshot()).isEqualTo(initialTables);
         assertThat(files()).containsExactlyElementsOf(initialFiles);
+    }
+
+    @Test
+    @DisplayName("TC-NF-08 duplicate notification failure rolls back the link, both events, and watchers")
+    void duplicateLinksRollBackTogether() throws Exception {
+        var original = complaints.find(FIRST, false).orElseThrow();
+        var source = complaints.find("GRV-2026-000003", false).orElseThrow();
+        var admin = identities.loadUserByUsername("admin@example.com");
+        var initial = snapshot();
+        var initialFiles = files();
+        var failure = new IllegalStateException("Injected notification failure");
+        doThrow(failure).when(notifications).duplicateLinked(eq(source.id()), anyLong(), eq(source.ownerId()),
+                anyList(), eq(source.number()), eq(original.number()), any());
+        assertThatThrownBy(() -> duplicates.markDuplicate(source.number(), original.number(), source.version(),
+                "Both reports describe the same issue", admin)).isSameAs(failure);
+        assertThat(snapshot()).isEqualTo(initial);
+        assertThat(files()).isEqualTo(initialFiles);
     }
 
     @Test

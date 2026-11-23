@@ -64,7 +64,7 @@ class ComplaintWorkflowMySqlIT extends FlowTestBase {
         assertThat(jdbc.sql("""
                 SELECT COUNT(*) FROM notification n JOIN complaint_event e ON e.id = n.event_id
                 WHERE n.complaint_id = :id AND e.to_status = 'RESOLVED'
-                """).param("id", prior.id()).query(Long.class).single()).isEqualTo(1);
+                """).param("id", prior.id()).query(Long.class).single()).isEqualTo(2);
     }
 
     private Callable<Boolean> resolve(CyclicBarrier start, int version, CurrentUser officer) {

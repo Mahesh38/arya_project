@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
-    <div th:fragment="bar(actionLinks, complaintNo, version, reviewBar)" th:unless="${actionLinks.isEmpty()}" class="d-flex flex-wrap gap-2 mb-3">
-        <th:block th:each="link : ${actionLinks}">
-            <th:block th:if="${reviewBar == (link.action.name() == 'CLOSE' or link.action.name() == 'REOPEN')}">
-            <a th:if="${link.method.name() == 'GET'}" class="btn" th:classappend="|btn-outline-${link.style}|" th:href="@{${link.url}}" th:text="${link.label}"></a>
-            <form th:if="${link.method.name() == 'POST'}" method="post" th:action="@{${link.url}}" th:attr="data-confirm=${link.confirm ? #messages.msg(link.action.name() == 'START_REVIEW' ? 'confirm.startReview' : (link.action.name() == 'UNWATCH' ? 'confirm.unwatch' : 'confirm.watch'), complaintNo) : null}">
-                <input type="hidden" name="version" th:value="${version}">
-                <button type="submit" class="btn" th:classappend="|btn-outline-${link.style}|" th:text="${link.label}"></button>
-            </form>
+    <div th:fragment="bar(actionLinks, complaintNo, version, group)" th:unless="${actionLinks.isEmpty()}" class="d-flex flex-wrap gap-2 mb-3">
+        <th:block th:each="link : ${actionLinks}" th:with="kind=${link.action.name()},
+                actionGroup=${(kind == 'CLOSE' or kind == 'REOPEN') ? 'review' : ((kind == 'WATCH' or kind == 'UNWATCH') ? 'watch' : 'general')}">
+            <th:block th:if="${group == actionGroup}">
+                <a th:if="${link.method.name() == 'GET'}" class="btn" th:classappend="|btn-outline-${link.style}|" th:href="@{${link.url}}" th:text="${link.label}"></a>
+                <form th:if="${link.method.name() == 'POST'}" method="post" th:action="@{${link.url}}" th:attr="data-confirm=${link.confirm ? #messages.msg(link.action.name() == 'START_REVIEW' ? 'confirm.startReview' : (link.action.name() == 'UNWATCH' ? 'confirm.unwatch' : 'confirm.watch'), complaintNo) : null}">
+                    <input th:unless="${group == 'watch'}" type="hidden" name="version" th:value="${version}">
+                    <button type="submit" class="btn" th:classappend="|btn-outline-${link.style}|" th:text="${link.label}"></button>
+                </form>
             </th:block>
         </th:block>
     </div>

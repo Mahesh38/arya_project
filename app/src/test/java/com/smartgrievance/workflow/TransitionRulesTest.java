@@ -94,6 +94,23 @@ class TransitionRulesTest {
     }
 
     @Test
+    @DisplayName("TC-SM-33 final complaints are read-only except for watcher toggles")
+    void finalStatusesOnlyAllowWatchToggles() {
+        for (var status : List.of(CLOSED, REJECTED, DUPLICATE, WITHDRAWN)) {
+            for (var viewer : VIEWERS) {
+                var facts = new ComplaintFacts(status, OWNER.userId(), OFFICER.departmentId(), 0,
+                        NOW.minusDays(1), false, viewer.watching(), viewer.ownsDuplicate());
+                var expected = switch (viewer.code()) {
+                    case "W" -> EnumSet.of(UNWATCH);
+                    case "D" -> EnumSet.of(WATCH);
+                    default -> EnumSet.noneOf(Action.class);
+                };
+                assertThat(TransitionRules.allowedActions(viewer.actor(), facts, NOW, 7, 2)).isEqualTo(expected);
+            }
+        }
+    }
+
+    @Test
     @DisplayName("TC-SM-38 the owner gets the precise withdrawal refusal for the current status")
     void withdrawalMessages() {
         for (var status : ComplaintStatus.values()) {

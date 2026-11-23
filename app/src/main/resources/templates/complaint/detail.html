@@ -39,7 +39,7 @@
             <span th:text="|${c.departmentName} marked this complaint resolved on ${resolved}. If you do nothing, it will close automatically on ${deadline}.|"></span>
             <span th:if="${c.can('REOPEN')}" th:text="|You can reopen this complaint ${c.maxReopens - c.reopenCount} more time(s).|"></span>
             <div class="mt-2">
-                <div th:replace="~{fragments/complaint-actions :: bar(${actionLinks}, ${c.complaintNo}, ${c.version}, true)}"></div>
+                <div th:replace="~{fragments/complaint-actions :: bar(${actionLinks}, ${c.complaintNo}, ${c.version}, 'review')}"></div>
             </div>
         </th:block>
         <span th:if="${!staff and c.viewerRelation.name() != 'OWNER'}"
@@ -49,8 +49,11 @@
     </aside>
     <aside th:if="${c.viewerRelation.name() == 'WATCHER' or c.can('UNWATCH')}" class="alert alert-info">
         You are watching this complaint. You get its updates, but only the person who filed it can close or reopen it.
+        <div class="mt-2" th:replace="~{fragments/complaint-actions :: bar(${actionLinks}, ${c.complaintNo}, ${c.version}, 'watch')}"></div>
     </aside>
-    <aside th:if="${c.can('WATCH')}" class="alert alert-info">You stopped watching this complaint. Watch again to get its updates.</aside>
+    <aside th:if="${c.can('WATCH')}" class="alert alert-info">You stopped watching this complaint. Watch again to get its updates.
+        <div th:replace="~{fragments/complaint-actions :: bar(${actionLinks}, ${c.complaintNo}, ${c.version}, 'watch')}"></div>
+    </aside>
     <aside th:if="${c.isFinal() and c.duplicateOf == null}" class="alert alert-secondary">
         <th:block th:if="${!c.timeline.isEmpty()}" th:with="last=${c.timeline.getLast()},
                   label=${last.type.name() == 'AUTO_CLOSED' ? 'Closed automatically' : c.status.label}">
@@ -58,7 +61,7 @@
         </th:block>
         <div>This complaint is finished.</div>
     </aside>
-    <div th:replace="~{fragments/complaint-actions :: bar(${actionLinks}, ${c.complaintNo}, ${c.version}, false)}"></div>
+    <div th:replace="~{fragments/complaint-actions :: bar(${actionLinks}, ${c.complaintNo}, ${c.version}, 'general')}"></div>
     <ul th:unless="${c.notices.isEmpty()}" class="small text-body-secondary">
         <li th:each="notice : ${c.notices}" th:text="${notice}"></li>
     </ul>

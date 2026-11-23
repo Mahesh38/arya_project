@@ -1,14 +1,6 @@
 import { resolve } from 'node:path';
-import { expect, test, type Page } from '@playwright/test';
-
-async function signIn(page: Page, email: string, password = 'Demo@1234') {
-  await page.context().clearCookies();
-  await page.goto('/login');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill(password);
-  await page.getByRole('button', { name: 'Log in' }).click();
-  await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
-}
+import { expect, test } from '@playwright/test';
+import { signIn } from './support/session';
 
 test('admin reviews and assigns, an officer resolves, and the citizen closes the complaint', async ({ page }, testInfo) => {
   test.setTimeout(90_000);
