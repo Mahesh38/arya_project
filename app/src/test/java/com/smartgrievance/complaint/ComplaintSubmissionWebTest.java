@@ -1,5 +1,8 @@
 package com.smartgrievance.complaint;
 
+import com.smartgrievance.attachment.AttachmentPurpose;
+import com.smartgrievance.attachment.AttachmentService;
+import com.smartgrievance.common.exception.BusinessRuleException;
 import com.smartgrievance.seed.ComplaintDemoData;
 import com.smartgrievance.seed.DemoData;
 import com.smartgrievance.testsupport.Html;
@@ -44,6 +47,7 @@ class ComplaintSubmissionWebTest extends WebTestBase {
     @Autowired AppUserDetailsService identities;
     @Autowired ComplaintService submission;
     @Autowired ComplaintRepository repository;
+    @Autowired AttachmentService attachments;
     @Autowired ComplaintNumberGenerator numbers;
     @Autowired TransactionTemplate transaction;
 
@@ -167,8 +171,11 @@ class ComplaintSubmissionWebTest extends WebTestBase {
     }
 
     @Test
-    @DisplayName("TC-BR-01, TC-BR-36, TC-SEC-42 IST numbering and rolling submission limit")
+    @DisplayName("TC-SM-43, TC-BR-01, TC-BR-36, TC-SEC-42 verified filing, IST numbering and rolling submission limit")
     void yearlySequenceUsesIstAndRollingLimitIsAppliedBeforeNumberAllocation() throws Exception {
+        var unverified = identities.loadUserByUsername("rahul@example.com");
+        assertThatThrownBy(() -> submission.submit(new ComplaintForm(), List.of(), unverified))
+                .isInstanceOfSatisfying(BusinessRuleException.class, error -> assertThat(error.rule()).isEqualTo("BR-86"));
         testClock.set(LocalDateTime.of(2026, 12, 31, 23, 59));
         jdbc.sql("INSERT INTO complaint_sequence (seq_year, last_number) VALUES (2026, 41)").update();
         mvc.perform(complaint(post(BASE), "mahesh", TITLE))
@@ -179,7 +186,8 @@ class ComplaintSubmissionWebTest extends WebTestBase {
                     .andExpect(redirectedUrl(BASE + "/GRV-2027-%06d/submitted".formatted(i)));
         }
         mvc.perform(complaint(post(BASE), "mahesh", TITLE)).andExpect(status().isOk())
-                .andExpect(model().attributeHasErrors("form"));
+                .andExpect(model().attributeHasErrors("form"))
+                .andExpect(content().string(containsString("You have filed 10 complaints in the last 24 hours.")));
         assertThat(count("complaint")).isEqualTo(10);
         assertThat(jdbc.sql("SELECT MAX(created_at) FROM complaint").query(LocalDateTime.class).single())
                 .isEqualTo(LocalDateTime.of(2027, 1, 1, 0, 0));
@@ -240,15 +248,16 @@ class ComplaintSubmissionWebTest extends WebTestBase {
                 """).update()).isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("uq_complaint_no");
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = {"Road Maintenance", "Water Supply"})
     @DisplayName("TC-SM-19, TC-RT-27, TC-RT-28, TC-UC-12a, TC-UC-12b withdrawal validates reason and notifies recipients")
-    void withdrawValidatesReasonAndNotifiesOnlyAdminsAndAssignedOfficers() throws Exception {
+    void withdrawValidatesReasonAndNotifiesOnlyAdminsAndAssignedOfficers(String department) throws Exception {
         demo.seed();
         String submitted = "GRV-2026-000003";
         String assigned = "GRV-2026-000005";
         String underReview = "GRV-2026-000008";
         jdbc.sql("UPDATE complaint SET department_id = :department WHERE complaint_no = :no")
-                .param("department", lookup("department", "Water Supply")).param("no", assigned).update();
+                .param("department", lookup("department", department)).param("no", assigned).update();
         String withdrawal = BASE + "/" + submitted + "/withdraw";
         mvc.perform(get(withdrawal).with(Logins.appUser(identities, "sneha@example.com")))
                 .andExpect(status().isOk()).andExpect(view().name("complaint/action-form"))
@@ -267,8 +276,10 @@ class ComplaintSubmissionWebTest extends WebTestBase {
                 .andExpect(redirectedUrl("/complaints/" + underReview));
         assertThat(emailRecipients(underReview, "STATUS_CHANGED")).containsExactly(properties.admin().email());
         assertThat(emailRecipients(submitted, "STATUS_CHANGED")).containsExactly(properties.admin().email());
-        assertThat(emailRecipients(assigned, "STATUS_CHANGED")).containsExactlyInAnyOrder(
-                properties.admin().email(), "anita.deshmukh@example.com", "rohan.kulkarni@example.com");
+        var recipients = department.equals("Road Maintenance")
+                ? List.of(properties.admin().email(), "vikram.jadhav@example.com")
+                : List.of(properties.admin().email(), "anita.deshmukh@example.com", "rohan.kulkarni@example.com");
+        assertThat(emailRecipients(assigned, "STATUS_CHANGED")).containsExactlyInAnyOrderElementsOf(recipients);
         assertThat(jdbc.sql("""
                 SELECT e.from_status, e.remark FROM complaint_event e JOIN complaint c ON c.id = e.complaint_id
                 WHERE c.complaint_no IN (:numbers) AND c.status = 'WITHDRAWN' AND e.to_status = 'WITHDRAWN'
@@ -381,6 +392,22 @@ class ComplaintSubmissionWebTest extends WebTestBase {
         assertThat(allocated).containsExactly(14, 1);
         assertThat(jdbc.sql("SELECT last_number FROM complaint_sequence ORDER BY seq_year").query(Integer.class).list())
                 .containsExactly(14, 1);
+    }
+
+    @Test
+    @DisplayName("TC-Q-29 guards count active complaint attachments and other active admins")
+    void guardCountsExcludeOtherAttachmentPurposesAndDeletedRows() throws Exception {
+        demo.seed();
+        long complaintId = repository.find("GRV-2026-000003", false).orElseThrow().id();
+        long ownerId = identities.loadUserByUsername("sneha@example.com").id();
+        var initial = attachments.active(complaintId, AttachmentPurpose.COMPLAINT);
+        assertThat(initial).hasSize(2);
+        attachments.add(complaintId, ownerId, AttachmentPurpose.RESOLUTION, List.of(photo()));
+        attachments.remove(complaintId, ownerId, List.of(initial.getFirst().id()));
+        assertThat(attachments.active(complaintId, AttachmentPurpose.COMPLAINT)).containsExactly(initial.getLast());
+        long adminId = identities.loadUserByUsername(properties.admin().email()).id();
+        assertThat(jdbc.sql("SELECT COUNT(*) FROM app_user WHERE role = 'ADMIN' AND active = TRUE AND id <> :admin")
+                .param("admin", adminId).query(Long.class).single()).isZero();
     }
 
     @Test
