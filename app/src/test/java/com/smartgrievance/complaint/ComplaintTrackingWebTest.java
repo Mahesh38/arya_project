@@ -26,7 +26,10 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class ComplaintTrackingWebTest extends WebTestBase {
@@ -157,6 +160,37 @@ class ComplaintTrackingWebTest extends WebTestBase {
         assertThat(details.actions()).containsExactlyInAnyOrder(Action.CLOSE, Action.REOPEN);
         assertThat(details.overdue()).isFalse();
         assertThat(details.timeline()).extracting(TimelineEntry::createdAt).isSorted();
+    }
+
+    @Test
+    @DisplayName("TC-UC-11c and TC-UC-12c an in-progress complaint refuses direct edit and withdrawal requests")
+    void inProgressOwnerCannotEditOrWithdraw() throws Exception {
+        fixture();
+        String detail = "/complaints/" + FIRST;
+        String edit = MINE + "/" + FIRST + "/edit";
+        String withdraw = MINE + "/" + FIRST + "/withdraw";
+        var owner = Logins.appUser(identities, OWNER);
+
+        var page = mvc.perform(get(detail).with(owner)).andExpect(status().isOk())
+                .andExpect(model().attribute("actionLinks", List.of())).andReturn();
+        var document = Html.of(page.getResponse().getContentAsString()).document();
+        assertThat(document.select("a[href='" + edit + "'], a[href='" + withdraw + "']")).isEmpty();
+
+        String editError = "This complaint can no longer be edited because it is In Progress.";
+        mvc.perform(get(edit).with(owner)).andExpect(redirectedUrl(detail))
+                .andExpect(flash().attribute("flashError", editError));
+        mvc.perform(multipart(edit).with(owner).with(csrf()).param("version", "3")
+                        .param("categoryId", "2").param("areaId", "2").param("title", "Revised water leak report")
+                        .param("description", "Water has been leaking from the mains since Wednesday.")
+                        .param("address", "Karve Road, Kothrud"))
+                .andExpect(redirectedUrl(detail)).andExpect(flash().attribute("flashError", editError));
+        mvc.perform(post(withdraw).with(owner).with(csrf()).param("version", "3")
+                        .param("remark", "Problem solved by neighbours"))
+                .andExpect(redirectedUrl(detail)).andExpect(flash().attribute("flashError",
+                        "Work has already started; it can no longer be withdrawn."));
+        var complaint = repository.find(FIRST, false).orElseThrow();
+        assertThat(complaint.status()).isEqualTo(ComplaintStatus.IN_PROGRESS);
+        assertThat(complaint.version()).isEqualTo(3);
     }
 
     @Test
