@@ -8,9 +8,9 @@ import com.smartgrievance.common.exception.NotFoundException;
 import com.smartgrievance.config.AppProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,8 +54,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
-    ModelAndView missingResource(HttpServletRequest request) {
-        return ErrorPages.view(HttpStatus.NOT_FOUND, request, null);
+    ModelAndView missingResource(NoResourceFoundException failure, HttpServletRequest request) {
+        return clientError(HttpStatus.NOT_FOUND, failure, request);
     }
 
     @ExceptionHandler(ActionRefusedException.class)
@@ -72,15 +72,14 @@ public class GlobalExceptionHandler {
     ModelAndView invalidRequest(Exception failure, HttpServletRequest request) {
         if (failure instanceof MethodArgumentTypeMismatchException mismatch
                 && mismatch.getParameter().hasParameterAnnotation(PathVariable.class)) {
-            return ErrorPages.view(HttpStatus.NOT_FOUND, request, null);
+            return clientError(HttpStatus.NOT_FOUND, failure, request);
         }
-        LOG.debug("CLIENT_ERROR status=400 type={}", failure.getClass().getSimpleName());
-        return ErrorPages.view(HttpStatus.BAD_REQUEST, request, null);
+        return clientError(HttpStatus.BAD_REQUEST, failure, request);
     }
 
     @ExceptionHandler(BindException.class)
     ModelAndView unhandledBindingError(HttpServletRequest request) {
-        LOG.warn("CLIENT_ERROR status=400 type=missing_binding_result");
+        LOG.warn("BIND_WITHOUT_BINDING_RESULT path={}", request.getRequestURI());
         return ErrorPages.view(HttpStatus.BAD_REQUEST, request, null);
     }
 
@@ -88,17 +87,17 @@ public class GlobalExceptionHandler {
     ModelAndView invalidMethod(HttpRequestMethodNotSupportedException failure,
             HttpServletRequest request, HttpServletResponse response) {
         response.setHeader("Allow", failure.getHeaders().getFirst("Allow"));
-        return ErrorPages.view(HttpStatus.METHOD_NOT_ALLOWED, request, null);
+        return clientError(HttpStatus.METHOD_NOT_ALLOWED, failure, request);
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    ModelAndView unsupportedMediaType(HttpServletRequest request) {
-        return ErrorPages.view(HttpStatus.UNSUPPORTED_MEDIA_TYPE, request, null);
+    ModelAndView unsupportedMediaType(HttpMediaTypeNotSupportedException failure, HttpServletRequest request) {
+        return clientError(HttpStatus.UNSUPPORTED_MEDIA_TYPE, failure, request);
     }
 
     @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
-    ModelAndView notAcceptable(HttpServletRequest request) {
-        return ErrorPages.view(HttpStatus.NOT_ACCEPTABLE, request, null);
+    ModelAndView notAcceptable(HttpMediaTypeNotAcceptableException failure, HttpServletRequest request) {
+        return clientError(HttpStatus.NOT_ACCEPTABLE, failure, request);
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
@@ -122,8 +121,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({AsyncRequestNotUsableException.class, ClientAbortException.class})
-    void disconnected(HttpServletResponse response) {
-        LOG.debug("Client disconnected");
+    void disconnected(Exception failure, HttpServletRequest request, HttpServletResponse response) {
+        logClientError(response.getStatus(), failure, request);
     }
 
     @ExceptionHandler(Exception.class)
@@ -134,5 +133,14 @@ public class GlobalExceptionHandler {
             return ResponseEntity.internalServerError().body(Map.of("error", "server_error", "reference", reference));
         }
         return ErrorPages.view(HttpStatus.INTERNAL_SERVER_ERROR, request, reference);
+    }
+
+    private static ModelAndView clientError(HttpStatus status, Exception failure, HttpServletRequest request) {
+        logClientError(status.value(), failure, request);
+        return ErrorPages.view(status, request, null);
+    }
+
+    private static void logClientError(int status, Exception failure, HttpServletRequest request) {
+        LOG.debug("CLIENT_ERROR status={} type={} path={}", status, failure.getClass().getSimpleName(), request.getRequestURI());
     }
 }

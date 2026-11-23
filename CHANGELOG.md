@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] — M0
+## [0.0.1] — 23-Nov-2026 (M0)
 
 ### Added
 

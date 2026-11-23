@@ -19,7 +19,7 @@ Run `./mvnw verify -Pmysql` against the local MySQL test database. For Playwrigh
 
 ## Implementation sequence
 
-Work through M0–M9 in the order defined in the build and deployment specification. Verify each milestone against its linked requirements and test cases before moving to the next.
+Work through M0–M9 in the order defined in the build and deployment specification. Verify each milestone against its linked requirements and test cases before moving to the next. Verify shared infrastructure behavior in M0 and exercise each exact route in the milestone that implements it.
 
 1. M0 — Spring Boot MVC foundation, build, and CI
 2. M1 — Registration, login, accounts, and OTP
