@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="details" class="text-center">
+    <p class="h2 text-body-secondary" th:text="${status}"></p>
+    <h1 class="h4" th:text="#{${titleKey}}"></h1>
+    <p th:text="#{${textKey}}"></p>
+    <p th:if="${reference != null}"><code id="error-reference" th:text="${reference}"></code></p>
+    <a class="btn btn-primary" th:if="${currentUser != null or homeUrl != null}" th:href="@{${homeUrl ?: '/'}}">Go to my home page</a>
+    <a class="btn btn-primary" th:unless="${currentUser != null or homeUrl != null}" th:href="@{/login}">Log in</a>
+</div>
+</body>
+</html>

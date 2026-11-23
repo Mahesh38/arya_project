@@ -1,0 +1,25 @@
+# Repository root .gitignore (doc 14 §3.4)
+# build output
+app/target/
+app/e2e/node_modules/
+app/e2e/playwright-report/
+app/e2e/test-results/
+# runtime data written next to the JAR (never commit personal data or logs)
+app/uploads/
+app/logs/
+uploads/
+logs/
+# secrets (doc 11 §9.1)
+.env
+*.env
+!*.env.example
+docs/deploy/docker/.env
+# IDE and OS files
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+.DS_Store
+Thumbs.db
