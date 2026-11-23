@@ -1,6 +1,10 @@
 package com.smartgrievance.complaint;
 
 import com.smartgrievance.common.PageResult;
+import com.smartgrievance.security.SecurityEvents;
+import java.io.IOException;
+import java.io.Writer;
+import java.time.format.DateTimeFormatter;
 import com.smartgrievance.config.AppProperties;
 import com.smartgrievance.user.CurrentUser;
 import java.time.Clock;
@@ -21,14 +25,54 @@ public class StaffComplaintService {
     private static final List<ComplaintStatus> QUEUE_STATUSES = List.of(ComplaintStatus.ASSIGNED, ComplaintStatus.IN_PROGRESS,
             ComplaintStatus.REOPENED, ComplaintStatus.RESOLVED, ComplaintStatus.CLOSED, ComplaintStatus.REJECTED,
             ComplaintStatus.DUPLICATE, ComplaintStatus.WITHDRAWN);
+    private static final DateTimeFormatter CSV_DATE = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm");
+    private static final List<String> CSV_HEADER = List.of("Complaint No", "Title", "Category", "Area", "Address",
+            "Department", "Status", "Submitted", "Due", "Overdue", "Days overdue", "Resolved");
     private final StaffComplaintRepository complaints;
     private final Clock clock;
     private final int reviewDays;
+    private final int exportMaxRows;
 
     StaffComplaintService(StaffComplaintRepository complaints, Clock clock, AppProperties properties) {
         this.complaints = complaints;
         this.clock = clock;
         this.reviewDays = properties.complaint().reviewWindowDays();
+        this.exportMaxRows = properties.export().maxRows();
+    }
+
+    public int exportMaxRows() {
+        return exportMaxRows;
+    }
+
+    /** How many complaints an admin filter matches; R-32 refuses the export above {@link #exportMaxRows()}. */
+    public long exportCount(StaffComplaintFilter filter) {
+        return complaints.count(filter, LocalDateTime.now(clock));
+    }
+
+    /**
+     * Writes the CSV of R-32 (FR-65): UTF-8 BOM, header, complaint fields only (no email or mobile, SEC-51), cells
+     * escaped against formula injection (SEC-47). Returns the number of data rows written.
+     */
+    public int exportCsv(StaffComplaintFilter filter, long adminId, Writer out) throws IOException {
+        var now = LocalDateTime.now(clock);
+        var rows = complaints.export(filter, now, exportMaxRows);
+        var csv = new CsvWriter(out).bom();
+        csv.row(CSV_HEADER);
+        for (var row : rows) {
+            csv.row(java.util.Arrays.asList(row.complaintNo(), row.title(), row.category(), row.area(), row.address(),
+                    row.department(), row.status().label(), format(row.createdAt()), format(row.dueAt()),
+                    row.overdue() ? "Yes" : "No",
+                    row.overdue() ? Integer.toString(ComplaintDates.daysOverdue(row.dueAt(), now)) : "",
+                    format(row.resolvedAt())));
+        }
+        out.flush();
+        SecurityEvents.LOG.info("ADMIN_ACTION adminId={} action=export_csv targetType=complaint targetId=- rows={}",
+                adminId, rows.size());
+        return rows.size();
+    }
+
+    private static String format(LocalDateTime value) {
+        return value == null ? null : CSV_DATE.format(value);
     }
 
     public PageResult<ComplaintListItem> departmentQueue(CurrentUser officer, StaffComplaintFilter filter) {

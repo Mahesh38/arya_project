@@ -29,6 +29,12 @@ public class Flash {
                 .put("flashError", messages.getMessage(key, args, LocaleContextHolder.getLocale()));
     }
 
+    /** For handlers that answer with a {@code ResponseEntity} redirect instead of a redirect view. */
+    public void error(HttpServletRequest request, HttpServletResponse response, String target, String key, Object... args) {
+        error(request, key, args);
+        RequestContextUtils.saveOutputFlashMap(target, request, response);
+    }
+
     public void info(RedirectAttributes redirect, String key, Object... args) {
         add(redirect, "flashInfo", key, args);
     }

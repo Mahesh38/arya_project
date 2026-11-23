@@ -231,3 +231,4 @@ form.is-submitting [type=submit] { pointer-events: none; opacity: .65; }
     border-inline-start: 4px solid #084298;
     background: #f3f7ff;
 }
+.chart-box { position: relative; height: 240px; }

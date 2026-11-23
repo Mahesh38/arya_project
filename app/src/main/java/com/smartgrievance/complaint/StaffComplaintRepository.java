@@ -26,25 +26,7 @@ class StaffComplaintRepository {
     }
 
     PageResult<ComplaintListItem> list(StaffComplaintFilter filter, Long scopeDepartment, LocalDateTime now, int reviewDays) {
-        var conditions = new Filters();
-        conditions.add("c.department_id = :scope", "scope", scopeDepartment);
-        var statuses = StatusGroup.expand(filter.status());
-        if (!statuses.isEmpty() && statuses.size() < ComplaintStatus.values().length) {
-            conditions.add("c.status IN (:statuses)", "statuses", statuses.stream().map(Enum::name).toList());
-        }
-        conditions.add("c.category_id = :category", "category", filter.categoryId());
-        conditions.add("c.department_id = :department", "department", filter.departmentId());
-        if (filter.unassigned()) conditions.where.append(" AND c.department_id IS NULL");
-        conditions.add("c.area_id = :area", "area", filter.areaId());
-        if (!filter.invalidDateRange()) {
-            if (filter.from() != null) conditions.add("c.created_at >= :from", "from", filter.from().atStartOfDay());
-            if (filter.to() != null) conditions.add("c.created_at < :to", "to", filter.to().plusDays(1).atStartOfDay());
-        }
-        if (filter.q() != null && !filter.q().isBlank()) {
-            conditions.add("(c.complaint_no = :number OR LOWER(c.title) LIKE :search ESCAPE '!')", "search", TextUtils.likeContains(filter.q()));
-            conditions.parameters.put("number", filter.q().toUpperCase(Locale.ROOT));
-        }
-        if (filter.overdue()) conditions.add(OVERDUE, "now", now);
+        var conditions = conditions(filter, scopeDepartment, now);
         long total = jdbc.sql("SELECT COUNT(*)" + FROM + conditions.where).params(conditions.parameters).query(Long.class).single();
         var page = filter.paging().clampTo(total);
         String order = scopeDepartment == null ? "c.created_at DESC, c.id DESC" : "overdue DESC, c.created_at, c.id";
@@ -66,6 +48,55 @@ class StaffComplaintRepository {
                             status == ComplaintStatus.RESOLVED && resolved != null ? resolved.plusDays(reviewDays) : null);
                 }).list();
         return new PageResult<>(rows, page.page(), page.size(), total);
+    }
+
+    /** Number of complaints matching an admin filter (no department scope); checked before the CSV export (D43). */
+    long count(StaffComplaintFilter filter, LocalDateTime now) {
+        var conditions = conditions(filter, null, now);
+        return jdbc.sql("SELECT COUNT(*)" + FROM + conditions.where).params(conditions.parameters).query(Long.class).single();
+    }
+
+    record ExportRow(String complaintNo, String title, String category, String area, String address, String department,
+                     ComplaintStatus status, LocalDateTime createdAt, LocalDateTime dueAt, boolean overdue,
+                     LocalDateTime resolvedAt) {}
+
+    /** Matching rows for the CSV export (R-32), newest first, at most {@code limit}. */
+    List<ExportRow> export(StaffComplaintFilter filter, LocalDateTime now, int limit) {
+        var conditions = conditions(filter, null, now);
+        return jdbc.sql("""
+                SELECT c.complaint_no, c.title, k.name AS category_name, a.name AS area_name, c.address,
+                       d.name AS department_name, c.status, c.created_at, c.resolved_at,
+                """ + DUE + " AS due_at, CASE WHEN " + OVERDUE + " THEN 1 ELSE 0 END AS overdue"
+                + FROM + conditions.where + " ORDER BY c.created_at DESC, c.id DESC LIMIT :limit")
+                .params(conditions.parameters).param("now", now).param("limit", limit)
+                .query((row, n) -> new ExportRow(row.getString("complaint_no"), row.getString("title"),
+                        row.getString("category_name"), row.getString("area_name"), row.getString("address"),
+                        row.getString("department_name"), ComplaintStatus.valueOf(row.getString("status")),
+                        row.getObject("created_at", LocalDateTime.class), row.getObject("due_at", LocalDateTime.class),
+                        row.getBoolean("overdue"), row.getObject("resolved_at", LocalDateTime.class))).list();
+    }
+
+    private static Filters conditions(StaffComplaintFilter filter, Long scopeDepartment, LocalDateTime now) {
+        var conditions = new Filters();
+        conditions.add("c.department_id = :scope", "scope", scopeDepartment);
+        var statuses = StatusGroup.expand(filter.status());
+        if (!statuses.isEmpty() && statuses.size() < ComplaintStatus.values().length) {
+            conditions.add("c.status IN (:statuses)", "statuses", statuses.stream().map(Enum::name).toList());
+        }
+        conditions.add("c.category_id = :category", "category", filter.categoryId());
+        conditions.add("c.department_id = :department", "department", filter.departmentId());
+        if (filter.unassigned()) conditions.where.append(" AND c.department_id IS NULL");
+        conditions.add("c.area_id = :area", "area", filter.areaId());
+        if (!filter.invalidDateRange()) {
+            if (filter.from() != null) conditions.add("c.created_at >= :from", "from", filter.from().atStartOfDay());
+            if (filter.to() != null) conditions.add("c.created_at < :to", "to", filter.to().plusDays(1).atStartOfDay());
+        }
+        if (filter.q() != null && !filter.q().isBlank()) {
+            conditions.add("(c.complaint_no = :number OR LOWER(c.title) LIKE :search ESCAPE '!')", "search", TextUtils.likeContains(filter.q()));
+            conditions.parameters.put("number", filter.q().toUpperCase(Locale.ROOT));
+        }
+        if (filter.overdue()) conditions.add(OVERDUE, "now", now);
+        return conditions;
     }
 
     record StatusCount(ComplaintStatus status, long count, long overdue) {}

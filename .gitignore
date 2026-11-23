@@ -23,3 +23,6 @@ docs/deploy/docker/.env
 .classpath
 .DS_Store
 Thumbs.db
+
+# JVM attach markers
+.attach_pid*

@@ -59,7 +59,7 @@ class AuthenticationWebTest extends WebTestBase {
     @CsvSource({
             "MAHESH@EXAMPLE.COM,Demo@1234,/citizen/complaints,citizen/my-complaints",
             "ANITA.DESHMUKH@EXAMPLE.COM,Demo@1234,/officer/queue,officer/queue",
-            "ADMIN@EXAMPLE.COM,Admin@1234,/admin/dashboard,auth/role-home"})
+            "ADMIN@EXAMPLE.COM,Admin@1234,/admin/dashboard,admin/dashboard"})
     @DisplayName("TC-SEC-04 login normalizes email and sends each role to its home")
     void roleLanding(String email, String password, String expected, String homeView) throws Exception {
         var result = mvc.perform(login(email, password)).andExpect(redirectedUrl(expected)).andReturn();
