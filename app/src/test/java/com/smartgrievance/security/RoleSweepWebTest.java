@@ -88,7 +88,7 @@ class RoleSweepWebTest extends WebTestBase {
     @DisplayName("TC-RT-G4 the implemented routes match the documented method and path inventory")
     void routeInventory() throws IOException {
         var documented = routes().stream().map(Route::key).collect(Collectors.toSet());
-        var interimRoutes = Set.of("GET /citizen/complaints", "GET /complaints/{no}", "GET /officer/queue",
+        var interimRoutes = Set.of("GET /officer/queue",
                 "GET /admin/dashboard", "GET /notifications/unread-count");
         var actual = mappings.getHandlerMethods().entrySet().stream()
                 .filter(mapping -> mapping.getValue().getBeanType().getPackageName().startsWith("com.smartgrievance"))
@@ -129,7 +129,7 @@ class RoleSweepWebTest extends WebTestBase {
     void knownPrefixes() throws IOException {
         assertThat(routes().stream().filter(route -> !route.role().equals("PUBLIC")))
                 .allSatisfy(route -> assertThat(route.path()).matches(
-                        "/(logout|account/[^/]+|verify-mobile(?:/[^/]+)?|citizen/complaints(?:/.*)?|admin/(departments|categories|areas|officers|citizens)(?:/.*)?)"));
+                        "/(logout|account/[^/]+|verify-mobile(?:/[^/]+)?|citizen/(?:complaints(?:/.*)?|watching)|complaints/[^/]+|attachments/[^/]+|admin/(departments|categories|areas|officers|citizens)(?:/.*)?)"));
     }
 
     private List<?> entries() {
@@ -143,7 +143,7 @@ class RoleSweepWebTest extends WebTestBase {
         return csv.lines().skip(1).map(line -> line.split(",", 6))
                 .filter(row -> {
                     int id = Integer.parseInt(row[0].substring(2));
-                    return id <= 12 || (id >= 22 && id <= 28) || (id >= 80 && id <= 115);
+                    return id <= 12 || (id >= 20 && id <= 29) || id == 73 || (id >= 80 && id <= 115);
                 })
                 .map(row -> new Route(row[1], row[2], row[3], row[4]))
                 .toList();

@@ -47,9 +47,9 @@ public class ComplaintService {
 
     public record EditPage(ComplaintSummary complaint, ComplaintEditForm form, List<AttachmentView> files,
                            long categoryId, long areaId) {}
-    public record Detail(ComplaintSummary complaint, List<AttachmentView> files, boolean canEdit, boolean canWithdraw) {}
 
     private final ComplaintRepository repository;
+    private final ComplaintVisibility visibility;
     private final ComplaintNumberGenerator numbers;
     private final AttachmentService attachments;
     private final FileStorageService files;
@@ -61,8 +61,9 @@ public class ComplaintService {
     public ComplaintService(ComplaintRepository repository, ComplaintNumberGenerator numbers,
                             AttachmentService attachments, FileStorageService files,
                             ComplaintHistory history, NotificationService notifications,
-                            AppProperties properties, Clock clock) {
+                            AppProperties properties, Clock clock, ComplaintVisibility visibility) {
         this.repository = repository;
+        this.visibility = visibility;
         this.numbers = numbers;
         this.attachments = attachments;
         this.files = files;
@@ -174,16 +175,6 @@ public class ComplaintService {
                 number, complaint.status(), ComplaintStatus.WITHDRAWN, user.id());
     }
 
-    @Transactional(readOnly = true)
-    public Detail detail(String number, CurrentUser user) {
-        var complaint = load(number, false);
-        var actor = ActorContext.of(user);
-        var facts = visibleFacts(complaint, actor);
-        var actions = TransitionRules.allowedActions(actor, facts, now(), config.reviewWindowDays(), config.maxReopens());
-        return new Detail(summary(complaint), attachments.active(complaint.id(), FILE_PURPOSE),
-                actions.contains(Action.EDIT), actions.contains(Action.WITHDRAW));
-    }
-
     private Complaint forAction(String number, CurrentUser user, Action action, boolean lock) {
         var complaint = load(number, lock);
         var actor = ActorContext.of(user);
@@ -198,15 +189,13 @@ public class ComplaintService {
     }
 
     private ComplaintFacts visibleFacts(Complaint complaint, ActorContext actor) {
-        boolean otherCitizen = actor.role() == Role.CITIZEN && actor.userId() != complaint.ownerId();
-        boolean watching = otherCitizen && repository.activeWatcher(complaint.id(), actor.userId());
-        boolean linked = otherCitizen && repository.ownsDuplicate(complaint.id(), actor.userId());
-        var relation = ComplaintAccessPolicy.relation(actor, complaint.ownerId(), complaint.departmentId(), watching, linked);
+        var access = visibility.access(actor, complaint.id(), complaint.ownerId(), complaint.departmentId());
+        var relation = access.relation();
         if (!ComplaintAccessPolicy.canView(relation)) throw missing(complaint.number(), true);
         boolean hasDuplicates = TransitionRules.allows(Action.WITHDRAW, complaint.status(), relation)
                 && repository.hasDuplicates(complaint.id());
         return new ComplaintFacts(complaint.status(), complaint.ownerId(), complaint.departmentId(),
-                complaint.reopenCount(), complaint.resolvedAt(), hasDuplicates, watching, linked);
+                complaint.reopenCount(), complaint.resolvedAt(), hasDuplicates, access.watching(), access.linked());
     }
 
     private record Choices(LookupOption category, LookupOption area) {}

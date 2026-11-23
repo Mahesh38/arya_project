@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="trackingList(watching, verifyBanner)"
+     th:with="listUrl=${watching ? '/citizen/watching' : '/citizen/complaints'},
+              filtered=${(filter.status != null and !filter.status.toString().isEmpty() and filter.status.toString() != 'ALL') or (filter.q != null and !filter.q.isEmpty())}">
+    <aside th:if="${verifyBanner}" class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <span><i class="bi bi-phone" aria-hidden="true"></i> Verify your mobile number to file complaints.</span>
+        <a th:href="@{/verify-mobile}" class="btn btn-sm btn-outline-dark">Verify now</a>
+    </aside>
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+        <h1 class="h3 mb-0" th:text="${watching ? 'Watching' : 'My Complaints'}"></h1>
+        <a th:unless="${watching}" class="btn btn-primary" th:href="@{/citizen/complaints/new}">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> New Complaint
+        </a>
+    </div>
+    <p th:if="${watching}">You’ll get updates on complaints linked to your own as duplicates. The original complainant can close or reopen them.</p>
+    <form method="get" th:action="@{${listUrl}}" class="row gy-2 gx-3 mb-3 align-items-end">
+        <div class="col-12 col-sm-auto">
+            <label class="form-label" for="status-filter">Status</label>
+            <select class="form-select" id="status-filter" name="status">
+                <option th:each="option : ${statusOptions}" th:value="${option.value}"
+                        th:selected="${option.value == (filter.status == null ? 'ALL' : filter.status.toString())}"
+                        th:text="${option.label}"></option>
+            </select>
+        </div>
+        <div th:unless="${watching}" class="col-12 col-sm">
+            <label class="form-label" for="complaint-search">Search</label>
+            <input class="form-control" type="search" id="complaint-search" name="q" th:value="${filter.q}"
+                   maxlength="100" placeholder="GRV number or title">
+        </div>
+        <input th:if="${page.size != 10}" type="hidden" name="size" th:value="${page.size}">
+        <div th:replace="~{fragments/admin-controls :: filterButtons(${listUrl})}"></div>
+    </form>
+    <div th:replace="~{fragments/admin-controls :: count(${page})}"></div>
+    <div th:if="${page.items.isEmpty()}" class="card text-center py-4 px-3">
+        <div class="card-body">
+            <i class="bi fs-3 text-body-secondary" th:classappend="${watching ? 'bi-eye' : 'bi-inbox'}" aria-hidden="true"></i>
+            <h2 class="h5 mt-2" th:text="${filtered ? 'No complaints match this filter.' : (watching ? 'You are not watching any complaints.' : 'No complaints yet')}"></h2>
+            <a th:if="${filtered}" th:href="@{${listUrl}}">Clear filter</a>
+            <th:block th:unless="${filtered}">
+                <p th:if="${watching}" class="mb-0">When an officer links your complaint to an existing one, it appears here.</p>
+                <th:block th:unless="${watching}">
+                    <p th:text="${verifyBanner ? 'Verify your mobile number first, then you can file complaints.' : 'Report a problem in your area and track it here.'}"></p>
+                    <a th:if="${verifyBanner}" class="btn btn-outline-primary" th:href="@{/verify-mobile}">Verify now</a>
+                    <a th:unless="${verifyBanner}" class="btn btn-primary" th:href="@{/citizen/complaints/new}">New Complaint</a>
+                </th:block>
+            </th:block>
+        </div>
+    </div>
+    <div th:unless="${page.items.isEmpty()}" class="card mb-3">
+        <table class="table complaint-list align-middle mb-0">
+            <caption class="visually-hidden" th:text="${watching ? 'Complaints you watch' : 'Your complaints'}"></caption>
+            <thead><tr><th scope="col">Complaint</th><th scope="col">Title</th><th scope="col">Category</th><th scope="col">Status</th><th scope="col">Submitted</th></tr></thead>
+            <tbody>
+                <tr th:each="item : ${page.items}">
+                    <th scope="row"><a class="complaint-no" th:href="@{/complaints/{no}(no=${item.complaintNo})}" th:text="${item.complaintNo}"></a></th>
+                    <td class="fw-semibold" th:text="${item.title}"></td>
+                    <td th:text="${item.categoryName}"></td>
+                    <td>
+                        <span th:replace="~{fragments/status-badge :: badge(${item.status})}"></span>
+                        <small th:if="${!watching and item.reviewDeadline != null}" class="d-block text-body-secondary mt-1"
+                               th:text="|Review by ${@fmt.date(item.reviewDeadline.toLocalDate())}|"></small>
+                    </td>
+                    <td th:text="${@fmt.date(item.createdAt.toLocalDate())}"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <nav th:replace="~{fragments/admin-controls :: pager(${page}, ${pageLinks})}"></nav>
+</div>
+</body>
+</html>

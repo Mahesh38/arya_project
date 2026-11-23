@@ -57,15 +57,15 @@ class AuthenticationWebTest extends WebTestBase {
 
     @ParameterizedTest
     @CsvSource({
-            "MAHESH@EXAMPLE.COM,Demo@1234,/citizen/complaints",
-            "ANITA.DESHMUKH@EXAMPLE.COM,Demo@1234,/officer/queue",
-            "ADMIN@EXAMPLE.COM,Admin@1234,/admin/dashboard"})
+            "MAHESH@EXAMPLE.COM,Demo@1234,/citizen/complaints,citizen/my-complaints",
+            "ANITA.DESHMUKH@EXAMPLE.COM,Demo@1234,/officer/queue,auth/role-home",
+            "ADMIN@EXAMPLE.COM,Admin@1234,/admin/dashboard,auth/role-home"})
     @DisplayName("TC-SEC-04 login normalizes email and sends each role to its home")
-    void roleLanding(String email, String password, String expected) throws Exception {
+    void roleLanding(String email, String password, String expected, String homeView) throws Exception {
         var result = mvc.perform(login(email, password)).andExpect(redirectedUrl(expected)).andReturn();
         var session = session(result);
         assertThat(user(session).getPassword()).isNull();
-        mvc.perform(get(expected).with(requestedSession(session))).andExpect(status().isOk()).andExpect(view().name("auth/role-home"));
+        mvc.perform(get(expected).with(requestedSession(session))).andExpect(status().isOk()).andExpect(view().name(homeView));
         mvc.perform(get("/login").with(requestedSession(session))).andExpect(redirectedUrl("/"));
         mvc.perform(get("/register").with(requestedSession(session))).andExpect(redirectedUrl("/"));
         mvc.perform(get("/").with(requestedSession(session))).andExpect(redirectedUrl(expected));

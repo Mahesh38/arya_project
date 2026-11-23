@@ -118,16 +118,6 @@ public class CitizenComplaintController {
         return "redirect:/complaints/" + no;
     }
 
-    @GetMapping("/complaints/{no}")
-    String detail(@PathVariable String no, @AuthenticationPrincipal CurrentUser user, Model model) {
-        var detail = complaints.detail(no, user);
-        model.addAttribute("complaint", detail.complaint());
-        model.addAttribute("currentAttachments", detail.files());
-        model.addAttribute("canEdit", detail.canEdit());
-        model.addAttribute("canWithdraw", detail.canWithdraw());
-        return "complaint/submission-detail";
-    }
-
     private String createPage(Model model) {
         formOptions(model, "CREATE", lookups.activeCategories(), lookups.activeAreas());
         return FORM;

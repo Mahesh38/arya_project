@@ -2,6 +2,7 @@ package com.smartgrievance.attachment;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -15,15 +16,32 @@ class AttachmentRepository {
         this.jdbc = jdbc;
     }
 
-    List<AttachmentView> active(long complaintId, AttachmentPurpose purpose) {
+    record Download(long complaintId, long ownerId, Long departmentId, String name, String storedName,
+                    String contentType, long size, boolean deleted) {}
+
+    List<AttachmentView> visible(long complaintId, AttachmentPurpose purpose, boolean includeDeleted) {
         return jdbc.sql("""
-                SELECT id, original_name, content_type, size_bytes, uploaded_at
-                FROM attachment WHERE complaint_id = :complaintId AND purpose = :purpose AND deleted = FALSE
+                SELECT id, original_name, content_type, size_bytes, uploaded_at, deleted, deleted_at
+                FROM attachment WHERE complaint_id = :complaintId AND purpose = :purpose
+                  AND (:includeDeleted = TRUE OR deleted = FALSE)
                 ORDER BY id
                 """).param("complaintId", complaintId).param("purpose", purpose.name())
+                .param("includeDeleted", includeDeleted)
                 .query((row, index) -> AttachmentView.of(row.getLong("id"), row.getString("original_name"),
                         row.getString("content_type"), row.getLong("size_bytes"), purpose,
-                        row.getObject("uploaded_at", LocalDateTime.class), false, null)).list();
+                        row.getObject("uploaded_at", LocalDateTime.class), row.getBoolean("deleted"),
+                        row.getObject("deleted_at", LocalDateTime.class))).list();
+    }
+
+    Optional<Download> download(long id) {
+        return jdbc.sql("""
+                SELECT a.complaint_id, c.owner_id, c.department_id, a.original_name, a.stored_name,
+                       a.content_type, a.size_bytes, a.deleted
+                FROM attachment a JOIN complaint c ON c.id = a.complaint_id WHERE a.id = :id
+                """).param("id", id).query((row, index) -> new Download(row.getLong("complaint_id"),
+                        row.getLong("owner_id"), row.getObject("department_id", Long.class),
+                        row.getString("original_name"), row.getString("stored_name"), row.getString("content_type"),
+                        row.getLong("size_bytes"), row.getBoolean("deleted"))).optional();
     }
 
     AttachmentView insert(long complaintId, long actorId, AttachmentPurpose purpose, LocalDateTime now,

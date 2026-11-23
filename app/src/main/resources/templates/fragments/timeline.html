@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<ol th:fragment="timelineEntries(entries)" class="list-unstyled mb-0">
+    <li th:each="event, iteration : ${entries}" class="border-start border-2 ps-3 py-2"
+        th:with="type=${event.type.name()}, next=${event.toStatus == null ? '' : event.toStatus.name()}">
+        <div class="d-flex gap-2 flex-wrap align-items-center fw-semibold">
+            <th:block th:switch="${type}">
+                <span th:case="'CREATED'">Complaint submitted</span>
+                <span th:case="'EDITED'">Complaint edited</span>
+                <span th:case="'REMARK'">Progress update</span>
+                <span th:case="'REASSIGNED'" th:text="|Reassigned to ${event.departmentName}|"></span>
+                <span th:case="'AUTO_CLOSED'">Closed automatically</span>
+                <span th:case="'DUPLICATE_LINKED'">
+                    Marked as a duplicate of <a th:if="${event.relatedLinkable}" th:href="@{/complaints/{no}(no=${event.relatedNo})}" th:text="${event.relatedNo}"></a>
+                    <span th:unless="${event.relatedLinkable}" th:text="${event.relatedNo}"></span>
+                </span>
+                <span th:case="'DUPLICATE_RECEIVED'">
+                    <th:block th:if="${event.relatedNo != null}">
+                        <a th:if="${event.relatedLinkable}" th:href="@{/complaints/{no}(no=${event.relatedNo})}" th:text="${event.relatedNo}"></a>
+                        <span th:unless="${event.relatedLinkable}" th:text="${event.relatedNo}"></span> linked as a duplicate
+                    </th:block>
+                    <th:block th:if="${event.relatedNo == null}">Another complaint about the same problem was linked to this one</th:block>
+                </span>
+                <th:block th:case="'STATUS_CHANGED'">
+                    <th:block th:switch="${next}">
+                        <span th:case="'UNDER_REVIEW'" th:text="${event.fromStatus.name() == 'SUBMITTED' ? 'Review started' : 'Sent back to the Grievance Cell'}"></span>
+                        <span th:case="'ASSIGNED'" th:text="|Assigned to ${event.departmentName}|"></span>
+                        <span th:case="'IN_PROGRESS'">Work started</span>
+                        <span th:case="'REOPENED'">Reopened by the citizen</span>
+                        <span th:case="'CLOSED'">Closed by the citizen</span>
+                        <span th:case="'WITHDRAWN'">Withdrawn by the citizen</span>
+                        <span th:case="'*'" th:text="${event.toStatus.label}"></span>
+                    </th:block>
+                </th:block>
+            </th:block>
+            <th:block th:if="${event.toStatus != null}">
+                <span th:replace="~{fragments/status-badge :: badge(${event.toStatus})}"></span>
+            </th:block>
+        </div>
+        <div class="small text-body-secondary" th:text="|${@fmt.dateTime(event.createdAt)} · ${event.actorLabel}|"></div>
+        <div th:if="${event.remark != null}" class="timeline-remark" th:text="${type == 'EDITED' ? 'Reason: ' + event.remark : event.remark}"></div>
+        <small th:if="${iteration.last and next == 'RESOLVED' and c.reviewDeadline != null}" class="text-body-secondary"
+               th:text="|Review by ${@fmt.date(c.reviewDeadline.toLocalDate())}|"></small>
+        <ul th:unless="${event.changes.isEmpty()}" class="mb-0 mt-1">
+            <li th:each="change : ${event.changes}" th:switch="${change.field}">
+                <div th:case="'description'">
+                    <span>Description changed</span>
+                    <details><summary>Show old and new text</summary>
+                        <p class="pre-line" th:text="${change.oldValue}"></p>
+                        <p class="pre-line" th:text="${change.newValue}"></p>
+                    </details>
+                </div>
+                <div th:case="'attachment'">
+                    <th:block th:if="${change.newValue == null}">Attachment removed <del th:text="${change.oldValue}"></del></th:block>
+                    <th:block th:if="${change.oldValue == null}">Attachment added <ins th:text="${change.newValue}"></ins></th:block>
+                </div>
+                <div th:case="'*'">
+                    <span th:text="|${#strings.capitalize(change.field)} changed from|"></span>
+                    <del th:text="${change.oldValue}"></del> to <ins th:text="${change.newValue}"></ins>
+                </div>
+            </li>
+        </ul>
+    </li>
+</ol>
+</body>
+</html>

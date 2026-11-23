@@ -6,6 +6,7 @@ import com.smartgrievance.common.exception.ActionRefusedException;
 import com.smartgrievance.common.exception.BusinessRuleException;
 import com.smartgrievance.common.exception.NotFoundException;
 import com.smartgrievance.config.AppProperties;
+import com.smartgrievance.user.CurrentUser;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.catalina.connector.ClientAbortException;
@@ -16,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
@@ -49,7 +51,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     ModelAndView notFound(NotFoundException ex, HttpServletRequest request) {
         LOG.info("NOT_FOUND object={} ref={}", ex.object(), ex.ref());
-        if (ex.policy()) SECURITY.info("NOT_VISIBLE object={} ref={}", ex.object(), ex.ref());
+        if (ex.policy()) {
+            CurrentUser actor = request.getUserPrincipal() instanceof Authentication authentication
+                    && authentication.getPrincipal() instanceof CurrentUser user ? user : null;
+            SECURITY.info("NOT_VISIBLE object={} ref={} userId={} role={}", ex.object(), ex.ref(),
+                    actor == null ? null : actor.id(), actor == null ? null : actor.role());
+        }
         return ErrorPages.view(HttpStatus.NOT_FOUND, request, null);
     }
 

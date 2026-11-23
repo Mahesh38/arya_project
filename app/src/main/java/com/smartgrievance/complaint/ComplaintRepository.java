@@ -17,7 +17,9 @@ public class ComplaintRepository {
 
     public record Complaint(long id, String number, long ownerId, long categoryId, long areaId, Long departmentId,
                             String title, String description, String address, ComplaintStatus status, int version, int reopenCount,
-                            String categoryName, String areaName, String departmentName, LocalDateTime resolvedAt) {}
+                            String categoryName, String areaName, String departmentName, LocalDateTime resolvedAt,
+                            LocalDateTime createdAt, LocalDateTime updatedAt, String ownerName, int slaDays,
+                            String originalNo, String originalTitle, String originalStatus) {}
 
     private final JdbcClient jdbc;
 
@@ -27,15 +29,20 @@ public class ComplaintRepository {
         if (lock && jdbc.sql("SELECT id FROM complaint WHERE complaint_no = :number FOR UPDATE")
                 .param("number", number).query(Long.class).optional().isEmpty()) return Optional.empty();
         return jdbc.sql("""
-                SELECT c.*, a.name AS area_name, k.name AS category_name, d.name AS department_name
+                SELECT c.*, a.name AS area_name, k.name AS category_name, k.sla_days,
+                       d.name AS department_name, u.full_name AS owner_name,
+                       o.complaint_no AS original_no, o.title AS original_title, o.status AS original_status
                 FROM complaint c JOIN area a ON a.id = c.area_id JOIN category k ON k.id = c.category_id
+                JOIN app_user u ON u.id = c.owner_id LEFT JOIN complaint o ON o.id = c.duplicate_of_id
                 LEFT JOIN department d ON d.id = c.department_id WHERE c.complaint_no = :number
                 """).param("number", number).query((row, i) -> new Complaint(row.getLong("id"),
                 row.getString("complaint_no"), row.getLong("owner_id"), row.getLong("category_id"), row.getLong("area_id"),
                 row.getObject("department_id", Long.class), row.getString("title"), row.getString("description"),
                 row.getString("address"), ComplaintStatus.valueOf(row.getString("status")), row.getInt("version"), row.getInt("reopen_count"),
                 row.getString("category_name"), row.getString("area_name"), row.getString("department_name"),
-                row.getObject("resolved_at", LocalDateTime.class))).optional();
+                row.getObject("resolved_at", LocalDateTime.class), row.getObject("created_at", LocalDateTime.class),
+                row.getObject("updated_at", LocalDateTime.class), row.getString("owner_name"), row.getInt("sla_days"),
+                row.getString("original_no"), row.getString("original_title"), row.getString("original_status"))).optional();
     }
 
     boolean lockVerifiedOwner(long owner) {
@@ -85,14 +92,22 @@ public class ComplaintRepository {
                 .param("toStatus", toStatus.name()).param("now", now).update() == 1;
     }
 
-    boolean activeWatcher(long complaint, long user) {
-        return jdbc.sql("SELECT user_id FROM complaint_watcher WHERE complaint_id = :id AND user_id = :user AND active = TRUE")
-                .param("id", complaint).param("user", user).query(Long.class).optional().isPresent();
+    record ViewerFacts(boolean watching, boolean linked) {}
+
+    ViewerFacts viewerFacts(long complaint, long user) {
+        return jdbc.sql("""
+                SELECT
+                    (SELECT COUNT(*) FROM complaint_watcher
+                        WHERE complaint_id = :id AND user_id = :user AND active = TRUE) AS watching,
+                    (SELECT COUNT(*) FROM complaint
+                        WHERE duplicate_of_id = :id AND owner_id = :user) AS linked
+                """).param("id", complaint).param("user", user)
+                .query((row, index) -> new ViewerFacts(row.getLong("watching") > 0, row.getLong("linked") > 0)).single();
     }
 
-    boolean ownsDuplicate(long complaint, long user) {
-        return jdbc.sql("SELECT id FROM complaint WHERE duplicate_of_id = :id AND owner_id = :user LIMIT 1")
-                .param("id", complaint).param("user", user).query(Long.class).optional().isPresent();
+    int duplicateCount(long complaint) {
+        return jdbc.sql("SELECT COUNT(*) FROM complaint WHERE duplicate_of_id = :id")
+                .param("id", complaint).query(Integer.class).single();
     }
 
     boolean hasDuplicates(long complaint) {

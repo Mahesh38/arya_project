@@ -45,7 +45,7 @@ test('a verified citizen submits an attachment, edits the complaint, and withdra
   await expect(page.locator('main .complaint-no')).toHaveText(/^GRV-\d{4}-\d{6}$/);
   await page.getByRole('link', { name: 'View complaint' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
-  await expect(page.getByText('photo.png', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Attachments' }).getByText('photo.png', { exact: true })).toBeVisible();
 
   await page.getByRole('link', { name: 'Edit', exact: true }).click();
   await page.getByLabel('Title').fill(title + ' near the junction');
@@ -57,13 +57,13 @@ test('a verified citizen submits an attachment, edits the complaint, and withdra
   await page.getByLabel('Reason for change').fill('Clarified the location and removed an outdated photo.');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Complaint updated.')).toBeVisible();
-  await expect(page.getByText('photo.png', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Attachments' }).getByText('photo.png', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(title + ' near the junction');
 
   await page.getByRole('link', { name: 'Withdraw', exact: true }).click();
   await page.getByLabel('Reason for withdrawal').fill('The collection crew has cleared the waste.');
   await page.getByRole('button', { name: 'Withdraw complaint' }).click();
   await expect(page.getByText('Complaint withdrawn.')).toBeVisible();
-  await expect(page.getByText('Withdrawn', { exact: true })).toBeVisible();
+  await expect(page.locator('main header').getByText('Withdrawn', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Edit', exact: true })).toHaveCount(0);
 });
