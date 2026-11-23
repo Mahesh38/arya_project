@@ -5,15 +5,15 @@
 | Date | 23-Nov-2026 |
 | Code | `main` at `5f64d48` (merge of #10) plus the two fixes below |
 | Environment | JDK 25.0.5, MySQL 8.0, Chromium (Playwright 1.65), Linux |
-| Result | **All automated suites green; independent walkthrough 94/94 checks; 2 defects found and fixed** |
+| Result | **All automated suites green; independent walkthrough 94/94 checks; 3 defects found and fixed, then re-validated** |
 
 ## 1. How the project was validated
 
 | Layer | What ran | Result |
 |---|---|---|
-| Automated, H2 | `./mvnw clean verify`: unit, repository, web, HTTP and scan tests + JaCoCo gates | **1,403 passed**, 0 failed, coverage gates met |
+| Automated, H2 | `./mvnw clean verify`: unit, repository, web, HTTP and scan tests + JaCoCo gates | **1,403 passed**, 0 failed, coverage gates met (after all fixes) |
 | Automated, MySQL | `./mvnw verify -Pmysql`: every query test class on MySQL, concurrency, unique keys, 10,000-complaint performance and `EXPLAIN` | **117 passed**, 0 failed; every page under 100 ms median at 10k complaints |
-| Automated, browser | `./mvnw verify -Pe2e`: Playwright, JavaScript on and off, 360 and 1280 px, axe-core, CSP | **81 passed**, 15 skipped (JS-only or no-JS-only checks), 0 failed |
+| Automated, browser | `./mvnw verify -Pe2e`: Playwright, JavaScript on and off, 360 and 1280 px, axe-core, CSP, off-screen controls | **81 passed**, 15 skipped (JS-only or no-JS-only checks), 0 failed (after all fixes) |
 | Independent walkthrough | [`walkthrough.mjs`](walkthrough.mjs) against the packaged JAR with the `dev` profile on MySQL and the Appendix A demo data, exactly as at the viva: use case by use case, error by error, screen by screen | **94/94 passed** ([raw results](walkthrough-results.json)) |
 
 The walkthrough is independent of the automated suites: it drives the real browser through the UI the way a citizen, officer and administrator would, on MySQL rather than H2, and checks the visible result of every step.
@@ -22,7 +22,7 @@ The walkthrough is independent of the automated suites: it drives the real brows
 
 | UC | Flow checked | Result | Evidence |
 |---|---|:-:|---|
-| UC-01 | Register as citizen (main + duplicate email + weak password) | ✅ | registered priya.1795424181644@example.com; field errors for taken email and short password |
+| UC-01 | Register as citizen (main + duplicate email + weak password) | ✅ | registered priya.1795425819486@example.com; field errors for taken email and short password |
 | UC-04 | Verify mobile with OTP (wrong code, resend cooldown, correct code) | ✅ | wrong code counted down; resend disabled and refused by the server inside the cooldown; correct code verified |
 | UC-02 | Log in / log out (role landing, wrong password, inactive, lockout, logout) | ✅ | three roles land on their homes; generic error for wrong password and inactive officer; lockout after 5 failures |
 | UC-03 | Change own password (wrong current, mismatch, success, old password rejected) | ✅ | errors shown for wrong current / mismatch; new password works, old refused |
@@ -42,9 +42,9 @@ The walkthrough is independent of the automated suites: it drives the real brows
 | UC-32 | Add progress remark | ✅ |  |
 | UC-33 | Resolve (with work-done file) and optimistic-lock conflict on a stale form | ✅ | first resolve wins; second (stale version) gets the "updated by someone else" message |
 | UC-34 | Send complaint back to the admin (wrong department) | ✅ | GRV-2026-000005 back to Under Review; Drainage officer loses access (404) |
-| UC-22 | Reject (reason required; officer rejection is covered by TC-UC-22b/c) | ✅ | GRV-2026-000008 rejected with a reason; owner sees Rejected |
-| UC-40/41/42 | Manage departments, categories, areas (create, duplicate name, deactivate, guard) | ✅ | Parks 81644 + category created; duplicate name refused; deactivating a default department refused |
-| UC-43 | Manage officer accounts (create, duplicate email, login as new officer) | ✅ | officer.1795424181644@example.com created after a duplicate-email error and can log in to the Water Supply queue |
+| UC-22 | Reject (reason required) (reason required; officer rejection is covered by TC-UC-22b/c) | ✅ | GRV-2026-000008 rejected with a reason; owner sees Rejected |
+| UC-40/41/42 | Manage departments, categories, areas (create, duplicate name, deactivate, guard) | ✅ | Parks 19486 + category created; duplicate name refused; deactivating a default department refused |
+| UC-43 | Manage officer accounts (create, duplicate email, login as new officer) | ✅ | officer.1795425819486@example.com created after a duplicate-email error and can log in to the Water Supply queue |
 | UC-44 | Manage citizen accounts (deactivate → login refused, reactivate, reset password) | ✅ | deactivated citizen cannot log in; reactivated; admin reset password works |
 | UC-50 | Admin dashboard and reports (cards link to matching lists, CSV export) | ✅ | Total 13 = CSV rows; Pending card 2 opens matching list; chart rendered |
 | UC-51 | Officer summary cards | ✅ | Assigned 0 · In Progress 1 · Reopened 0 · Awaiting citizen 0 · Closed 0 · Rejected 0 · Duplicate 2 · Withdrawn 0 · Overdue 0 |
@@ -70,7 +70,7 @@ The walkthrough is independent of the automated suites: it drives the real brows
 
 ## 4. Screens
 
-Every screen of doc 10 was opened at 1280 px and 360 px. Each check asserts: the page renders, **no sideways scroll**, **no JavaScript error**, **no CSP violation**, and at 1280 px **0 axe-core violations** (WCAG 2.1 A/AA). SCR-92 (500 page) is covered by TC-VE-14 because a running build has no safe way to raise a server error.
+Every screen of doc 10 was opened at 1280 px and 360 px. Each check asserts: the page renders, **no sideways scroll**, **no table that has to be scrolled sideways and no link or button off screen** (added after V-3), **no JavaScript error**, **no CSP violation**, and at 1280 px **0 axe-core violations** (WCAG 2.1 A/AA). SCR-92 (500 page) is covered by TC-VE-14 because a running build has no safe way to raise a server error.
 
 | Screen | Page | 1280 px | 360 px | Screenshots |
 |---|---|:-:|:-:|---|
@@ -107,9 +107,10 @@ Every screen of doc 10 was opened at 1280 px and 360 px. Each check asserts: the
 | # | Defect | Severity | Found by | Fix | Regression test |
 |---|---|---|---|---|---|
 | V-1 | **Edit revisions were not shown in the timeline (FR-17).** The "Complaint edited" entry rendered an empty list, so neither the citizen nor staff could see which field changed or its old and new value; the revisions were stored correctly. Cause: `th:switch` on the same `<li>` as `th:each` in `fragments/timeline.html` left every item empty. | Medium (requirement not visible to users) | UC-11 walkthrough | `th:if` conditions instead of the switch | `TimelineRevisionWebTest` (TC-UC-11a, FR-17): fails before, passes after |
+| V-3 | **Admin tables were cut off on phones (NFR-20).** At 360 px the officer, citizen, department, category and area lists showed only the first columns; the status and every action button (Edit, Deactivate, Reset password) were off screen and reachable only by scrolling the table sideways, and long emails were cut. The dashboard's overdue table clipped its "Days / SLA" column. Found by looking at the walkthrough screenshots; the earlier automated check only measured page-level scrolling, which a `.table-responsive` hides. | Medium (admin work on a phone was impractical) | Screenshot review of SCR-40, 44, 48, 50 at 360 px | Below 576 px these tables stack each row as a labelled card and wrap the action buttons (`.table-stack`, `data-label`, D129) | New off-screen check in TC-NF-04 (`quality.spec.ts`, now also sweeping the five admin lists) and in the walkthrough: on the old build it reported 24 hidden controls on Officers, 11 on Citizens, 14 on Categories and a clipped dashboard table; 0 after the fix |
 | V-2 | **An encoded slash (`%2F`) in the URL got Tomcat's plain "HTTP Status 400" page** instead of the application's 400 page used for every other rejected request (doc 12 D85). No information was leaked and the request was refused either way. | Low (consistency) | E-400 walkthrough | `TomcatConfig` passes `%2F` through so Spring Security's firewall rejects it and the app's page is shown | `CookieAndFirewallHttpTest` TC-SEC-33 (encoded slash, encoded `..`, double slash): fails before, passes after |
 
-The automated suites had missed both: no test checked the rendered change text of an edit, and the firewall test did not use an encoded slash.
+The automated suites had missed all three: no test checked the rendered change text of an edit, the firewall test did not use an encoded slash, and the phone-layout check looked only at page-level scrolling.
 
 ## 6. Behaviour confirmed as designed (not defects)
 

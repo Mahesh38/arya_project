@@ -32,6 +32,11 @@ const screens: Screen[] = [
   { user: 'anita.deshmukh@example.com', path: `/officer/complaints/${original}/resolve` },
   { user: 'admin@example.com', password: 'Admin@1234', path: '/admin/dashboard' },
   { user: 'admin@example.com', password: 'Admin@1234', path: '/admin/complaints' },
+  { user: 'admin@example.com', password: 'Admin@1234', path: '/admin/officers' },
+  { user: 'admin@example.com', password: 'Admin@1234', path: '/admin/citizens' },
+  { user: 'admin@example.com', password: 'Admin@1234', path: '/admin/departments' },
+  { user: 'admin@example.com', password: 'Admin@1234', path: '/admin/categories' },
+  { user: 'admin@example.com', password: 'Admin@1234', path: '/admin/areas' },
 ];
 
 test('TC-NF-03, TC-NF-04, TC-SEC-30a the main screens are accessible, fit the viewport and keep the CSP', async ({ page, javaScriptEnabled }, testInfo) => {
@@ -54,6 +59,16 @@ test('TC-NF-03, TC-NF-04, TC-SEC-30a the main screens are accessible, fit the vi
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow, `sideways scroll on ${where}`).toBeLessThanOrEqual(0);
+    const offscreen = await page.evaluate(() => {
+      const width = window.innerWidth;
+      const clipped = [...document.querySelectorAll('main .table-responsive')].filter((el) => el.scrollWidth > el.clientWidth + 1).length;
+      const hidden = [...document.querySelectorAll('main a, main button')]
+        .filter((el) => el.offsetParent !== null && el.getBoundingClientRect().right > width + 1)
+        .map((el) => el.textContent.trim().replace(/\s+/g, ' ').slice(0, 40));
+      return { clipped, hidden };
+    });
+    expect(offscreen.clipped, `tables scrolling sideways on ${where}`).toBe(0);
+    expect(offscreen.hidden, `links/buttons off screen on ${where}`).toEqual([]);
     // the verify page uses the public layout without a navbar
     if (screen.user && screen.path !== '/verify-mobile' && page.viewportSize()!.width <= 400) {
       await expect(page.getByRole('link', { name: /^Notifications,/ }), `bell on ${where}`).toBeVisible();

@@ -1,15 +1,15 @@
 {
   "base": "http://localhost:8080",
   "year": 2026,
-  "at": "2026-11-23T09:00:47.568Z",
+  "at": "2026-11-23T09:25:54.183Z",
   "results": [
     {
       "area": "UC",
       "id": "UC-01",
       "title": "Register as citizen (main + duplicate email + weak password)",
       "ok": true,
-      "note": "registered priya.1795424181644@example.com; field errors for taken email and short password",
-      "ms": 1534
+      "note": "registered priya.1795425819486@example.com; field errors for taken email and short password",
+      "ms": 1593
     },
     {
       "area": "UC",
@@ -17,7 +17,7 @@
       "title": "Verify mobile with OTP (wrong code, resend cooldown, correct code)",
       "ok": true,
       "note": "wrong code counted down; resend disabled and refused by the server inside the cooldown; correct code verified",
-      "ms": 590
+      "ms": 640
     },
     {
       "area": "UC",
@@ -25,7 +25,7 @@
       "title": "Log in / log out (role landing, wrong password, inactive, lockout, logout)",
       "ok": true,
       "note": "three roles land on their homes; generic error for wrong password and inactive officer; lockout after 5 failures",
-      "ms": 6040
+      "ms": 6037
     },
     {
       "area": "UC",
@@ -33,7 +33,7 @@
       "title": "Change own password (wrong current, mismatch, success, old password rejected)",
       "ok": true,
       "note": "errors shown for wrong current / mismatch; new password works, old refused",
-      "ms": 2996
+      "ms": 3049
     },
     {
       "area": "UC",
@@ -41,7 +41,7 @@
       "title": "Submit complaint (validation, wrong file type, too many files, success with photo + PDF)",
       "ok": true,
       "note": "GRV-2026-000012 filed with 2 attachments after required, length, type and count errors",
-      "ms": 2285
+      "ms": 2439
     },
     {
       "area": "UC",
@@ -49,7 +49,7 @@
       "title": "Edit complaint (no changes, change title, revision in timeline)",
       "ok": true,
       "note": "no-op edit refused politely; title change recorded as revision",
-      "ms": 1679
+      "ms": 1922
     },
     {
       "area": "UC",
@@ -57,7 +57,7 @@
       "title": "Withdraw complaint (reason required, success; refused after work started)",
       "ok": true,
       "note": "GRV-2026-000013 withdrawn with reason; GRV-2026-000001 (In Progress) refused",
-      "ms": 2618
+      "ms": 2835
     },
     {
       "area": "UC",
@@ -65,7 +65,7 @@
       "title": "My Complaints / Watching lists (filter, search, watching)",
       "ok": true,
       "note": "own complaints only, status filter, number search, Jayesh watches 000001",
-      "ms": 1846
+      "ms": 2006
     },
     {
       "area": "UC",
@@ -73,7 +73,7 @@
       "title": "Complaint detail & timeline (owner, watcher, officer, admin, duplicate banner, staff names hidden)",
       "ok": true,
       "note": "each role sees the right actions; citizen timeline shows department, not officer name",
-      "ms": 3466
+      "ms": 3635
     },
     {
       "area": "UC",
@@ -81,7 +81,7 @@
       "title": "Review resolution: reopen with reason, then close; window and limits enforced",
       "ok": true,
       "note": "GRV-2026-000004: reopen (reason required) → officer start + resolve → close; reopen count shown",
-      "ms": 3915
+      "ms": 3982
     },
     {
       "area": "UC",
@@ -89,7 +89,7 @@
       "title": "View / download attachment (owner yes, outsider 404, download name)",
       "ok": true,
       "note": "inline with nosniff, ?download=true as attachment, outsider 404 (/attachments/3)",
-      "ms": 1584
+      "ms": 1695
     },
     {
       "area": "UC",
@@ -97,7 +97,7 @@
       "title": "Review new complaint (admin, confirm prompt)",
       "ok": true,
       "note": "GRV-2026-000012 moved to Under Review after a confirm prompt",
-      "ms": 1022
+      "ms": 1177
     },
     {
       "area": "UC",
@@ -105,7 +105,7 @@
       "title": "Assign (default department pre-selected) and reassign (remark required)",
       "ok": true,
       "note": "GRV-2026-000012 → Water Supply (default); GRV-2026-000005 reassigned to Drainage with remark",
-      "ms": 1700
+      "ms": 1813
     },
     {
       "area": "UC",
@@ -113,7 +113,7 @@
       "title": "Mark duplicate (unknown no., self, other department, success; watcher added)",
       "ok": true,
       "note": "GRV-2026-000012 linked to GRV-2026-000001 after unknown/self/other-department refusals; Sneha now watches GRV-2026-000001",
-      "ms": 2709
+      "ms": 2725
     },
     {
       "area": "UC",
@@ -121,7 +121,7 @@
       "title": "Unwatch and watch again",
       "ok": true,
       "note": "unwatch removes it from Watching; original still reachable from the duplicate; watch again works",
-      "ms": 1397
+      "ms": 1546
     },
     {
       "area": "UC",
@@ -129,7 +129,7 @@
       "title": "Department queue (scope, overdue first, filters)",
       "ok": true,
       "note": "Water Supply and Sanitation queues show only their own complaints",
-      "ms": 1662
+      "ms": 1752
     },
     {
       "area": "UC",
@@ -137,7 +137,7 @@
       "title": "Start work on a reopened complaint (remark required)",
       "ok": true,
       "note": "",
-      "ms": 1220
+      "ms": 1228
     },
     {
       "area": "UC",
@@ -145,7 +145,7 @@
       "title": "Add progress remark",
       "ok": true,
       "note": "",
-      "ms": 1007
+      "ms": 1155
     },
     {
       "area": "UC",
@@ -153,7 +153,7 @@
       "title": "Resolve (with work-done file) and optimistic-lock conflict on a stale form",
       "ok": true,
       "note": "first resolve wins; second (stale version) gets the \"updated by someone else\" message",
-      "ms": 1975
+      "ms": 2147
     },
     {
       "area": "UC",
@@ -161,7 +161,7 @@
       "title": "Send complaint back to the admin (wrong department)",
       "ok": true,
       "note": "GRV-2026-000005 back to Under Review; Drainage officer loses access (404)",
-      "ms": 1943
+      "ms": 2104
     },
     {
       "area": "UC",
@@ -169,23 +169,23 @@
       "title": "Reject (reason required) by admin and by officer",
       "ok": true,
       "note": "GRV-2026-000008 rejected with a reason; owner sees Rejected",
-      "ms": 2096
+      "ms": 2204
     },
     {
       "area": "UC",
       "id": "UC-40/41/42",
       "title": "Manage departments, categories, areas (create, duplicate name, deactivate, guard)",
       "ok": true,
-      "note": "Parks 81644 + category created; duplicate name refused; deactivating a default department refused",
-      "ms": 1749
+      "note": "Parks 19486 + category created; duplicate name refused; deactivating a default department refused",
+      "ms": 1951
     },
     {
       "area": "UC",
       "id": "UC-43",
       "title": "Manage officer accounts (create, duplicate email, login as new officer)",
       "ok": true,
-      "note": "officer.1795424181644@example.com created after a duplicate-email error and can log in to the Water Supply queue",
-      "ms": 2551
+      "note": "officer.1795425819486@example.com created after a duplicate-email error and can log in to the Water Supply queue",
+      "ms": 2591
     },
     {
       "area": "UC",
@@ -193,7 +193,7 @@
       "title": "Manage citizen accounts (deactivate → login refused, reactivate, reset password)",
       "ok": true,
       "note": "deactivated citizen cannot log in; reactivated; admin reset password works",
-      "ms": 3874
+      "ms": 4169
     },
     {
       "area": "UC",
@@ -201,7 +201,7 @@
       "title": "Admin dashboard and reports (cards link to matching lists, CSV export)",
       "ok": true,
       "note": "Total 13 = CSV rows; Pending card 2 opens matching list; chart rendered",
-      "ms": 1185
+      "ms": 1270
     },
     {
       "area": "UC",
@@ -209,7 +209,7 @@
       "title": "Officer summary cards",
       "ok": true,
       "note": "Assigned 0 · In Progress 1 · Reopened 0 · Awaiting citizen 0 · Closed 0 · Rejected 0 · Duplicate 2 · Withdrawn 0 · Overdue 0",
-      "ms": 849
+      "ms": 859
     },
     {
       "area": "UC",
@@ -217,7 +217,7 @@
       "title": "Notifications (bell count, open marks read, mark all read)",
       "ok": true,
       "note": "Notifications, 10 unread → opened one → all read",
-      "ms": 1169
+      "ms": 1303
     },
     {
       "area": "UC",
@@ -225,7 +225,7 @@
       "title": "Auto-close expired resolved complaints (dev job runs every 5 minutes)",
       "ok": true,
       "note": "GRV-2026-000011 (resolved 8 days ago) closed by the scheduler with an auto-close entry",
-      "ms": 166961
+      "ms": 31154
     },
     {
       "area": "ERR",
@@ -233,7 +233,7 @@
       "title": "Unknown complaint number → 404 page",
       "ok": true,
       "note": "",
-      "ms": 772
+      "ms": 804
     },
     {
       "area": "ERR",
@@ -241,7 +241,7 @@
       "title": "Another citizen's complaint → 404 (not 403: existence is not revealed)",
       "ok": true,
       "note": "",
-      "ms": 792
+      "ms": 816
     },
     {
       "area": "ERR",
@@ -257,7 +257,7 @@
       "title": "Unknown URL and missing static file → 404 without a session cookie",
       "ok": true,
       "note": "",
-      "ms": 171
+      "ms": 174
     },
     {
       "area": "ERR",
@@ -265,7 +265,7 @@
       "title": "Wrong role (citizen opens admin and officer pages) → 403 page",
       "ok": true,
       "note": "",
-      "ms": 978
+      "ms": 1106
     },
     {
       "area": "ERR",
@@ -273,7 +273,7 @@
       "title": "Form without CSRF token while logged in → 403 \"form expired\"",
       "ok": true,
       "note": "",
-      "ms": 750
+      "ms": 777
     },
     {
       "area": "ERR",
@@ -281,7 +281,7 @@
       "title": "Session expired: stale session cookie → /login?expired; JSON endpoint → 401",
       "ok": true,
       "note": "",
-      "ms": 795
+      "ms": 847
     },
     {
       "area": "ERR",
@@ -289,7 +289,7 @@
       "title": "GET on a POST-only action → 405 page",
       "ok": true,
       "note": "",
-      "ms": 767
+      "ms": 844
     },
     {
       "area": "ERR",
@@ -297,7 +297,7 @@
       "title": "Request rejected by the firewall (encoded path traversal) → 400 page",
       "ok": true,
       "note": "encoded ../, double slash and encoded / all answer the 400 page",
-      "ms": 35
+      "ms": 43
     },
     {
       "area": "ERR",
@@ -305,7 +305,7 @@
       "title": "Upload over 26 MB without JavaScript → back to the form with a size message",
       "ok": true,
       "note": "",
-      "ms": 5802
+      "ms": 5523
     },
     {
       "area": "ERR",
@@ -313,7 +313,7 @@
       "title": "Business refusals: edit after assignment, reopen of a closed complaint, staff action as citizen",
       "ok": true,
       "note": "",
-      "ms": 928
+      "ms": 982
     },
     {
       "area": "ERR",
@@ -329,7 +329,7 @@
       "title": "/login as visitor",
       "ok": true,
       "note": "Log in · Smart Grievance",
-      "ms": 651
+      "ms": 706
     },
     {
       "area": "SCR",
@@ -337,7 +337,7 @@
       "title": "/register as visitor",
       "ok": true,
       "note": "Create a citizen account · Smart Grievance",
-      "ms": 566
+      "ms": 557
     },
     {
       "area": "SCR",
@@ -345,7 +345,7 @@
       "title": "/verify-mobile as rahul@example.com",
       "ok": true,
       "note": "Verify your mobile number · Smart Grievance",
-      "ms": 1326
+      "ms": 1290
     },
     {
       "area": "SCR",
@@ -353,7 +353,7 @@
       "title": "/account/password as mahesh@example.com",
       "ok": true,
       "note": "Change password · Smart Grievance",
-      "ms": 1323
+      "ms": 1342
     },
     {
       "area": "SCR",
@@ -361,7 +361,7 @@
       "title": "/citizen/complaints as mahesh@example.com",
       "ok": true,
       "note": "My Complaints · Smart Grievance",
-      "ms": 590
+      "ms": 616
     },
     {
       "area": "SCR",
@@ -369,7 +369,7 @@
       "title": "/citizen/watching as jayesh@example.com",
       "ok": true,
       "note": "Watching · Smart Grievance",
-      "ms": 1446
+      "ms": 1395
     },
     {
       "area": "SCR",
@@ -377,7 +377,7 @@
       "title": "/citizen/complaints/new as mahesh@example.com",
       "ok": true,
       "note": "· Smart Grievance",
-      "ms": 625
+      "ms": 709
     },
     {
       "area": "SCR",
@@ -385,7 +385,7 @@
       "title": "/citizen/complaints/GRV-2026-000013/submitted as sneha@example.com",
       "ok": true,
       "note": "Complaint registered · Smart Grievance",
-      "ms": 1310
+      "ms": 1312
     },
     {
       "area": "SCR",
@@ -393,7 +393,7 @@
       "title": "/complaints/GRV-2026-000001 as mahesh@example.com",
       "ok": true,
       "note": "GRV-2026-000001 · Smart Grievance",
-      "ms": 619
+      "ms": 667
     },
     {
       "area": "SCR",
@@ -401,7 +401,7 @@
       "title": "/officer/complaints/GRV-2026-000001/resolve as anita.deshmukh@example.com",
       "ok": true,
       "note": "Resolve complaint · Smart Grievance",
-      "ms": 1312
+      "ms": 1465
     },
     {
       "area": "SCR",
@@ -409,7 +409,7 @@
       "title": "/officer/queue as anita.deshmukh@example.com",
       "ok": true,
       "note": "Department Queue · Smart Grievance",
-      "ms": 618
+      "ms": 613
     },
     {
       "area": "SCR",
@@ -417,7 +417,7 @@
       "title": "/admin/dashboard as admin@example.com",
       "ok": true,
       "note": "Dashboard · Smart Grievance",
-      "ms": 1893
+      "ms": 1989
     },
     {
       "area": "SCR",
@@ -425,7 +425,7 @@
       "title": "/admin/complaints as admin@example.com",
       "ok": true,
       "note": "All Complaints · Smart Grievance",
-      "ms": 733
+      "ms": 801
     },
     {
       "area": "SCR",
@@ -433,7 +433,7 @@
       "title": "/admin/departments as admin@example.com",
       "ok": true,
       "note": "Departments · Smart Grievance",
-      "ms": 648
+      "ms": 733
     },
     {
       "area": "SCR",
@@ -441,7 +441,7 @@
       "title": "/admin/departments/new as admin@example.com",
       "ok": true,
       "note": "Add department · Smart Grievance",
-      "ms": 583
+      "ms": 600
     },
     {
       "area": "SCR",
@@ -449,7 +449,7 @@
       "title": "/admin/categories as admin@example.com",
       "ok": true,
       "note": "Categories · Smart Grievance",
-      "ms": 612
+      "ms": 595
     },
     {
       "area": "SCR",
@@ -457,7 +457,7 @@
       "title": "/admin/categories/new as admin@example.com",
       "ok": true,
       "note": "Add category · Smart Grievance",
-      "ms": 582
+      "ms": 562
     },
     {
       "area": "SCR",
@@ -465,7 +465,7 @@
       "title": "/admin/areas as admin@example.com",
       "ok": true,
       "note": "Areas · Smart Grievance",
-      "ms": 702
+      "ms": 704
     },
     {
       "area": "SCR",
@@ -473,7 +473,7 @@
       "title": "/admin/areas/new as admin@example.com",
       "ok": true,
       "note": "Add area · Smart Grievance",
-      "ms": 553
+      "ms": 556
     },
     {
       "area": "SCR",
@@ -481,7 +481,7 @@
       "title": "/admin/officers as admin@example.com",
       "ok": true,
       "note": "Officers · Smart Grievance",
-      "ms": 695
+      "ms": 808
     },
     {
       "area": "SCR",
@@ -489,7 +489,7 @@
       "title": "/admin/officers/new as admin@example.com",
       "ok": true,
       "note": "Add officer · Smart Grievance",
-      "ms": 642
+      "ms": 576
     },
     {
       "area": "SCR",
@@ -497,7 +497,7 @@
       "title": "/admin/citizens as admin@example.com",
       "ok": true,
       "note": "Citizens · Smart Grievance",
-      "ms": 631
+      "ms": 679
     },
     {
       "area": "SCR",
@@ -505,7 +505,7 @@
       "title": "/admin/officers/2/password as admin@example.com",
       "ok": true,
       "note": "Reset password · Smart Grievance",
-      "ms": 671
+      "ms": 490
     },
     {
       "area": "SCR",
@@ -513,7 +513,7 @@
       "title": "/notifications as mahesh@example.com",
       "ok": true,
       "note": "Notifications · Smart Grievance",
-      "ms": 651
+      "ms": 620
     },
     {
       "area": "SCR",
@@ -521,7 +521,7 @@
       "title": "/admin/dashboard as mahesh@example.com",
       "ok": true,
       "note": "Access denied · Smart Grievance",
-      "ms": 430
+      "ms": 428
     },
     {
       "area": "SCR",
@@ -529,7 +529,7 @@
       "title": "/complaints/GRV-2026-999999 as mahesh@example.com",
       "ok": true,
       "note": "Page not found · Smart Grievance",
-      "ms": 438
+      "ms": 464
     },
     {
       "area": "SCR",
@@ -537,7 +537,7 @@
       "title": "/notifications/read-all as mahesh@example.com",
       "ok": true,
       "note": "Request not accepted · Smart Grievance",
-      "ms": 427
+      "ms": 443
     },
     {
       "area": "SCR",
@@ -545,7 +545,7 @@
       "title": "/login as visitor",
       "ok": true,
       "note": "Log in · Smart Grievance",
-      "ms": 220
+      "ms": 234
     },
     {
       "area": "SCR",
@@ -553,7 +553,7 @@
       "title": "/register as visitor",
       "ok": true,
       "note": "Create a citizen account · Smart Grievance",
-      "ms": 158
+      "ms": 142
     },
     {
       "area": "SCR",
@@ -561,7 +561,7 @@
       "title": "/verify-mobile as rahul@example.com",
       "ok": true,
       "note": "Verify your mobile number · Smart Grievance",
-      "ms": 795
+      "ms": 895
     },
     {
       "area": "SCR",
@@ -569,7 +569,7 @@
       "title": "/account/password as mahesh@example.com",
       "ok": true,
       "note": "Change password · Smart Grievance",
-      "ms": 831
+      "ms": 881
     },
     {
       "area": "SCR",
@@ -577,7 +577,7 @@
       "title": "/citizen/complaints as mahesh@example.com",
       "ok": true,
       "note": "My Complaints · Smart Grievance",
-      "ms": 144
+      "ms": 146
     },
     {
       "area": "SCR",
@@ -585,7 +585,7 @@
       "title": "/citizen/watching as jayesh@example.com",
       "ok": true,
       "note": "Watching · Smart Grievance",
-      "ms": 823
+      "ms": 822
     },
     {
       "area": "SCR",
@@ -593,7 +593,7 @@
       "title": "/citizen/complaints/new as mahesh@example.com",
       "ok": true,
       "note": "· Smart Grievance",
-      "ms": 145
+      "ms": 182
     },
     {
       "area": "SCR",
@@ -601,7 +601,7 @@
       "title": "/citizen/complaints/GRV-2026-000013/submitted as sneha@example.com",
       "ok": true,
       "note": "Complaint registered · Smart Grievance",
-      "ms": 856
+      "ms": 885
     },
     {
       "area": "SCR",
@@ -609,7 +609,7 @@
       "title": "/complaints/GRV-2026-000001 as mahesh@example.com",
       "ok": true,
       "note": "GRV-2026-000001 · Smart Grievance",
-      "ms": 189
+      "ms": 218
     },
     {
       "area": "SCR",
@@ -617,7 +617,7 @@
       "title": "/officer/complaints/GRV-2026-000001/resolve as anita.deshmukh@example.com",
       "ok": true,
       "note": "Resolve complaint · Smart Grievance",
-      "ms": 873
+      "ms": 959
     },
     {
       "area": "SCR",
@@ -625,7 +625,7 @@
       "title": "/officer/queue as anita.deshmukh@example.com",
       "ok": true,
       "note": "Department Queue · Smart Grievance",
-      "ms": 155
+      "ms": 169
     },
     {
       "area": "SCR",
@@ -633,7 +633,7 @@
       "title": "/admin/dashboard as admin@example.com",
       "ok": true,
       "note": "Dashboard · Smart Grievance",
-      "ms": 924
+      "ms": 1084
     },
     {
       "area": "SCR",
@@ -641,7 +641,7 @@
       "title": "/admin/complaints as admin@example.com",
       "ok": true,
       "note": "All Complaints · Smart Grievance",
-      "ms": 207
+      "ms": 245
     },
     {
       "area": "SCR",
@@ -649,7 +649,7 @@
       "title": "/admin/departments as admin@example.com",
       "ok": true,
       "note": "Departments · Smart Grievance",
-      "ms": 148
+      "ms": 153
     },
     {
       "area": "SCR",
@@ -657,7 +657,7 @@
       "title": "/admin/departments/new as admin@example.com",
       "ok": true,
       "note": "Add department · Smart Grievance",
-      "ms": 140
+      "ms": 134
     },
     {
       "area": "SCR",
@@ -665,7 +665,7 @@
       "title": "/admin/categories as admin@example.com",
       "ok": true,
       "note": "Categories · Smart Grievance",
-      "ms": 137
+      "ms": 165
     },
     {
       "area": "SCR",
@@ -673,7 +673,7 @@
       "title": "/admin/categories/new as admin@example.com",
       "ok": true,
       "note": "Add category · Smart Grievance",
-      "ms": 125
+      "ms": 141
     },
     {
       "area": "SCR",
@@ -681,7 +681,7 @@
       "title": "/admin/areas as admin@example.com",
       "ok": true,
       "note": "Areas · Smart Grievance",
-      "ms": 146
+      "ms": 152
     },
     {
       "area": "SCR",
@@ -689,7 +689,7 @@
       "title": "/admin/areas/new as admin@example.com",
       "ok": true,
       "note": "Add area · Smart Grievance",
-      "ms": 120
+      "ms": 129
     },
     {
       "area": "SCR",
@@ -697,7 +697,7 @@
       "title": "/admin/officers as admin@example.com",
       "ok": true,
       "note": "Officers · Smart Grievance",
-      "ms": 143
+      "ms": 199
     },
     {
       "area": "SCR",
@@ -705,7 +705,7 @@
       "title": "/admin/officers/new as admin@example.com",
       "ok": true,
       "note": "Add officer · Smart Grievance",
-      "ms": 152
+      "ms": 189
     },
     {
       "area": "SCR",
@@ -713,7 +713,7 @@
       "title": "/admin/citizens as admin@example.com",
       "ok": true,
       "note": "Citizens · Smart Grievance",
-      "ms": 142
+      "ms": 186
     },
     {
       "area": "SCR",
@@ -721,7 +721,7 @@
       "title": "/admin/officers/2/password as admin@example.com",
       "ok": true,
       "note": "Reset password · Smart Grievance",
-      "ms": 116
+      "ms": 124
     },
     {
       "area": "SCR",
@@ -729,7 +729,7 @@
       "title": "/notifications as mahesh@example.com",
       "ok": true,
       "note": "Notifications · Smart Grievance",
-      "ms": 155
+      "ms": 148
     },
     {
       "area": "SCR",
@@ -737,7 +737,7 @@
       "title": "/admin/dashboard as mahesh@example.com",
       "ok": true,
       "note": "Access denied · Smart Grievance",
-      "ms": 111
+      "ms": 113
     },
     {
       "area": "SCR",
@@ -745,7 +745,7 @@
       "title": "/complaints/GRV-2026-999999 as mahesh@example.com",
       "ok": true,
       "note": "Page not found · Smart Grievance",
-      "ms": 98
+      "ms": 134
     },
     {
       "area": "SCR",
@@ -753,7 +753,7 @@
       "title": "/notifications/read-all as mahesh@example.com",
       "ok": true,
       "note": "Request not accepted · Smart Grievance",
-      "ms": 132
+      "ms": 141
     }
   ]
 }

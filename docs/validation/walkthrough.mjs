@@ -814,6 +814,16 @@ for (const width of [1280, 360]) {
       const title = await page.title();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow, 'horizontal scroll').toBeLessThanOrEqual(0);
+      const offscreen = await page.evaluate(() => {
+        const width = window.innerWidth;
+        const clipped = [...document.querySelectorAll('main .table-responsive')].filter((el) => el.scrollWidth > el.clientWidth + 1).length;
+        const hidden = [...document.querySelectorAll('main a, main button')]
+          .filter((el) => el.offsetParent !== null && el.getBoundingClientRect().right > width + 1)
+          .map((el) => el.textContent.trim().replace(/\s+/g, ' ').slice(0, 40));
+        return { clipped, hidden };
+      });
+      expect(offscreen.clipped, 'tables scrolling sideways').toBe(0);
+      expect(offscreen.hidden, 'links/buttons off screen').toEqual([]);
       await page.screenshot({ path: `shots/${id}-${width}.png`, fullPage: true });
       if (width === 1280) {
         const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();

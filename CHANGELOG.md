@@ -6,6 +6,7 @@
 
 - The complaint timeline now lists every edited field with its old and new value; the edit entry was empty before (FR-17).
 - An encoded slash in the URL now gets the application's own 400 page instead of the server's plain one.
+- Admin lists (officers, citizens, departments, categories, areas) and the dashboard's overdue list stack as labelled cards on phones, so every column and action button stays on screen.
 
 ### Added
 

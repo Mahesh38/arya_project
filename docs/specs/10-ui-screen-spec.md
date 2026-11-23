@@ -33,6 +33,7 @@ This document says what every user sees. It builds only on the routes, view name
 | Works from **360 px** wide to desktop | Bootstrap 5.3.8 grid, `container-lg`, breakpoints `sm` 576, `md` 768, `lg` 992. Every page is designed for 360 px first, then widened. |
 | No horizontal page scroll at 360 px | Long values (`overflow-wrap: anywhere` on titles and remarks), complaint numbers and dates kept on one line. Wide admin tables sit in `.table-responsive`, so only the table scrolls, never the page. Checked on the mock-ups (§10). |
 | Complaint lists | **Stacked list** (`list-group`) below `md`, **table** from `md` up, both rendered by the same fragment loop (D51). |
+| Admin tables (SCR-42, 44, 46, 48, 50, SCR-40 overdue list) | Below `sm` (576 px) each row is shown as a labelled card (`.table-stack`, labels from `data-label`) with its action buttons wrapping underneath; a normal table from `sm` up (D129). No table may scroll sideways on a phone. |
 | Touch targets | Buttons and links in lists at least 44 × 44 px on phones (`.btn` default size; the whole list item is the link). Action buttons wrap two per row on phones (`.action-bar`). |
 | Navbar | `navbar-expand-md`: collapsed behind a toggler on phones. The bell stays visible next to the toggler at every width. |
 
@@ -1427,3 +1428,4 @@ Run on 2026-11-22. All scripts are kept under `docs/specs/verify/` so they can b
 | 2026-11-23 | Doc 12 alignment: U3, U4, U5 decided (D77, D83, D85, D87); where texts live (§8.1) |
 | 2026-11-23 | Doc 13 alignment: U7, U8, U10 decided (D99) |
 | 2026-11-23 | Doc 14 alignment: U9 decided (D109, D110) |
+| 2026-11-23 | Validation finding V-3: admin tables stack as labelled cards below 576 px so actions stay on screen (D129) |
