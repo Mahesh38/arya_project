@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased] — M1
+
+### Added
+
+- Citizen registration, role-based sign-in and sign-out, and password changes.
+- Demo OTP issuance, verification, and resend flows.
+- Initial administrator setup and development accounts for citizen, officer, and administrator login.
+
+### Security
+
+- Per-account and per-network login limits, BCrypt password storage, HMAC-protected OTPs, and session refresh when account state changes.
+
 ## [0.0.1] — 23-Nov-2026 (M0)
 
 ### Added

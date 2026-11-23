@@ -10,8 +10,25 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import com.smartgrievance.security.AuthSessionService;
+import com.smartgrievance.security.ThrottledAuthenticationProvider;
+import com.smartgrievance.security.UserStateFilter;
+import com.smartgrievance.security.WebAuthentication;
+import com.smartgrievance.user.CurrentAccountService;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CsrfAuthenticationStrategy;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -35,8 +52,20 @@ public class SecurityConfig {
     }
 
     @Bean
-    UserDetailsService foundationUserDetailsService() {
-        return new InMemoryUserDetailsManager(List.of());
+    SecurityContextRepository securityContexts() {
+        return new DelegatingSecurityContextRepository(
+                new RequestAttributeSecurityContextRepository(), new HttpSessionSecurityContextRepository());
+    }
+
+    @Bean
+    HttpSessionCsrfTokenRepository csrfTokens() {
+        return new HttpSessionCsrfTokenRepository();
+    }
+
+    @Bean
+    SessionAuthenticationStrategy registrationSessionStrategy(HttpSessionCsrfTokenRepository tokens) {
+        return new CompositeSessionAuthenticationStrategy(List.of(
+                new ChangeSessionIdAuthenticationStrategy(), new CsrfAuthenticationStrategy(tokens)));
     }
 
     @Bean
@@ -46,9 +75,24 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http, ThrottledAuthenticationProvider provider,
+                                    SecurityContextRepository contexts, HttpSessionCsrfTokenRepository csrfTokens,
+                                    AuthSessionService sessions, CurrentAccountService accounts) throws Exception {
         var accessDenied = new AppAccessDeniedHandler();
-        return http
+        var cache = new HttpSessionRequestCache();
+        cache.setRequestMatcher(request -> {
+            String path = WebAuthentication.path(request);
+            String accept = request.getHeader("Accept");
+            return "GET".equals(request.getMethod()) && !WebAuthentication.notificationCount(request)
+                    && !path.equals("/error") && !path.equals("/favicon.ico") && !path.startsWith("/actuator/")
+                    && !path.startsWith("/attachments/") && (accept == null || accept.contains("text/html")
+                    || accept.equals("*/*"));
+        });
+        return http.authenticationManager(new ProviderManager(provider))
+                .securityContext(context -> context.securityContextRepository(contexts))
+                .requestCache(requests -> requests.requestCache(cache))
+                .csrf(csrf -> csrf.csrfTokenRepository(csrfTokens))
+                .addFilterAfter(new UserStateFilter(accounts, sessions), AnonymousAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/webjars/**", "/css/**", "/js/**", "/images/**",
                                 "/vendor/**", "/favicon.ico", "/error").permitAll()
@@ -63,9 +107,25 @@ public class SecurityConfig {
                         .requestMatchers("/complaints/**", "/attachments/**", "/notifications/**", "/account/**")
                                 .authenticated()
                         .anyRequest().authenticated())
-                .exceptionHandling(errors -> errors.accessDeniedHandler(accessDenied))
-                .formLogin(form -> form.loginPage("/login").usernameParameter("email"))
-                .logout(logout -> logout.logoutSuccessUrl("/login?logout").deleteCookies("JSESSIONID"))
+                .exceptionHandling(errors -> errors.accessDeniedHandler(accessDenied)
+                        .authenticationEntryPoint((request, response, cause) -> {
+                            if (WebAuthentication.notificationCount(request)) {
+                                WebAuthentication.unauthenticated(response);
+                            } else {
+                                boolean expired = request.getRequestedSessionId() != null
+                                        && !request.isRequestedSessionIdValid();
+                                response.sendRedirect(request.getContextPath() + (expired ? "/login?expired" : "/login"));
+                            }
+                        }))
+                .formLogin(form -> form.loginPage("/login").usernameParameter("email")
+                        .successHandler(WebAuthentication.successHandler(cache))
+                        .failureHandler(WebAuthentication.failureHandler()))
+                .logout(logout -> logout.logoutRequestMatcher(request -> {
+                            var user = SecurityContextHolder.getContext().getAuthentication();
+                            return "POST".equals(request.getMethod()) && WebAuthentication.path(request).equals("/logout")
+                                    && user != null && user.isAuthenticated() && !(user instanceof AnonymousAuthenticationToken);
+                        }).addLogoutHandler(WebAuthentication::logout)
+                        .logoutSuccessUrl("/login?logout").deleteCookies("JSESSIONID"))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives(CSP))
                         .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.SAME_ORIGIN))

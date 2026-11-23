@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/public}">
+<head>
+    <title th:text="${#fields.hasErrors('${form.*}') ? #messages.msg('form.errors.pageTitle', 'Verify your mobile number') : 'Verify your mobile number'}">Verify your mobile number</title>
+</head>
+<body>
+<div class="card-body p-4" layout:fragment="content">
+    <h1 class="h3 mb-3">Verify your mobile number</h1>
+    <p>We sent a 6-digit code to <span th:text="${otp.maskedMobile}"></span>.</p>
+    <div th:with="code=${demoOtp ?: otp.demoCode}">
+        <div class="alert alert-warning demo-otp" role="status" th:if="${code != null}">
+            <i class="bi bi-key" aria-hidden="true"></i>
+            Demo mode: no SMS is sent. Your OTP is <strong id="demo-otp" th:text="${code}"></strong>.
+        </div>
+    </div>
+    <form method="post" th:action="@{/verify-mobile}" th:object="${form}">
+        <div th:replace="~{fragments/form :: errorSummary(${ {'code'} })}"></div>
+        <p class="small text-body-secondary">* required</p>
+        <div th:replace="~{fragments/form :: accountField('code', 'OTP', 'text', null, true, 'one-time-code', 6, 'numeric')}"></div>
+        <p class="small text-body-secondary" th:if="${otp.expiresAt != null and otp.attemptsLeft > 0}">
+            Code valid until <span th:text="${@fmt.time(otp.expiresAt)}"></span> ·
+            <span th:text="${otp.attemptsLeft == 1 ? '1 attempt left' : otp.attemptsLeft + ' attempts left'}"></span>
+        </p>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle" aria-hidden="true"></i> Verify
+        </button>
+    </form>
+    <hr>
+    <form method="post" th:action="@{/verify-mobile/resend}">
+        <span class="me-2">Didn't get it?</span>
+        <button type="submit" class="btn btn-outline-secondary btn-sm" th:disabled="${!otp.resendAllowed}">
+            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Send a new code
+        </button>
+        <p class="small text-body-secondary mt-2" th:if="${!otp.resendAllowed and otp.resendAllowedAt != null}">
+            <span th:if="${otp.hourlyLimitReached}">Too many OTP requests, try again after</span>
+            <span th:unless="${otp.hourlyLimitReached}">You can request a new code at</span>
+            <span th:text="${@fmt.time(otp.resendAllowedAt)}"></span>.
+        </p>
+    </form>
+    <a class="d-inline-block mt-3" th:href="@{/citizen/complaints}">Skip for now</a>
+    <p class="small text-body-secondary mb-0">You can browse complaints before verifying your mobile number.</p>
+</div>
+</body>
+</html>

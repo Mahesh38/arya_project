@@ -106,7 +106,7 @@ class ErrorTriggerController {
         return original + "|" + email;
     }
 
-    @GetMapping("/notifications/unread-count")
+    @GetMapping(path = "/notifications/unread-count", headers = "X-Test-Error")
     void unread() { throw new IllegalStateException(PRIVATE_MESSAGE); }
 
     @PostMapping("/test-only/form")

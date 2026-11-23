@@ -2,7 +2,7 @@
 
 A Spring Boot MVC application for citizens to submit and track public grievances and for staff to assign and resolve them. The application uses Thymeleaf, Spring Security, Spring JDBC, and MySQL.
 
-## Run M0 locally
+## Run locally
 
 Install JDK 25 and MySQL 8.4. From the repository root, provision the local development and test databases using the scripts in the build specification.
 
@@ -13,7 +13,7 @@ cd app
 java -jar target/smart-grievance.jar --spring.profiles.active=dev
 ```
 
-Use `mvnw.cmd` on Windows. Open `http://localhost:8080/` to see the login placeholder. Registration, verification, and login are part of M1.
+Use `mvnw.cmd` on Windows. Open `http://localhost:8080/` to register or sign in. The development profile seeds the accounts listed in [Appendix A](docs/specs/appendix-a-seed-and-demo-data.md#4-users). The mobile verification page displays the demo OTP when it issues a new code.
 
 Run `./mvnw verify -Pmysql` against the local MySQL test database. For Playwright, install Node.js and run `npm ci` followed by `npx playwright install chromium` in `app/e2e`. Then run `./mvnw verify -Pe2e -De2e.skip.npm.install=true` from `app`.
 

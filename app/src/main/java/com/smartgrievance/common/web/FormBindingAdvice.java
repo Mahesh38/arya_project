@@ -20,16 +20,14 @@ public class FormBindingAdvice {
 
     @InitBinder
     void bind(WebDataBinder binder, HttpServletRequest request) {
-        if (binder.getTarget() == null) {
-            Object variables = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-            String name = binder.getObjectName();
-            if (!(variables instanceof Map<?, ?> paths) || !paths.containsKey(name)) {
-                binder.registerCustomEditor(String.class, editor(normalizer(name)));
-            }
+        String name = binder.getObjectName();
+        Object variables = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        if (binder.getTarget() == null && variables instanceof Map<?, ?> paths && paths.containsKey(name)) {
             return;
         }
         binder.setDisallowedFields("files");
-        binder.registerCustomEditor(String.class, editor(FormBindingAdvice::singleLine));
+        binder.registerCustomEditor(String.class, editor(binder.getTarget() == null
+                ? normalizer(name) : FormBindingAdvice::singleLine));
         for (String field : new String[]{"description", "remark", "changeReason", "password", "confirmPassword",
                 "currentPassword", "newPassword", "email", "mobile", "original", "originalNo", "code", "q"}) {
             binder.registerCustomEditor(String.class, field, editor(normalizer(field)));

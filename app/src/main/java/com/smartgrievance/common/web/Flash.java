@@ -1,6 +1,7 @@
 package com.smartgrievance.common.web;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
@@ -30,6 +31,12 @@ public class Flash {
 
     public void info(RedirectAttributes redirect, String key, Object... args) {
         add(redirect, "flashInfo", key, args);
+    }
+
+    public void info(HttpServletRequest request, HttpServletResponse response, String target, String key) {
+        RequestContextUtils.getOutputFlashMap(request)
+                .put("flashInfo", messages.getMessage(key, null, LocaleContextHolder.getLocale()));
+        RequestContextUtils.saveOutputFlashMap(target, request, response);
     }
 
     private void add(RedirectAttributes redirect, String attribute, String key, Object[] args) {

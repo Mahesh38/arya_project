@@ -189,7 +189,7 @@ class ErrorMappingWebTest extends WebTestBase {
                 .singleElement().satisfies(log -> assertThat(log.getMDCPropertyMap()).containsEntry("ref", reference));
         assertThat(result.getResponse().getContentAsString()).doesNotContain(ErrorTriggerController.PRIVATE_MESSAGE);
 
-        mvc.perform(get("/notifications/unread-count").with(user("test")))
+        mvc.perform(get("/notifications/unread-count").header("X-Test-Error", "1").with(user("test")))
                 .andExpect(status().isInternalServerError()).andExpect(jsonPath("$.error").value("server_error"))
                 .andExpect(jsonPath("$.reference").isString()).andExpect(jsonPath("$.exception").doesNotExist());
     }
