@@ -152,9 +152,8 @@ class ComplaintSubmissionWebTest extends WebTestBase {
 
     @Test
     @DisplayName("TC-Q-19, TC-Q-20 optimistic writes enforce status and version")
-    void optimisticStatusUpdateChecksBothStatusAndVersion() {
-        jdbc.sql("DELETE FROM app_user").update();
-        jdbc.sql("ALTER TABLE app_user ALTER COLUMN id RESTART WITH 1").update();
+    void optimisticStatusUpdateChecksBothStatusAndVersion() throws Exception {
+        TestDatabase.reset(dataSource);
         TestDatabase.load(dataSource, "sql/q-fixture.sql");
         var prior = repository.find(FIRST, false).orElseThrow();
         var now = LocalDateTime.now(testClock);

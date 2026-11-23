@@ -45,7 +45,7 @@ class ComplaintWorkflowMySqlIT extends FlowTestBase {
     }
 
     @Test
-    @DisplayName("TC-SM-42 concurrent resolve forms commit only one transition on MySQL")
+    @DisplayName("TC-SM-42, TC-SC-10 two officers resolving at the same moment commit only one transition on MySQL")
     void staleConcurrentResolutionCannotInsertAnotherEvent() throws Exception {
         var prior = complaints.find(FIRST, false).orElseThrow();
         var anita = identities.loadUserByUsername("anita.deshmukh@example.com");

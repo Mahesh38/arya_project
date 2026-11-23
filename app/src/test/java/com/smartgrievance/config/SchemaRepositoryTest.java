@@ -12,7 +12,6 @@ import com.smartgrievance.testsupport.TestDatabase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.dao.DataIntegrityViolationException;
 
 class SchemaRepositoryTest extends RepositoryTestBase {
     @Test
@@ -22,8 +21,9 @@ class SchemaRepositoryTest extends RepositoryTestBase {
                 .query(String.class).list()).containsExactly("1", "2");
         assertThat(jdbc.sql("""
                 SELECT table_name FROM information_schema.tables
-                WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-                """).query(String.class).list()).hasSize(13);
+                WHERE table_schema = SCHEMA() AND table_type = 'BASE TABLE'
+                  AND LOWER(table_name) <> 'flyway_schema_history'
+                """).query(String.class).list()).hasSize(12);
         assertThat(new com.smartgrievance.testsupport.Db(jdbc).rowCounts())
                 .containsEntry("department", 5L).containsEntry("category", 6L).containsEntry("area", 7L);
     }
@@ -36,7 +36,7 @@ class SchemaRepositoryTest extends RepositoryTestBase {
                 .matcher(migration).results().map(match -> match.group(1)).toList();
         assertThat(expected).isNotEmpty();
         assertThat(jdbc.sql("""
-                SELECT constraint_name FROM information_schema.table_constraints WHERE table_schema = 'public'
+                SELECT constraint_name FROM information_schema.table_constraints WHERE table_schema = SCHEMA()
                 """).query(String.class).list()).containsAll(expected);
     }
 
@@ -46,7 +46,8 @@ class SchemaRepositoryTest extends RepositoryTestBase {
         TestDatabase.load(dataSource, "sql/q-fixture.sql");
         assertThatThrownBy(() -> jdbc.sql("UPDATE complaint SET resolved_at = NULL WHERE complaint_no = :no")
                 .param("no", "GRV-2026-000004").update())
-                .isInstanceOf(DataIntegrityViolationException.class)
+                // H2 raises a DataIntegrityViolationException; MySQL error 3819 stays uncategorized in Spring
+                .isInstanceOf(org.springframework.dao.DataAccessException.class)
                 .hasMessageContaining("ck_complaint_resolved_at");
     }
 }

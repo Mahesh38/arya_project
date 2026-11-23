@@ -2,8 +2,12 @@
 
 ## [Unreleased]
 
+## [1.0.0] — 23-Nov-2026 (M9)
+
 ### Added
 
+- Production start-up checks: the prod profile refuses to start with a missing or default administrator password, an empty database password, combined dev and prod profiles, or weak BCrypt settings, and warns about insecure cookies, the demo OTP sender and example.com admin addresses.
+- Release quality checks: MySQL runs of the query tests, parallel numbering and OTP tests, a 10,000-complaint performance and index check, browser checks for accessibility, layout, CSP, focus and large uploads with JavaScript on and off, and scans for coverage gates and test-case IDs.
 - Admin dashboard with status cards, open and closed counts by department, category and area, the overdue list, and a department chart; every number links to the matching complaint list.
 - CSV export of the filtered complaint list for administrators, capped at the configured row limit.
 - In-app notifications, unread counts, and scheduled housekeeping.
@@ -16,8 +20,13 @@
 - Demo OTP issuance, verification, and resend flows.
 - Initial administrator setup and development accounts for citizen, officer, and administrator login.
 
+### Fixed
+
+- Outline buttons and the notification list now meet WCAG 2.1 AA: darker outline button colours on the page background, and notification buttons include their visible text in the accessible name.
+
 ### Security
 
+- Logs never contain passwords, OTPs or session ids; emails and mobile numbers are masked in security events.
 - CSV export escapes cells that spreadsheets could run as formulas and leaves out email addresses and mobile numbers.
 - Per-account and per-network login limits, BCrypt password storage, HMAC-protected OTPs, and session refresh when account state changes.
 

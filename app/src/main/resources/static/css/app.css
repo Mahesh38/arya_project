@@ -232,3 +232,9 @@ form.is-submitting [type=submit] { pointer-events: none; opacity: .65; }
     background: #f3f7ff;
 }
 .chart-box { position: relative; height: 240px; }
+/* Bootstrap's outline button colours are 4.2–4.3:1 on the #f5f6f8 page background (below WCAG 1.4.3's 4.5:1);
+   use Bootstrap's own darker shades for text and border */
+.btn-outline-primary { --bs-btn-color: #0a58ca; --bs-btn-border-color: #0a58ca; }
+.btn-outline-secondary { --bs-btn-color: #565e64; --bs-btn-border-color: #565e64; }
+.btn-outline-success { --bs-btn-color: #146c43; --bs-btn-border-color: #146c43; }
+.btn-outline-danger { --bs-btn-color: #b02a37; --bs-btn-border-color: #b02a37; }

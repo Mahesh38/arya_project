@@ -13,6 +13,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,7 @@ class ComplaintSubmissionMySqlIT extends FlowTestBase {
     }
 
     @Test
+    @DisplayName("TC-BR-27 concurrent first complaints get sequential numbers and IST timestamps in a +05:30 session")
     void concurrentFirstComplaintsUseDistinctSequentialNumbers() throws Exception {
         var form = form();
         var first = identities.loadUserByUsername("mahesh@example.com");
@@ -51,6 +53,7 @@ class ComplaintSubmissionMySqlIT extends FlowTestBase {
     }
 
     @Test
+    @DisplayName("TC-VE-30 two parallel submissions for the last daily slot never exceed the BR-88 limit by more than one")
     void concurrentSubmissionsCannotBothTakeFinalDailySlot() throws Exception {
         var actor = identities.loadUserByUsername("mahesh@example.com");
         var form = form();

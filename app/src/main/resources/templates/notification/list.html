@@ -22,9 +22,9 @@
         <li th:each="item : ${page.items}">
             <form method="post" th:action="@{/notifications/{id}/open(id=${item.id})}">
                 <button type="submit" class="list-group-item list-group-item-action text-start w-100 py-3"
-                        th:classappend="${item.read ? null : 'notification-unread'}"
-                        th:attr="aria-describedby=|notice-${item.id}|,
-                                 aria-label=${item.complaintNo == null ? 'Open notification' : 'Open complaint ' + item.complaintNo}">
+                        th:classappend="${item.read ? null : 'notification-unread'}">
+                    <span class="visually-hidden"
+                          th:text="${item.complaintNo == null ? 'Open notification: ' : 'Open complaint ' + item.complaintNo + ': '}"></span>
                     <span th:id="|notice-${item.id}|" class="d-block mb-1" th:classappend="${item.read ? null : 'fw-semibold'}"
                           th:text="${item.message}"></span>
                     <span class="d-flex align-items-center gap-2 small text-body-secondary">
