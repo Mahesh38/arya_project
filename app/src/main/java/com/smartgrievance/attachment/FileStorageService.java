@@ -38,7 +38,7 @@ public class FileStorageService {
     private static final DateTimeFormatter DIRECTORY = DateTimeFormatter.ofPattern("uuuu/MM");
     private static final Pattern UNSAFE_NAME = Pattern.compile("[\\p{Cc}\"*:<>?|]");
     private static final Pattern SPACES = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
-    private static final int RESOLUTION_LIMIT = 3;
+    public static final int RESOLUTION_LIMIT = 3;
 
     private final AppProperties.Upload config;
     private final Clock clock;

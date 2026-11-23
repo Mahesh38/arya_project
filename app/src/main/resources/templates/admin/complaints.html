@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head><title>All Complaints</title></head>
+<body>
+<section layout:fragment="content">
+    <h1 class="h3 mb-3">All Complaints</h1>
+    <div th:replace="~{fragments/staff-complaint-list :: staffList(true)}"></div>
+</section>
+</body>
+</html>

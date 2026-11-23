@@ -24,9 +24,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class ComplaintTrackingController {
     public record StatusOption(String value, String label) {}
 
-    private static final Set<Action> IMPLEMENTED_ACTIONS = Set.of(Action.EDIT, Action.WITHDRAW);
+    private static final Set<Action> DEFERRED_ACTIONS = Set.of(Action.MARK_DUPLICATE, Action.WATCH, Action.UNWATCH);
 
-    private static final List<StatusOption> STATUS_OPTIONS = Stream.concat(
+    static final List<StatusOption> STATUS_OPTIONS = Stream.concat(
             Arrays.stream(StatusGroup.values()).map(group -> new StatusOption(group.name(), group.label())),
             Arrays.stream(ComplaintStatus.values()).map(status -> new StatusOption(status.name(), status.label()))).toList();
     private final ComplaintQueryService complaints;
@@ -58,7 +58,7 @@ public class ComplaintTrackingController {
         var complaint = complaints.detail(no, user);
         model.addAttribute("c", complaint);
         model.addAttribute("actionLinks", ActionLinks.forComplaint(complaint.complaintNo(), user.role(), complaint.actions())
-                .stream().filter(link -> IMPLEMENTED_ACTIONS.contains(link.action())).toList());
+                .stream().filter(link -> !DEFERRED_ACTIONS.contains(link.action())).toList());
         return "complaint/detail";
     }
 

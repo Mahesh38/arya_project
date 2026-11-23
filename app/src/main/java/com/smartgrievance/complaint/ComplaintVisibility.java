@@ -19,9 +19,9 @@ public class ComplaintVisibility {
         return access(ActorContext.of(actor), complaintId, ownerId, departmentId).relation();
     }
 
-    record Access(Relation relation, boolean watching, boolean linked) {}
+    public record Access(Relation relation, boolean watching, boolean linked) {}
 
-    Access access(ActorContext actor, long complaintId, long ownerId, Long departmentId) {
+    public Access access(ActorContext actor, long complaintId, long ownerId, Long departmentId) {
         boolean otherCitizen = actor.role() == Role.CITIZEN && actor.userId() != ownerId;
         var facts = otherCitizen ? complaints.viewerFacts(complaintId, actor.userId())
                 : new ComplaintRepository.ViewerFacts(false, false);

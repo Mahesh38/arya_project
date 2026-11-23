@@ -197,7 +197,7 @@ class ComplaintSubmissionWebTest extends WebTestBase {
     }
 
     @Test
-    @DisplayName("TC-RT-25, TC-RT-26, TC-BR-03, TC-BR-04, TC-BR-10, TC-UC-11a, TC-UC-11d edit choices, no-op and optimistic lock")
+    @DisplayName("TC-RT-25, TC-RT-26, TC-BR-03, TC-BR-04, TC-BR-10, TC-UC-11a, TC-UC-11d, TC-SC-11 edit choices, no-op and optimistic lock")
     void editRetainsInactiveCurrentChoiceTracksRevisionsAndRejectsStaleUpdates() throws Exception {
         mvc.perform(complaint(multipart(BASE).file(photo()), "mahesh", TITLE)).andExpect(status().isFound());
         jdbc.sql("UPDATE category SET active = FALSE WHERE name IN ('Garbage', 'Streetlight')").update();
@@ -261,7 +261,7 @@ class ComplaintSubmissionWebTest extends WebTestBase {
         String withdrawal = BASE + "/" + submitted + "/withdraw";
         mvc.perform(get(withdrawal).with(Logins.appUser(identities, "sneha@example.com")))
                 .andExpect(status().isOk()).andExpect(view().name("complaint/action-form"))
-                .andExpect(model().attribute("action", "WITHDRAW"));
+                .andExpect(model().attribute("action", com.smartgrievance.workflow.TransitionRules.Action.WITHDRAW));
         mvc.perform(post(withdrawal).with(Logins.appUser(identities, "sneha@example.com")).with(csrf())
                         .param("version", "0").param("remark", "short"))
                 .andExpect(status().isOk()).andExpect(model().attributeHasFieldErrors("form", "remark"));

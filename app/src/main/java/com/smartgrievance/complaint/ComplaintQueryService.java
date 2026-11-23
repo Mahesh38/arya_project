@@ -16,7 +16,6 @@ import com.smartgrievance.workflow.ComplaintFacts;
 import com.smartgrievance.workflow.TransitionRules;
 import com.smartgrievance.workflow.TransitionRules.Action;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -85,7 +84,7 @@ public class ComplaintQueryService {
                 complaint.status(), complaint.categoryName(), complaint.areaName(), complaint.departmentName(),
                 staff || owner ? complaint.ownerName() : null, complaint.createdAt(), complaint.updatedAt(), complaint.resolvedAt(),
                 deadline, complaint.reopenCount(), config.maxReopens(), complaint.version(), overdue, due,
-                overdue ? Math.toIntExact(Duration.between(due, now).toDays()) : 0, original, count, access.relation(),
+                overdue ? ComplaintDates.daysOverdue(due, now) : 0, original, count, access.relation(),
                 attachments.visible(complaint.id(), AttachmentPurpose.COMPLAINT, admin),
                 attachments.visible(complaint.id(), AttachmentPurpose.RESOLUTION, admin),
                 timeline.timeline(complaint.id(), owner, user),

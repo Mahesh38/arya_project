@@ -38,6 +38,9 @@
             <strong th:text="|Please review the resolution by ${deadline}.|"></strong>
             <span th:text="|${c.departmentName} marked this complaint resolved on ${resolved}. If you do nothing, it will close automatically on ${deadline}.|"></span>
             <span th:if="${c.can('REOPEN')}" th:text="|You can reopen this complaint ${c.maxReopens - c.reopenCount} more time(s).|"></span>
+            <div class="mt-2">
+                <div th:replace="~{fragments/complaint-actions :: bar(${actionLinks}, ${c.complaintNo}, ${c.version}, true)}"></div>
+            </div>
         </th:block>
         <span th:if="${!staff and c.viewerRelation.name() != 'OWNER'}"
               th:text="|Resolved on ${resolved}. The person who filed it has until ${deadline} to review it.|"></span>
@@ -55,7 +58,7 @@
         </th:block>
         <div>This complaint is finished.</div>
     </aside>
-    <div th:replace="~{fragments/complaint-actions :: bar(${actionLinks}, ${c.complaintNo}, ${c.version})}"></div>
+    <div th:replace="~{fragments/complaint-actions :: bar(${actionLinks}, ${c.complaintNo}, ${c.version}, false)}"></div>
     <ul th:unless="${c.notices.isEmpty()}" class="small text-body-secondary">
         <li th:each="notice : ${c.notices}" th:text="${notice}"></li>
     </ul>

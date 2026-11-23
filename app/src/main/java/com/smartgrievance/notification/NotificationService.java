@@ -1,6 +1,10 @@
 package com.smartgrievance.notification;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import com.smartgrievance.workflow.TransitionRules.Action;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
@@ -33,10 +37,77 @@ public class NotificationService {
         }
     }
 
+    public record WorkflowNotice(long complaintId, long eventId, long ownerId, Long departmentId, Long actorId,
+                                 String number, String departmentName, String remark, String reviewDeadline,
+                                 LocalDateTime time) {}
+
+    public void workflow(Action action, WorkflowNotice notice) {
+        var number = notice.number();
+        var remark = NotificationMessages.excerpt(notice.remark(), 120);
+        switch (action) {
+            case START_REVIEW -> send(notice, List.of(notice.ownerId()), "notify.reviewStarted", number);
+            case ASSIGN -> {
+                send(notice, ownerAndWatchers(notice), "notify.assigned.citizen", number, notice.departmentName());
+                send(notice, officers(notice.departmentId()), "notify.assigned.officer", number);
+            }
+            case REASSIGN -> {
+                send(notice, ownerAndWatchers(notice), "notify.reassigned.citizen", number, notice.departmentName(), remark);
+                send(notice, officers(notice.departmentId()), "notify.reassigned.officer", number, remark);
+            }
+            case START_WORK -> send(notice, ownerAndWatchers(notice), "notify.workStarted", number, remark);
+            case ADD_REMARK -> send(notice, ownerAndWatchers(notice), "notify.remark", number, remark);
+            case RESOLVE -> {
+                send(notice, List.of(notice.ownerId()), "notify.resolved.owner", number, remark, notice.reviewDeadline());
+                var watchers = new LinkedHashSet<>(ownerAndWatchers(notice));
+                watchers.remove(notice.ownerId());
+                send(notice, List.copyOf(watchers), "notify.resolved.watcher", number, remark);
+            }
+            case CLOSE -> send(notice, officers(notice.departmentId()), "notify.closed", number);
+            case REOPEN -> {
+                var recipients = new LinkedHashSet<>(adminIds());
+                recipients.addAll(officers(notice.departmentId()));
+                send(notice, List.copyOf(recipients), "notify.reopened", number, remark);
+            }
+            case SEND_BACK -> send(notice, adminIds(), "notify.sentBack", number, notice.departmentName(), remark);
+            case REJECT -> send(notice, ownerAndWatchers(notice), "notify.rejected", number, remark);
+            default -> throw new IllegalArgumentException("Unsupported workflow notification: " + action);
+        }
+    }
+
+    public void autoClosed(WorkflowNotice notice, int days) {
+        var recipients = new LinkedHashSet<>(officers(notice.departmentId()));
+        recipients.add(notice.ownerId());
+        send(notice, List.copyOf(recipients), "notify.autoClosed", notice.number(), days);
+    }
+
+    private void send(WorkflowNotice notice, List<Long> recipients, String key, Object... args) {
+        for (Long recipient : recipients) {
+            if (!Objects.equals(recipient, notice.actorId())) {
+                write(notice.complaintId(), notice.eventId(), recipient, notice.time(), key, args);
+            }
+        }
+    }
+
+    private List<Long> ownerAndWatchers(WorkflowNotice notice) {
+        return jdbc.sql("""
+                SELECT owner_id AS user_id FROM complaint WHERE id = :complaint
+                UNION
+                SELECT user_id FROM complaint_watcher WHERE complaint_id = :complaint AND active = TRUE
+                """).param("complaint", notice.complaintId()).query(Long.class).list();
+    }
+
+    private List<Long> officers(Long department) {
+        return jdbc.sql("""
+                SELECT id FROM app_user WHERE active = TRUE AND role = 'OFFICER' AND department_id = :department
+                """).param("department", department).query(Long.class).list();
+    }
+
+    private List<Long> adminIds() {
+        return jdbc.sql("SELECT id FROM app_user WHERE role = 'ADMIN' AND active = TRUE").query(Long.class).list();
+    }
+
     private void adminRecipients(long complaint, long event, LocalDateTime now, String key, Object... args) {
-        var ids = jdbc.sql("SELECT id FROM app_user WHERE role = 'ADMIN' AND active = TRUE")
-                .query(Long.class).list();
-        for (var id : ids) write(complaint, event, id, now, key, args);
+        for (var id : adminIds()) write(complaint, event, id, now, key, args);
     }
 
     private void write(long complaint, long event, long recipient, LocalDateTime now, String key, Object... args) {
