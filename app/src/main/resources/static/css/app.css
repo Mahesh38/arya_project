@@ -137,3 +137,7 @@ form.is-submitting [type=submit] { pointer-events: none; opacity: .65; }
     margin: 0 auto;
     z-index: 1050;
 }
+
+.admin-edit-form {
+    max-width: 38rem;
+}
