@@ -1,0 +1,45 @@
+# =====================================================================
+# systemd unit for Smart Grievance on a Linux VM (doc 14 §7.6)
+#   sudo cp smart-grievance.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now smart-grievance
+#   journalctl -u smart-grievance -f        (console: WARN and above in prod)
+#   tail -f /var/log/smart-grievance/app.log
+# Layout: /opt/smart-grievance/smart-grievance.jar (owner root, read-only for the service)
+#         /var/lib/smart-grievance/uploads     (owner grievance, mode 750)
+#         /var/log/smart-grievance             (owner grievance, mode 750)
+#         /etc/smart-grievance/env             (owner root, group grievance, mode 640)
+# =====================================================================
+[Unit]
+Description=Smart Public Grievance and Complaint Management System
+After=network-online.target mysql.service
+Wants=network-online.target
+Requires=mysql.service
+
+[Service]
+Type=simple
+User=grievance
+Group=grievance
+WorkingDirectory=/var/lib/smart-grievance
+EnvironmentFile=/etc/smart-grievance/env
+Environment=SPRING_PROFILES_ACTIVE=prod
+# 4 GB VM shared with MySQL: 512 MB heap is plenty for one college (doc 14 §7.4)
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+ExitOnOutOfMemoryError -jar /opt/smart-grievance/smart-grievance.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+UMask=0027
+
+# hardening: the service can write only its uploads and logs
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/smart-grievance /var/log/smart-grievance
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

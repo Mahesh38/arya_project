@@ -170,7 +170,7 @@ The latest edition is **OWASP Top 10:2025**. The 2021 ID is given for readers wh
 | 2025 | 2021 | Category | How this project addresses it | Sections |
 |---|---|---|---|---|
 | A01 | A01 | Broken Access Control | URL prefix rules, `ComplaintAccessPolicy` with 404, object checks for attachments and notifications, SQL-filtered lists (BR-64), deny-by-prefix route inventory test, CSRF | §4.2, §5, §4.5 |
-| A02 | A05 | Security Misconfiguration | Explicit security headers and CSP, error details off, no actuator, cookie flags, prod safety check, no default secrets | §4.7, §4.8, §9 |
+| A02 | A05 | Security Misconfiguration | Explicit security headers and CSP, error details off, Actuator limited to `health` (D113), cookie flags, prod safety check, no default secrets | §4.7, §4.8, §9 |
 | A03 | A06 | Software Supply Chain Failures | All versions pinned by the Spring Boot BOM and doc 07; front-end libraries from WebJars or copied, never a CDN (ADR-12); dependency check in the build (doc 14) | §14 (K-S5) |
 | A04 | A02 | Cryptographic Failures | BCrypt(12) for passwords, HMAC-SHA256 for OTPs, `SecureRandom`, HTTPS + `Secure` cookies + HSTS in prod | §3.3, §6.2, §4.7 |
 | A05 | A03 | Injection (incl. XSS) | Parameterised `JdbcClient`, whitelisted fragments (D25), Thymeleaf escaping, no `th:utext`, CSV-injection prefix (D43, D75) | §8 |
@@ -363,6 +363,7 @@ Rules are evaluated top to bottom; the first match wins. Patterns are Spring `Pa
 |---|---|---|---|---|---|
 | 1 | `/webjars/**`, `/css/**`, `/js/**`, `/images/**`, `/vendor/**`, `/favicon.ico` | any | `permitAll` | static resources (§3.11) | — |
 | 2 | `/error` | any | `permitAll` (otherwise an error page for an anonymous user would loop to the login page, U3) | infrastructure | — |
+| 2a | `/actuator/health` | GET | `access(localhostOrAdmin())`: requests from 127.0.0.1/::1 or an ADMIN (doc 14 §9.1, D113); all other Actuator endpoints are not exposed | infrastructure | — |
 | 3 | `/`, `/login`, `/register` | any | `permitAll` | R-01, R-02, R-03, R-05, R-06 | 5 |
 | — | `/logout` | POST | handled by `LogoutFilter` before the rules (any user with a valid CSRF token) | R-04 | 1 |
 | 4 | `/verify-mobile/**`, `/citizen/**` | any | `hasRole('CITIZEN')` | R-10…R-12; R-20…R-28, R-40…R-43, R-71, R-72 | 3 + 15 |
@@ -465,10 +466,10 @@ form-action 'self'; frame-ancestors 'none'
 
 | Directive | Reason |
 |---|---|
-| `script-src 'self'` | Only our own files: Bootstrap bundle (WebJar), `app.js`, `early.js`, Chart.js from `static/vendor/`. **No inline scripts, no `eval`, no CDN** (ADR-12). |
+| `script-src 'self'` | Only our own files: Bootstrap bundle (WebJar), `app.js`, `early.js`, Chart.js (WebJar, doc 14 D110). **No inline scripts, no `eval`, no CDN** (ADR-12). |
 | `style-src 'self'` | Bootstrap CSS, Bootstrap Icons CSS and `app.css`. **No `style="…"` attributes and no `<style>` blocks** in templates. Bootstrap's and Chart.js's JavaScript set styles through the DOM (`element.style`), which CSP allows. |
 | `img-src 'self' data:` | Our images and attachments; `data:` is needed because Bootstrap's CSS draws the select arrow, check marks, close button and navbar toggler as `data:image/svg+xml` images. |
-| `font-src 'self'` | Bootstrap Icons font from the WebJar or `static/vendor/` |
+| `font-src 'self'` | Bootstrap Icons font from the WebJar (doc 14 D110) |
 | `connect-src 'self'` | `app.js` fetches R-77 only |
 | `object-src 'none'`, `base-uri 'none'`, `frame-ancestors 'none'`, `form-action 'self'` | No plugins, no `<base>` tricks, no framing, forms post only to us |
 
@@ -534,6 +535,7 @@ public class SecurityConfig {
       .authorizeHttpRequests(auth -> auth
         .requestMatchers("/webjars/**", "/css/**", "/js/**", "/images/**", "/vendor/**", "/favicon.ico").permitAll()
         .requestMatchers("/error").permitAll()
+        .requestMatchers(HttpMethod.GET, "/actuator/health").access(localhostOrAdmin())   // D113, doc 14 §9.1
         .requestMatchers("/", "/login", "/register").permitAll()
         .requestMatchers("/verify-mobile/**", "/citizen/**").hasRole("CITIZEN")
         .requestMatchers("/officer/**").hasRole("OFFICER")
@@ -924,7 +926,7 @@ Rules: no secret is committed to Git (the repository contains only `dev` default
 
 ### 9.2 `ProdSafetyCheck` (D73)
 
-An `ApplicationRunner` in `config`, active only with the `prod` profile, `@Order(0)` (before `AdminBootstrap`). Failing checks throw an exception, so the application **stops at startup** with a clear message.
+An `ApplicationRunner` in `config`, active only with the `prod` profile, `@Order(0)` (before `AdminBootstrap`). Failing checks throw an exception, so the application **stops at startup** with a clear message. Missing `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` and the P-1 combination are caught even earlier, before any bean is created, by `ProdEnvironmentCheck` (an `EnvironmentPostProcessor`, doc 14 §5.7, D112), because the data source would otherwise fail first with an unhelpful message.
 
 | # | Check | Result |
 |---|---|---|
@@ -940,7 +942,7 @@ An `ApplicationRunner` in `config`, active only with the `prod` profile, `@Order
 
 | Item | Rule |
 |---|---|
-| Spring Boot Actuator | Not a dependency. If added later, only `health` may be exposed, and only to `ADMIN` or to localhost. |
+| Spring Boot Actuator | **Changed by doc 14 (D113):** a dependency, but only `health` is exposed, without details, and only to localhost or an `ADMIN` (rule 2a of §4.2); `info`, `env`, `beans` … are not exposed. |
 | `spring.h2.console.enabled` | Never (H2 is test-only) |
 | `spring.web.error.include-stacktrace` / `include-message` / `include-binding-errors` / `include-exception` / `include-path` | `never` / `never` / `never` / `false` / `never`; `spring.web.error.whitelabel.enabled=false` (NFR-06). Spring Boot 4 ignores the old `server.error.*` names (doc 12 §6.4, D86) |
 | `spring.mvc.log-request-details`, `CommonsRequestLoggingFilter` with payload | Never (would log passwords and personal data) |
@@ -1215,12 +1217,12 @@ The trust-boundary diagram in §2.3 was rendered with `@mermaid-js/mermaid-cli` 
 | K-S1 | ~~Message wording.~~ **Decided in doc 12 §8.5 and §6.1 (D90).** Message texts introduced here (locked, inactive, form expired, too many registrations, complaint limit, too common / too long password, session warning, privacy notices) are English references; doc 12 fixes the final wording and the `error/403` CSRF variant. | 12 |
 | K-S2 | ~~Error pages without session.~~ **Decided and verified in doc 12 §5.5, §6.2 (D85).** `error/4xx` must handle `413` from Tomcat (over-size multipart to a non-upload route) and `400` from the firewall without needing `unreadCount` or a session (U3). | 12 |
 | K-S3 | ~~SEC tests in doc 13.~~ **Decided in doc 13 §3.5 and 13a §E:** every SEC-xx has its `TC-SEC` row; SEC-16/19 generated from `routes.csv` (D98), SEC-37 on MySQL (D105), SEC-30a/38b in Playwright (D99). All `SEC-xx` cases go into doc 13; SEC-16 is generated from the route catalogue; SEC-37 needs MySQL (parallel threads); SEC-30a/38b use Playwright, as U7 already plans. | 13 |
-| K-S4 | Properties to fix in doc 14: `server.tomcat.max-swallow-size=64MB`, cookie flags (§4.8) with `COOKIE_SECURE`, `spring.web.error.*` (not `server.error.*`, D86), `app.security.*` (§3.3, §3.5), `app.complaint.max-per-day=10`, `server.forward-headers-strategy` only behind a trusted proxy, HTTPS / reverse proxy set-up, `logs/security.log` rotation for one year, folder permissions for `uploads/`. | 14 |
-| K-S5 | Supply chain: add a dependency vulnerability check (e.g. OWASP Dependency-Check or `mvn versions:display-dependency-updates`) to the build and pin Bootstrap Icons and Chart.js versions (U9). | 14 |
+| K-S4 | ~~Properties.~~ **Decided in doc 14 §5, §8.2, §9 (D116, D121, D123).** Properties to fix in doc 14: `server.tomcat.max-swallow-size=64MB`, cookie flags (§4.8) with `COOKIE_SECURE`, `spring.web.error.*` (not `server.error.*`, D86), `app.security.*` (§3.3, §3.5), `app.complaint.max-per-day=10`, `server.forward-headers-strategy` only behind a trusted proxy, HTTPS / reverse proxy set-up, `logs/security.log` rotation for one year, folder permissions for `uploads/`. | 14 |
+| K-S5 | ~~Supply chain.~~ **Decided in doc 14 §4.1, §10.5 (D109, D110, D118):** Dependabot + `-Psecurity-scan`; Bootstrap Icons 1.13.2 and Chart.js 4.6.1 as WebJars. Supply chain: add a dependency vulnerability check (e.g. OWASP Dependency-Check or `mvn versions:display-dependency-updates`) to the build and pin Bootstrap Icons and Chart.js versions (U9). | 14 |
 | K-S6 | EXIF metadata (possibly GPS) is not removed from uploaded JPEGs. A future `ExifStripper` can drop `APP1` segments without re-encoding. | future |
 | K-S7 | Antivirus scanning (`FileScanner` + ClamAV) and an image pixel-size check (§7.1) are Could / future. | future |
 | K-S8 | With the demo OTP sender, mobile verification is not real (§6.6). A real SMS gateway needs its own rate limits per mobile number and cost alerts. | future |
-| K-S9 | The officer guide and the incident checklist (staff should not put their names in remarks; do not open PDFs in desktop readers with scripts; breach steps under DPDP) go into a short appendix of doc 14. | 14 |
+| K-S9 | ~~Guides.~~ **Done in doc 14 Appendices 14-A and 14-B.** The officer guide and the incident checklist (staff should not put their names in remarks; do not open PDFs in desktop readers with scripts; breach steps under DPDP) go into a short appendix of doc 14. | 14 |
 | K-S10 | If the app ever runs on more than one instance: login throttling, rate limits and the OTP HMAC key must move to shared storage, and sessions need Spring Session. | future |
 
 ## Change log
@@ -1229,3 +1231,4 @@ The trust-boundary diagram in §2.3 was rendered with `@mermaid-js/mermaid-cli` 
 | 2026-11-22 | Initial draft: threat model (STRIDE, OWASP Top 10:2025), authentication, filter chain with all 99 routes, entry points, CSRF, over-size uploads, headers and CSP, authorization, OTP, uploads, input/output, secrets, privacy (DPDP), security logging, 56 security tests; K1–K5, K7, U1, U2, U6, U11 decided (D56–D76); verified with a prototype (§13) |
 | 2026-11-23 | Doc 12 alignment: error properties are `spring.web.error.*` (D86); K-S1 and K-S2 decided in doc 12 (D85, D90) |
 | 2026-11-23 | Doc 13 alignment: K-S3 decided; all 62 SEC tests mapped in 13a §E |
+| 2026-11-23 | Doc 14 alignment: K-S4, K-S5, K-S9 decided; Actuator `health` only, localhost or ADMIN (rule 2a, §9.3, D113); Chart.js and Bootstrap Icons from WebJars (D110); `ProdEnvironmentCheck` before `ProdSafetyCheck` (D112) |

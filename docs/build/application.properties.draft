@@ -1,0 +1,123 @@
+# =====================================================================
+# Smart Grievance - shared settings for every profile (doc 14 §5.1)
+# Profile files override these: dev (default), prod, test, e2e.
+# Every app.* key is bound to config.AppProperties (@Validated, unknown keys refused).
+# =====================================================================
+spring.application.name=smart-grievance
+spring.profiles.default=dev
+
+# ---- web server (doc 14 §7.5) ----
+server.port=8080
+server.shutdown=graceful
+spring.lifecycle.timeout-per-shutdown-phase=20s
+server.compression.enabled=true
+server.compression.mime-types=text/html,text/css,application/javascript,application/json,image/svg+xml
+# behind a reverse proxy only: prod sets FORWARD_HEADERS_STRATEGY=native (doc 14 §8.2, doc 11 K-S4)
+server.forward-headers-strategy=none
+
+# ---- session and cookie (FR-04, doc 11 §4.8, D58) ----
+server.servlet.session.timeout=30m
+server.servlet.session.tracking-modes=cookie
+server.servlet.session.cookie.http-only=true
+server.servlet.session.cookie.same-site=lax
+server.servlet.session.cookie.secure=false
+
+# ---- uploads (FR-11, D36, D63): 5 MB per file is checked by FileStorageService ----
+spring.servlet.multipart.enabled=true
+spring.servlet.multipart.max-file-size=26MB
+spring.servlet.multipart.max-request-size=26MB
+server.tomcat.max-swallow-size=64MB
+
+# ---- errors: Spring Boot 4 names, server.error.* is ignored (NFR-06, doc 12 §6.4, D86) ----
+spring.web.error.include-stacktrace=never
+spring.web.error.include-message=never
+spring.web.error.include-binding-errors=never
+spring.web.error.include-exception=false
+spring.web.error.include-path=never
+spring.web.error.whitelabel.enabled=false
+spring.mvc.problemdetails.enabled=false
+
+# ---- messages (doc 12 §8.1, D77) ----
+spring.messages.basename=messages
+spring.messages.encoding=UTF-8
+spring.messages.fallback-to-system-locale=false
+spring.messages.use-code-as-default-message=false
+spring.messages.always-use-message-format=false
+
+# ---- views and static files ----
+spring.thymeleaf.cache=true
+spring.thymeleaf.mode=HTML
+# static files and WebJars: browsers re-validate (304) instead of caching blindly (doc 11 §4.7)
+spring.web.resources.cache.cachecontrol.no-cache=true
+
+# ---- database and migrations (doc 08 §4.4) ----
+spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/migration
+spring.flyway.clean-disabled=true
+spring.flyway.validate-on-migrate=true
+spring.datasource.hikari.pool-name=grievance-pool
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.connection-timeout=10000
+
+# ---- actuator: health only, no details (D113) ----
+management.endpoints.access.default=none
+management.endpoint.health.access=read-only
+management.endpoints.web.exposure.include=health
+management.endpoint.health.show-details=never
+management.endpoint.health.show-components=never
+management.endpoint.health.probes.enabled=false
+management.info.env.enabled=false
+
+# ---- logging: file layout in logback-spring.xml (doc 14 §5.8) ----
+logging.file.path=logs
+logging.level.root=INFO
+logging.level.com.smartgrievance=INFO
+logging.level.SECURITY=INFO
+
+# =====================================================================
+# Application settings (doc 03 §3); bound to AppProperties
+# =====================================================================
+app.timezone=Asia/Kolkata
+
+# complaints (FR-25, FR-27, FR-82, BR-88)
+app.complaint.review-window-days=7
+app.complaint.max-reopens=2
+app.complaint.auto-close-cron=0 0 * * * *
+app.complaint.max-per-day=10
+
+# housekeeping (FR-73, D28): daily 02:30 IST
+app.housekeeping.cron=0 30 2 * * *
+app.housekeeping.notification-retention-days=90
+app.housekeeping.otp-retention-days=30
+app.housekeeping.batch-size=1000
+
+# attachments (FR-11, NFR-05, BR-22..24)
+app.upload.dir=./uploads
+app.upload.max-file-size=5MB
+app.upload.max-files-per-complaint=5
+app.upload.allowed-types=image/jpeg,image/png,application/pdf
+
+# CSV export (FR-65, D43)
+app.export.max-rows=5000
+
+# OTP (FR-09, BR-85, D16, D66)
+app.otp.sender=demo
+app.otp.length=6
+app.otp.ttl=5m
+app.otp.max-attempts=3
+app.otp.resend-cooldown=60s
+app.otp.max-sends-per-hour=5
+
+# security (NFR-01, FR-05, FR-01; doc 11 §3.3, §3.5)
+app.security.bcrypt-strength=12
+app.security.login.max-failures-per-account=5
+app.security.login.max-failures-per-ip=20
+app.security.login.window=15m
+app.security.login.lock=15m
+app.security.register.max-per-ip-per-hour=10
+
+# bootstrap admin (FR-07, D26); prod overrides email and password from the environment
+app.admin.email=admin@example.com
+app.admin.password=${ADMIN_PASSWORD:Admin@1234}
+app.admin.name=System Administrator
+app.admin.mobile=9000000000

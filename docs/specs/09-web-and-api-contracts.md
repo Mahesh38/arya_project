@@ -365,6 +365,7 @@ There are no routes to create, edit or deactivate **admin** accounts. The only a
 | Path | Role | Purpose |
 |---|---|---|
 | `/webjars/**`, `/css/**`, `/js/**`, `/images/**`, `/favicon.ico` | public | Static resources (ADR-12) |
+| `/actuator/health` | localhost or ADMIN | health check only (`{"status":"UP"}` / 503 `DOWN`), Spring Boot Actuator, not a route of ours and not in `routes.csv` (doc 14 §9.1, D113) |
 | `/error` | public | Spring Boot error dispatch; renders `error/403`, `error/404`, `error/500`, and `error/4xx` for any other 4xx such as 400 and 405 (doc 10 SCR-90…93, D52; texts in doc 12). Must be public, otherwise an error page for an anonymous user would loop to the login page. |
 
 ### 3.12 Route count
@@ -994,7 +995,7 @@ Result:
 | K9 | ~~Status badge colours and labels.~~ **Decided in doc 10 §5.1 (D47).** | — |
 | K10 | Admin accounts other than the bootstrap admin have no UI (D45). If the examiners ask for it, it is a new UC with routes `/admin/admins/**`. | future |
 | K11 | ~~Route tests.~~ **Decided in doc 13 §3.4 (D98):** one test per route row (13a §D) plus sweeps generated from `routes.csv` for wrong role (403), not visible / unknown (404), anonymous and the route inventory. Every route row is one MockMvc test (happy path + each error column); workflow rows are also run as each wrong role (403) and as a user who cannot view (404). | 13 |
-| K12 | Properties introduced here: `spring.servlet.multipart.max-file-size=26MB` (D36), `server.tomcat.max-swallow-size=64MB` (doc 11 §4.6), CSV export limit 5,000 (`app.export.max-rows`). | 14 |
+| K12 | ~~Properties.~~ **Decided in doc 14 §5.1:** `spring.servlet.multipart.max-file-size=26MB` (D36), `server.tomcat.max-swallow-size=64MB` (doc 11 §4.6), CSV export limit 5,000 (`app.export.max-rows`). | — |
 
 ## Change log
 | Date | Change |
@@ -1004,3 +1005,4 @@ Result:
 | 2026-11-22 | Doc 11 alignment: K1–K5 and K7 decided (D59–D63, D69); §9.3 rewritten for `UploadSizeGuardFilter`; login flags `locked`/`inactive` and kept email (R-02, R-03); registration and daily complaint limits (R-06, R-23); §1.6 and §2 CSRF and 413 rows; `TimelineEntry.relatedLinkable`; chart data as a `data-chart` attribute (D64) |
 | 2026-11-23 | Doc 12 alignment: K8 decided; flash texts come from `messages.properties` (D77) |
 | 2026-11-23 | Doc 13 alignment: K11 decided (D98) |
+| 2026-11-23 | Doc 14 alignment: K12 decided; `/actuator/health` added to the infrastructure routes (D113) |

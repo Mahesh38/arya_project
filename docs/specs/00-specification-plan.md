@@ -45,7 +45,7 @@ Each one builds on the ones before it. We do them one at a time.
 
 Verified with a test build on 2026-11-22. Full details and reasoning are in **doc 07**.
 
-JDK **25** (LTS) · Spring Boot **4.2.0** (Spring Framework 7.1, Spring Security 7.2, Tomcat 11) · Thymeleaf 3.1.7 + Layout Dialect · Spring JDBC `JdbcClient` · MySQL **8.4 LTS** · Flyway 12.11 · Bootstrap 5.3.8 (WebJars) · JUnit 6 + MockMvc + H2 · Maven · executable JAR.
+JDK **25** (LTS) · Spring Boot **4.2.0** (Spring Framework 7.1, Spring Security 7.2, Tomcat 11) · Thymeleaf 3.1.7 + Layout Dialect · Spring JDBC `JdbcClient` · MySQL **8.4 LTS** · Flyway 12.11 · Bootstrap 5.3.8, Bootstrap Icons 1.13.2, Chart.js 4.6.1 (WebJars) · Actuator (health only) · JUnit 6 + MockMvc + H2 · Playwright 1.65 · Maven 3.9.16 (wrapper) · executable JAR. Build and deployment: **doc 14**.
 
 Note: Spring Boot has no "LTS" label in open source. Each minor release gets about 12 months of OSS support. The JDK is the LTS part.
 
@@ -55,9 +55,13 @@ Note: Spring Boot has no "LTS" label in open source. Each minor release gets abo
 arya_project/
 ├── docs/
 │   ├── Synopsis.pdf
-│   ├── specs/            # 00..14 spec documents (this folder)
+│   ├── specs/            # 00..14 spec documents (this folder), drafts, verify/ check scripts
+│   ├── db/               # migration/ (V1, V2) and verify/ (doc 08)
+│   ├── build/            # pom.xml, properties, logback and config-class drafts (doc 14)
+│   ├── deploy/           # SQL, run/backup scripts, systemd, Nginx, Docker (doc 14)
+│   ├── ci/  e2e/         # CI workflow + Dependabot drafts, test report; Playwright drafts (doc 14)
 │   └── diagrams/         # Mermaid / PlantUML sources + exported PNGs
-└── app/                  # Spring Boot project (created after specs 07–09 are frozen)
+└── app/                  # Spring Boot project (created in milestone M0, doc 14 §3, §11)
 ```
 
 ## 5. Working process
@@ -177,6 +181,28 @@ arya_project/
 | D104 | Notifications in S1 and S4 (found while writing tests)? | The T01 confirmation to the owner (FR-15) is the one deliberate exception to BR-68 ("the actor is never notified"). S1: Mahesh receives **5** notifications (registration + 4 status changes). S4: the watcher is notified of the new In Progress and Resolved steps, **not** of reopen or close, which go to staff (FR-70). Doc 05 corrected. |
 | D105 | Concurrency tests? | Only on MySQL (H2 locks differently): SEC-37 with 10 threads, the number generator (8 × 50 and 16 × 25), S10 with two threads, and BR-88 asserted as a soft limit (≤ limit + 1, doc 12 T-6). On H2 the same cases are sequential stale-version tests. |
 | D106 | Auto-close during the demo? | The `dev` profile runs the auto-close job every 5 minutes (`0 */5 * * * *`, set in doc 14), so GRV-…-000011 is visibly auto-closed at viva time; `prod` stays hourly. |
+| D107 | What must a student install to build? (doc 14) | Only **JDK 25** (plus MySQL to run the app, Node only for `-Pe2e`). Maven comes through the committed **Maven Wrapper 3.3.4 → Maven 3.9.16**; a system Maven ≥ 3.9 also works. |
+| D108 | Coordinates, version and JAR name? | `com.smartgrievance:smart-grievance`, version `0.1.0-SNAPSHOT` in the pom only; `finalName` = `smart-grievance`, so the file is always `target/smart-grievance.jar`; the version is in `META-INF/build-info.properties` (`build-info` goal) and in the Git tag. |
+| D109 | Versions Spring Boot does not manage? | Pinned exactly and checked on Maven Central / npm on 2026-11-23: Bootstrap 5.3.8, Bootstrap Icons **1.13.2**, Chart.js **4.6.1**, jsoup 1.24.1, JaCoCo 0.8.14, exec-maven-plugin 3.6.2, dependency-check-maven 13.0.0, Playwright 1.65.1, axe-core/playwright 4.14.0, Node 26 LTS (≥ 22.12). |
+| D110 | U9: WebJar or `static/vendor`? | **WebJars** for all three libraries (`org.webjars:bootstrap`, `org.webjars.npm:bootstrap-icons`, `org.webjars.npm:chart.js`), version-free URLs through `webjars-locator-lite`; nothing is copied into `static/vendor/`. Dependabot can update them; no files to keep in sync. |
+| D111 | O5: MySQL connection options? | `connectionTimeZone=%2B05:30&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8`. The zone name `Asia/Kolkata` fails (`ERROR 1298`) on MySQL servers without time-zone tables, which is the default for the Ubuntu and Windows installers (verified); India has no daylight saving, so `+05:30` is equivalent. |
+| D112 | A clear message when `prod` lacks its settings? | `config.ProdEnvironmentCheck`, an `EnvironmentPostProcessor` registered in `META-INF/spring.factories`, stops a `prod` start **before any bean** when `DB_URL`, `DB_USERNAME` or `DB_PASSWORD` is missing, or when `dev` and `prod` are combined (P-1). Without it the start fails with "'url' must start with jdbc" (verified). `ProdSafetyCheck` (D73) still does P-1…P-7. |
+| D113 | Health check / Actuator? | `spring-boot-starter-actuator` with **only `/actuator/health`** exposed, no details or components, probes off; allowed for requests from 127.0.0.1/::1 or an ADMIN (an `AuthorizationManager` before `anyRequest()`); Nginx also blocks `/actuator/` from outside. Replaces doc 11 §9.3 "not a dependency" under the condition that rule set. Not part of `routes.csv` (own handler mapping). |
+| D114 | Database accounts? | Least privilege: `grievance_owner` (DDL) used only by Flyway (`spring.flyway.user/password` = `DB_MIGRATION_*`), `grievance_app` with `SELECT, INSERT, UPDATE, DELETE` for the pool, `grievance_backup` read-only for `mysqldump`; on laptops `grievance_dev` / `grievance_test` own only their database. Verified: the app user cannot `CREATE TABLE`. |
+| D115 | O4: housekeeping schedule? | `app.housekeeping.cron=0 30 2 * * *` (daily 02:30 IST), `-` in tests (doc 13 B-2); new settings `app.housekeeping.notification-retention-days` (90), `otp-retention-days` (30), `batch-size` (1000). Every `@Scheduled` cron is declared with `zone = "${app.timezone}"`. |
+| D116 | Log files? | `logback-spring.xml`: time stamps always in IST (independent of the server zone), pattern with `%X{ref:-}`; `app.log` daily + 20 MB parts, 90 days, 2 GB cap; `security.log` (logger `SECURITY` only) daily, **366 days**, 1 GB cap; console threshold WARN in `prod` (journal), INFO in Docker; tests log to the console only. No logrotate. |
+| D117 | Caching of static files? | `Cache-Control: no-cache` (always revalidate, 304 via `Last-Modified`) for static files and WebJars; no long `max-age` or content-hash URLs, so an upgrade is never hidden by a stale browser cache. |
+| D118 | K-S5: dependency vulnerabilities? | GitHub **Dependabot** (Maven, npm, Actions; weekly, grouped; Spring Boot minor/major as planned upgrades) plus an optional `-Psecurity-scan` profile with OWASP Dependency-Check 13.0.0 (fail at CVSS ≥ 7, `NVD_API_KEY`) before each release; not in every build (large NVD download). |
+| D119 | Maven test wiring (doc 13 B-1)? | surefire: `excludedGroups=mysql,e2e`, excludes `*IT`, parallel off, `-Duser.timezone=UTC` (proves nothing depends on the JVM zone); failsafe `*MySqlIT` in `-Pmysql` with the Spring profile `mysqltest` (`TEST_MYSQL_*`); `-Pe2e`: `spring-boot:start` with **`testClasspath=all`** (Boot 4.2 deprecated `useTestClasspath`, which did not add the test resources: the app silently used MySQL, verified), `-Dspring.devtools.restart.enabled=false`, port 8090, JMX 9011, then `npm ci` and `npx playwright test`. |
+| D120 | When does the full coverage gate start? | Two JaCoCo `check` executions: `check-core` (D102 "from the start" rules) always; `check-later` (services, `common`, bundle) skipped while `coverage.later.skip=true`, switched to `false` at the end of milestone **M7** (doc 13 §6.1 "after M7"). |
+| D121 | HTTPS and reverse proxy? | Nginx with Let's Encrypt (certbot) in front; the app listens on 127.0.0.1:8080; `FORWARD_HEADERS_STRATEGY=native` **only behind the proxy**, trusting `X-Forwarded-*` from 127.0.0.1/::1 only; `client_max_body_size 64m` (= swallow size), `proxy_request_buffering off`; security headers come from the app only. Verified: HSTS and `Secure` cookie through the proxy, a forged `X-Forwarded-For` is not trusted. |
+| D122 | Deployment form? | Main: the executable JAR as a **systemd** service on one Linux VM. Optional: Docker Compose (app + `mysql:8.4`) with a runtime-only image built from the Maven JAR (non-root, `HEALTHCHECK`). The viva runs on a laptop with the `dev` profile. |
+| D123 | Folders and permissions (K-S4)? | Service user `grievance`; `/var/lib/smart-grievance/uploads` and `/var/log/smart-grievance` mode 750, files 640 (`UMask=0027`); JAR read-only under `/opt/smart-grievance`; env file `/etc/smart-grievance/env` mode 640; systemd `ProtectSystem=strict` with `ReadWritePaths` for the two folders. |
+| D124 | Versioning and releases? | Semantic versioning from 0.1.0; one MINOR release per milestone (`0.<n>.0`), **`1.0.0` for the viva**; annotated tags `vX.Y.Z`; `CHANGELOG.md` in *Keep a Changelog* format; release checklist in doc 14 §10.3. |
+| D125 | In which order is the app built? | Ten milestones **M0–M9** (skeleton/CI, auth+OTP, master data, submit/edit/withdraw+files, tracking, workflow, duplicates/watchers, notifications, dashboard/reports, hardening/e2e/viva); every one of the 446 test cases, 70 FRs and 99 routes belongs to exactly one milestone, checked by `verify/check-14-milestones.py`. `TransitionRules` and `ComplaintAccessPolicy` are written complete in M3; `DemoData` grows per milestone and is complete in M6. |
+| D126 | JVM options, port, context path? | `-Xms128m` (laptop) / `256m` (server), `-Xmx512m`, `-XX:+ExitOnOutOfMemoryError` (server, Docker), `-XX:MaxRAMPercentage=75` in Docker; `-Duser.timezone` not needed (D18, D116); port 8080 (`SERVER_PORT`), context path `/`. |
+| D127 | O5: demo sample files? | Two small JPEGs for GRV-…-000003 in `src/main/resources/seed/files/` (made by the students, ≤ 100 KB, EXIF removed); `DemoData` copies them to `app.upload.dir` with the BR-24 name inside its transaction and deletes them on rollback. |
+| D128 | Copies of spec files in the app? | `db/migration/*.sql`, `messages.properties` and `common-passwords.txt` (new draft, 34 entries) are byte-identical copies of the docs; a CI step `diff`s them, so a change is always made in the spec first. |
 
 ## Status
 
@@ -197,4 +223,4 @@ arya_project/
 | 11 Security Spec | Draft |
 | 12 Validation & Error Handling | Draft |
 | 13 Test Spec & Traceability (+ 13a Test Catalogue) | Draft |
-| 14 Build & Deployment | Not started |
+| 14 Build & Deployment | Draft |

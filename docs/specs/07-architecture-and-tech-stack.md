@@ -69,14 +69,15 @@ Verified on **2026-11-22** by building and running a test project (§9). Spring 
 | | `thymeleaf-extras-springsecurity6`, which also works with Spring Security 7. No `…7` artifact has been published. | 3.1.7 (managed) |
 | Security | Spring Security | 7.2.0 (managed) |
 | Data access | Spring JDBC: `JdbcClient` (`spring-boot-starter-jdbc`), HikariCP pool | managed |
-| Database | MySQL **8.4 LTS** in production. The test used MySQL 8.0, and the SQL works on both. | Connector/J 26.10.0 (managed) |
+| Database | MySQL **8.4 LTS** in production. The SQL was verified on MySQL 8.0.46 and 8.4.13 (doc 14 §12). | Connector/J 26.10.0 (managed) |
 | Migrations | Flyway (`spring-boot-starter-flyway` + `flyway-mysql`) | 12.11.0 (managed) |
 | Validation | Jakarta Bean Validation / Hibernate Validator | 9.1.6 (managed) |
 | CSS / UI | Bootstrap via **WebJars** + `webjars-locator-lite` | Bootstrap **5.3.8** |
-| Icons | Bootstrap Icons (WebJar or copied into `static/`) | 1.x |
-| Charts (FR-64, Could) | Chart.js, copied into `static/vendor/` | 4.x |
+| Icons | Bootstrap Icons, WebJar `org.webjars.npm:bootstrap-icons` (doc 14 D110) | **1.13.2** |
+| Charts (FR-64, Could) | Chart.js, WebJar `org.webjars.npm:chart.js` (doc 14 D110) | **4.6.1** |
+| Health check | Spring Boot Actuator, only `/actuator/health` (doc 14 §9.1, D113) | managed |
 | Tests | JUnit Jupiter, Spring Boot Test, MockMvc, Spring Security Test, H2 (MySQL mode) | JUnit 6.1.3, H2 2.5.252 (managed) |
-| Build | Maven + Maven Wrapper (`mvnw`) | Maven 3.9.x |
+| Build | Maven Wrapper 3.3.4 (`mvnw`, committed) | Maven **3.9.16** (doc 14 D107) |
 
 Note: Spring Boot 4 split the starters into modules. The web starter is now `spring-boot-starter-webmvc`, Flyway needs `spring-boot-starter-flyway`, and the test helpers come from `spring-boot-starter-webmvc-test` / `spring-boot-starter-security-test`.
 
@@ -96,12 +97,14 @@ Note: Spring Boot 4 split the starters into modules. The web starter is now `spr
 compile : spring-boot-starter-webmvc, spring-boot-starter-thymeleaf, spring-boot-starter-security,
           spring-boot-starter-validation, spring-boot-starter-jdbc, spring-boot-starter-flyway,
           flyway-mysql, thymeleaf-extras-springsecurity6, thymeleaf-layout-dialect,
-          org.webjars:bootstrap:5.3.8, webjars-locator-lite
+          spring-boot-starter-actuator (doc 14 D113),
+          org.webjars:bootstrap:5.3.8, org.webjars.npm:bootstrap-icons:1.13.2, org.webjars.npm:chart.js:4.6.1, webjars-locator-lite
 runtime : com.mysql:mysql-connector-j
 dev     : spring-boot-devtools (optional, auto-restart)
 test    : spring-boot-starter-webmvc-test, spring-boot-starter-security-test,
           spring-boot-starter-jdbc-test, com.h2database:h2, org.jsoup:jsoup 1.24.1 (doc 13 §2.1)
-plugin  : spring-boot-maven-plugin, jacoco-maven-plugin 0.8.14, maven-failsafe-plugin (profile mysql) (doc 13 §2.1, §6.1)
+plugin  : spring-boot-maven-plugin, jacoco-maven-plugin 0.8.14, maven-failsafe-plugin (profile mysql) (doc 13 §2.1, §6.1),
+          exec-maven-plugin 3.6.2 (profile e2e), dependency-check-maven 13.0.0 (profile security-scan); full pom: doc 14 §4.4
 ```
 
 ---
@@ -111,7 +114,7 @@ plugin  : spring-boot-maven-plugin, jacoco-maven-plugin 0.8.14, maven-failsafe-p
 ```text
 com.smartgrievance
 ├── SmartGrievanceApplication.java
-├── config/            SecurityConfig, ProdSafetyCheck, WebConfig, AppProperties (@ConfigurationProperties "app"),
+├── config/            SecurityConfig, ProdEnvironmentCheck (EnvironmentPostProcessor, doc 14 §5.7), ProdSafetyCheck, WebConfig, AppProperties (@ConfigurationProperties "app"),
 │                      ClockConfig (Clock bean, Asia/Kolkata), SchedulingConfig
 ├── common/            exception (AppException, NotFound, ActionRefused → InvalidTransition / BusinessRule / ConcurrentUpdate, FormRejected, Storage; doc 12 §5.1), validation (custom validators, doc 12 §4),
 │                      GlobalExceptionHandler (@ControllerAdvice), GlobalModelAdvice (unread count,
@@ -207,8 +210,9 @@ com.smartgrievance
 | `application-dev.properties` | Local MySQL `grievance_dev`, Thymeleaf cache off, `app.otp.sender=demo`, DevDataSeeder enabled, DEBUG logging for `com.smartgrievance` |
 | `application-prod.properties` | DB URL, user and password **from environment variables**, Thymeleaf cache on, admin password from env (required), INFO logging |
 | `src/test/resources/application-test.properties` | H2 `jdbc:h2:mem:test;MODE=MySQL;DATABASE_TO_LOWER=TRUE`, BCrypt strength 4, jobs off; the fixed `TestClock` comes from a test configuration (full content: doc 13 §2.2, D94) |
+| `src/test/resources/application-e2e.properties`, `application-mysqltest.properties` | `-Pe2e` (with `dev`, H2) and `-Pmysql` (`TEST_MYSQL_*`) (doc 14 §5.4) |
 
-Sketch of `application.properties` (final values come in doc 14):
+Sketch of `application.properties`. **The final files are in doc 14 §5** (they supersede this sketch: e.g. the housekeeping keys, Actuator, logging, and the profile files):
 
 ```properties
 spring.application.name=smart-grievance
@@ -304,7 +308,7 @@ src/main/resources/
 | Errors | `GlobalExceptionHandler`. `NotFoundException` → 404 page. `InvalidTransition`/`BusinessRule`/`ConcurrentUpdate` → redirect back with a flash error. Anything unexpected → 500 page with a reference ID, and the full stack trace is logged. |
 | Logging | SLF4J/Logback. Every transition is logged at INFO (`complaintNo`, from, to, actor). OTP codes are logged **only** by `DemoOtpSender`. |
 | Time | `Clock` bean (ADR-11). `LocalDateTime` values in Asia/Kolkata are stored in `DATETIME` columns without conversion (BR-74). |
-| Scheduling | `@EnableScheduling`. `AutoCloseJob` uses the `app.complaint.auto-close-cron` setting. One application instance is assumed. |
+| Scheduling | `@EnableScheduling`. `AutoCloseJob` uses `app.complaint.auto-close-cron`, `HousekeepingJob` `app.housekeeping.cron` (daily 02:30); every cron is declared with `zone = "${app.timezone}"` (doc 14 §9.4, D115). One application instance is assumed. |
 | Pagination | `PageResult<T>(items, page, size, total)` with `LIMIT ? OFFSET ?`. Size is capped at 50 (NFR-11). |
 | Validation | Bean Validation on forms, plus service-level checks for rules that need the DB (uniqueness, status, counts). |
 
@@ -331,3 +335,4 @@ A throwaway test project with the exact dependency set from §2.2 was built and 
 | 2026-11-22 | Doc 11 alignment: §5 security summary rewritten (D56–D65), new `security` package, `ProdSafetyCheck`, `OtpHasher`, `UploadSizeGuardFilter`, `FileScanner`; `max-swallow-size` 30 MB → 64 MB and session/error properties in §6 |
 | 2026-11-23 | Doc 12 alignment: error properties renamed to `spring.web.error.*` (Boot 4, D86); `common` exception and validation packages (D82, D81) |
 | 2026-11-23 | Doc 13 alignment: test dependencies and plugins (jsoup, JaCoCo, failsafe), `seed.DemoData` split from `DevDataSeeder` (D100), test properties (D94) |
+| 2026-11-23 | Doc 14 alignment: Bootstrap Icons 1.13.2 and Chart.js 4.6.1 as WebJars (U9, D110), Actuator `health` (D113), `ProdEnvironmentCheck` (D112), Maven 3.9.16 wrapper (D107), MySQL 8.4.13 verified; the final configuration files are in doc 14 §5 |

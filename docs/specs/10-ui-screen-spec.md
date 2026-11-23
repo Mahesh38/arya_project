@@ -38,7 +38,7 @@ This document says what every user sees. It builds only on the routes, view name
 
 ### 1.2 Server-rendered Bootstrap only
 
-- Bootstrap **5.3.8** CSS and JS bundle from WebJars, Bootstrap Icons 1.x and (dashboard only) Chart.js 4.x from `static/vendor/` (ADR-12, no CDN in the app). One own stylesheet `static/css/app.css` and one script `static/js/app.js`.
+- Bootstrap **5.3.8** CSS and JS bundle from WebJars, Bootstrap Icons **1.13.2** and (dashboard only) Chart.js **4.6.1**, also from WebJars (ADR-12, no CDN in the app; doc 14 D110). One own stylesheet `static/css/app.css` and one script `static/js/app.js`.
 - No SPA, no front-end build, no jQuery. Templates are plain Thymeleaf with the Layout Dialect.
 - Custom CSS is limited to the status colours, the timeline, thumbnails and small layout helpers. The reference copy is `docs/ui-mockups/css/app.css` (§10), which becomes `static/css/app.css`.
 
@@ -992,7 +992,7 @@ Flash alerts are dismissible with JS (`alert-dismissible` + close button rendere
 
 ### 5.4 Icons
 
-Bootstrap Icons 1.x (WebJar or `static/vendor`), always `<i class="bi bi-…" aria-hidden="true">`. Fixed set:
+Bootstrap Icons 1.13.2 (WebJar, doc 14 D110), always `<i class="bi bi-…" aria-hidden="true">`. Fixed set:
 
 | Meaning | Icon | Meaning | Icon |
 |---|---|---|---|
@@ -1415,7 +1415,7 @@ Run on 2026-11-22. All scripts are kept under `docs/specs/verify/` so they can b
 | U6 | ~~Typed email.~~ **Decided in doc 11 §3.11 (D71): kept once.** Login page: the typed email is not kept after a failed login by default in Spring Security (§4.1). Doc 11 decides whether to keep it (e.g. a failure handler that redirects with the email in the session). | 11 |
 | U7 | ~~JS on/off tests.~~ **Decided in doc 13 §3.8 (D99):** Playwright projects `js-on` / `js-off`, TC-NF-16 and TC-NF-17. `app.js` behaviours (submit disable, confirm, file pre-check, counter, bell refresh) and the no-JS fallback need tests: MockMvc covers no-JS by nature; doc 13 adds a small Playwright smoke test with JS on and off for the submit and duplicate flows. | 13 |
 | U8 | ~~Accessibility checker.~~ **Decided in doc 13 §3.8 (D99):** axe-core through Playwright on 13 screens, zero WCAG 2.1 A/AA violations (TC-NF-03). Accessibility checks: doc 13 runs an automated checker (e.g. axe-core through Playwright) on the main screens in addition to the contrast script. | 13 |
-| U9 | Bootstrap Icons and Chart.js versions: pin exact versions (Bootstrap Icons 1.13.1, Chart.js 4.4.7 were used for the mock-ups) and decide WebJar vs. copying into `static/vendor/`. | 14 |
+| U9 | ~~Versions.~~ **Decided in doc 14 §4.1 (D109, D110):** WebJars `org.webjars.npm:bootstrap-icons:1.13.2` and `org.webjars.npm:chart.js:4.6.1` (checked on Maven Central), URLs `/webjars/bootstrap-icons/font/bootstrap-icons.min.css` and `/webjars/chart.js/dist/chart.umd.min.js`; nothing in `static/vendor/`. Bootstrap Icons and Chart.js versions: pin exact versions (Bootstrap Icons 1.13.1, Chart.js 4.4.7 were used for the mock-ups) and decide WebJar vs. copying into `static/vendor/`. | 14 |
 | U10 | ~~Tests.~~ **Decided in doc 13 §3.8:** TC-UT-02, TC-UT-03, TC-SCAN-01. `@fmt` (`DisplayFormat` bean) and `ComplaintStatus.label()/badgeClass()/icon()` are small web-layer additions to the packages of doc 07 §3 (`common.web`, `complaint`). | 07 (updated), 13 |
 | U11 | ~~Timeout while typing.~~ **Decided in doc 11 §3.12 (D72):** JS warning with "Stay logged in"; no drafts. Session timeout while typing a long complaint: the POST goes to `/login?expired` and the typed text is lost (doc 09 §1.6). Acceptable for this project; the login page says why. | 11 |
 
@@ -1426,3 +1426,4 @@ Run on 2026-11-22. All scripts are kept under `docs/specs/verify/` so they can b
 | 2026-11-22 | Doc 11 alignment: no inline script/style (`early.js`, `.no-js` CSS, `data-chart`), session warning, login email kept and new login alerts, privacy notices, `relatedLinkable`; U1, U2, U6, U11 decided (D64, D69–D72, D76) |
 | 2026-11-23 | Doc 12 alignment: U3, U4, U5 decided (D77, D83, D85, D87); where texts live (§8.1) |
 | 2026-11-23 | Doc 13 alignment: U7, U8, U10 decided (D99) |
+| 2026-11-23 | Doc 14 alignment: U9 decided (D109, D110) |

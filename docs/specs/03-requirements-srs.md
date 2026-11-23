@@ -207,6 +207,11 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | `app.security.login.max-failures-per-account` / `max-failures-per-ip` / `window` / `lock` | 5 / 20 / 15m / 15m | FR-05 (doc 11 §3.5, D56) |
 | `app.security.register.max-per-ip-per-hour` | 10 | FR-01 (doc 11 §3.5) |
 | `server.tomcat.max-swallow-size` | 64MB | FR-11 (doc 11 §4.6, D63) |
+| `app.housekeeping.cron` | `0 30 2 * * *` (daily 02:30 IST); `-` in tests | FR-73 (doc 14 §9.4, D115) |
+| `app.housekeeping.notification-retention-days` / `otp-retention-days` / `batch-size` | 90 / 30 / 1000 | FR-73, D28 (doc 14 §5.5) |
+| `app.timezone` | `Asia/Kolkata` | NFR-23, D18 (`Clock`, cron zone) |
+
+The complete list with the value per profile and the environment variables of `prod` is in doc 14 §5.5–§5.6.
 
 ## 4. Seed data (initial)
 
@@ -225,3 +230,4 @@ Every requirement has a stable ID. Use cases (doc 04), routes (doc 09) and tests
 | 2026-11-22 | Added `app.admin.name` / `app.admin.mobile` settings (doc 08, D26) |
 | 2026-11-22 | Added `app.export.max-rows` (doc 09, D43) |
 | 2026-11-22 | Security settings from doc 11 (`app.security.*`, `app.complaint.max-per-day`, `max-swallow-size`) |
+| 2026-11-23 | Doc 14 alignment: `app.housekeeping.*` (O4, D115) and `app.timezone` rows; pointer to the full key inventory (doc 14 §5.5) |

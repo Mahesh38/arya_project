@@ -110,8 +110,8 @@ The test dependencies of doc 07 §2.2 stay; this document adds one library and t
 | `maven-surefire-plugin` | `test` | managed 3.6.1 | runs everything except the tags `mysql` and `e2e`; JUnit parallel execution **off** (shared H2, §2.4) |
 | `maven-failsafe-plugin` | `integration-test` in `-Pmysql` | managed 3.6.1 | runs `**/*MySqlIT.java` |
 | `jacoco-maven-plugin` | `prepare-agent`, `report` (test), `check` (verify) | **0.8.14** | coverage gate of §6.1 (works with JDK 25, verified) |
-| `spring-boot-maven-plugin` `start`/`stop`, `exec-maven-plugin` | `pre-`/`post-integration-test` in `-Pe2e` | managed / 3.6.x | start the app for Playwright (`useTestClasspath=true`, so H2 is available without being in the production JAR) |
-| `app/e2e/package.json` | Node | `@playwright/test` 1.65.1, `@axe-core/playwright` 4.14.0 (pinned exactly at the time of writing; doc 14 refreshes) | browser tests (D99) |
+| `spring-boot-maven-plugin` `start`/`stop`, `exec-maven-plugin` | `pre-`/`post-integration-test` in `-Pe2e` | managed / 3.6.2 | start the app for Playwright with **`testClasspath=all`** (H2 and `application-e2e.properties` available without being in the production JAR; the older `useTestClasspath=true` is deprecated in Boot 4.2 and did not put the test resources on the classpath, doc 14 §4.3, D119) |
+| `app/e2e/package.json` | Node | `@playwright/test` 1.65.1, `@axe-core/playwright` 4.14.0 (pinned exactly; re-checked on npm by doc 14 on 2026-11-23: still the newest; Node ≥ 22.12, doc 14 §3.5) | browser tests (D99) |
 
 ### 2.2 Test profile and properties
 
@@ -527,7 +527,7 @@ Run after §5.2, because they change the counts.
 
 ### 6.1 Coverage (JaCoCo, D102)
 
-Coverage is a smoke alarm, not a goal: the catalogue decides *what* is tested, coverage shows what was forgotten. Limits are checked by `jacoco:check` in `./mvnw verify`.
+"After M7" below means after **milestone M7** of doc 14 §11 (notifications), switched on with `coverage.later.skip=false` in the pom (D120). Coverage is a smoke alarm, not a goal: the catalogue decides *what* is tested, coverage shows what was forgotten. Limits are checked by `jacoco:check` in `./mvnw verify`.
 
 | Scope | Line | Branch | Enforced from |
 |---|---:|---:|---|
@@ -542,7 +542,7 @@ The prototype confirmed that JaCoCo 0.8.14 instruments JDK 25 classes and writes
 
 ### 6.2 CI recommendation (GitHub Actions, not committed yet)
 
-The workflow file is added together with the `app/` project (doc 14). Outline:
+The workflow file is added together with the `app/` project (doc 14). **Superseded by the full draft `docs/ci/build.yml.draft` (doc 14 §10.4, newer action versions, MySQL URL with `+05:30`, spec-copy checks); the outline below is kept for the record.** Outline:
 
 ```yaml
 # .github/workflows/build.yml (outline)
@@ -713,14 +713,14 @@ The two Mermaid diagrams (§1.2 pyramid, §6.2 CI pipeline) were rendered with `
 
 | # | Topic | For doc |
 |---|---|---|
-| B-1 | Maven: surefire `excludedGroups=mysql,e2e`, JUnit parallel off; failsafe in profile `mysql` with `TEST_MYSQL_*` variables; JaCoCo 0.8.14 rules of §6.1; profile `e2e` with `spring-boot:start`/`stop` (`useTestClasspath=true`, profiles `dev,e2e`) and `exec-maven-plugin` for `npm ci` + `npx playwright test`. | 14 |
-| B-2 | `application-test.properties` and `application-e2e.properties` as in §2.2 (H2, BCrypt 4, crons `-`, `app.upload.dir` under `target/`); the new property name `app.housekeeping.cron` (doc 08 O4) must exist so tests can switch the job off. | 14 |
-| B-3 | `application-dev.properties`: `app.complaint.auto-close-cron=0 */5 * * * *` for the demo (D106). | 14 |
-| B-4 | MySQL for `-Pmysql`: a database `grievance_test` (utf8mb4) and a user allowed to `ALTER TABLE` (identity restart); URL options as in doc 08 §6. On student laptops this profile is optional; CI runs it with the `mysql:8.4` service. | 14 |
-| B-5 | `app/e2e/`: `package.json` with exact versions (§2.1), `playwright.config.ts` (projects `js-on`, `js-off`; viewports 360 and 1280; `baseURL`), `npx playwright install chromium` once; college labs without internet can skip `-Pe2e`. | 14 |
-| B-6 | Commit `.github/workflows/build.yml` from the outline of §6.2 together with `app/`. | 14 |
-| B-7 | Test resources copied from the docs: `docs/db/verify/sample-data.sql` → `sql/q-fixture.sql`, the 13a §A.2 matrix → `transition-matrix.csv`, doc 09 §3 → `routes.csv` (99 rows), `docs/db/verify/load-10k.sql` → `perf/load-10k.sql` (ids looked up by name). A future check could compare `routes.csv` with doc 09 automatically. | 14 |
-| B-8 | Reference-laptop performance run (TC-NF-01) and the printed test report (§7.3) are part of the viva preparation list. | 14 |
+| B-1 | **Done in doc 14 §4 (D119, D120).** Maven: surefire `excludedGroups=mysql,e2e`, JUnit parallel off; failsafe in profile `mysql` with `TEST_MYSQL_*` variables; JaCoCo 0.8.14 rules of §6.1; profile `e2e` with `spring-boot:start`/`stop` (`useTestClasspath=true`, profiles `dev,e2e`) and `exec-maven-plugin` for `npm ci` + `npx playwright test`. | 14 |
+| B-2 | **Done in doc 14 §5.4 (D115)**, plus `application-mysqltest.properties`. `application-test.properties` and `application-e2e.properties` as in §2.2 (H2, BCrypt 4, crons `-`, `app.upload.dir` under `target/`); the new property name `app.housekeeping.cron` (doc 08 O4) must exist so tests can switch the job off. | 14 |
+| B-3 | **Done in doc 14 §5.2.** `application-dev.properties`: `app.complaint.auto-close-cron=0 */5 * * * *` for the demo (D106). | 14 |
+| B-4 | **Done in doc 14 §6.1 (D114).** MySQL for `-Pmysql`: a database `grievance_test` (utf8mb4) and a user allowed to `ALTER TABLE` (identity restart); URL options as in doc 08 §6. On student laptops this profile is optional; CI runs it with the `mysql:8.4` service. | 14 |
+| B-5 | **Done in doc 14 §3.5** (`docs/e2e/*.draft`). `app/e2e/`: `package.json` with exact versions (§2.1), `playwright.config.ts` (projects `js-on`, `js-off`; viewports 360 and 1280; `baseURL`), `npx playwright install chromium` once; college labs without internet can skip `-Pe2e`. | 14 |
+| B-6 | **Decided in doc 14 §10.4:** kept as `docs/ci/build.yml.draft` and moved to `.github/workflows/` in milestone M0 (no app to build yet). Commit `.github/workflows/build.yml` from the outline of §6.2 together with `app/`. | 14 |
+| B-7 | **Done in doc 14 §3.3 (D128).** Test resources copied from the docs: `docs/db/verify/sample-data.sql` → `sql/q-fixture.sql`, the 13a §A.2 matrix → `transition-matrix.csv`, doc 09 §3 → `routes.csv` (99 rows), `docs/db/verify/load-10k.sql` → `perf/load-10k.sql` (ids looked up by name). A future check could compare `routes.csv` with doc 09 automatically. | 14 |
+| B-8 | **Done in doc 14 §11.5** (`docs/ci/test-report.py`). Reference-laptop performance run (TC-NF-01) and the printed test report (§7.3) are part of the viva preparation list. | 14 |
 | R-a | Risk: `mvn test` slows down as tests grow. Mitigation: one shared context (§2.10), BCrypt 4, no sleeps; the `slow` tag lets students skip the heaviest classes locally. | — |
 | R-b | Risk: the catalogue and the code drift apart. Mitigation: TC IDs in `@DisplayName`, `TestIdScanTest` (TC-SCAN-04) and `check-13-traceability.py` on CI. | — |
 | R-c | Risk: MySQL-only behaviour (locking, error codes, time zone) is only seen in `-Pmysql`. Mitigation: run it on CI for every pull request and once in the week before the demo (§7.4). | — |
@@ -729,3 +729,4 @@ The two Mermaid diagrams (§1.2 pyramid, §6.2 CI pipeline) were rendered with `
 | Date | Change |
 |---|---|
 | 2026-11-23 | Initial draft: strategy and pyramid, test infrastructure (profile, `TestClock`, database reset, fixtures, security helpers, layout, naming), catalogue summary with appendix 13a (446 test cases), master traceability matrix, demo checklist, coverage and CI, defects and exit criteria; K11, U1, U7, U8, U10, K-S3, T-1…T-6 resolved (D92–D106); verified with `check-13-traceability.py`, a prototype (736 tests + Playwright smoke) and mermaid-cli |
+| 2026-11-23 | Doc 14 alignment: B-1…B-8 done; `-Pe2e` uses `testClasspath=all` (D119); "after M7" = milestone M7 of doc 14; CI outline superseded by `docs/ci/build.yml.draft` |

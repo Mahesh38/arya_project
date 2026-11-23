@@ -1,0 +1,2 @@
+# local secrets for compose.yaml (doc 11 §9.1)
+.env

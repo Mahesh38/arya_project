@@ -1,0 +1,45 @@
+# =====================================================================
+# DRAFT - Dependabot version updates (doc 14 §10.5, doc 11 K-S5, D118)
+# Milestone M0 moves it to .github/dependabot.yml together with the workflow.
+# Dependabot *security* alerts are switched on in the repository settings
+# (Settings -> Code security -> Dependabot alerts / security updates).
+# =====================================================================
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /app
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Kolkata
+    open-pull-requests-limit: 5
+    groups:
+      # Spring Boot manages most versions: one PR when the parent moves
+      spring-boot:
+        patterns: ["org.springframework.boot:*"]
+      webjars:
+        patterns: ["org.webjars*"]
+      build-plugins:
+        patterns: ["org.jacoco:*", "org.codehaus.mojo:*", "org.owasp:*", "org.jsoup:*"]
+    ignore:
+      # a new Spring Boot minor/major is a planned upgrade (doc 14 §10.6), not a weekly PR
+      - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  - package-ecosystem: npm
+    directory: /app/e2e
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Kolkata
+    open-pull-requests-limit: 3
+    groups:
+      playwright:
+        patterns: ["@playwright/*", "@axe-core/*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -995,12 +995,13 @@ The two Mermaid diagrams (§5.1, §6.2) were rendered with `@mermaid-js/mermaid-
 | T-4 | **Decided in doc 13 (TC-VE-28).** Template scan: every page with a bound form includes `errorSummary` with a field list that matches its inputs; no hand-written `id` on `th:field` inputs (§7.4). | 13 |
 | T-5 | **Decided in doc 13 (TC-VE-29, D99).** Playwright: focus moves to `#error-summary` with JS on; summary links move focus to the field; axe-core finds no issues on a form with errors (doc 10 U7, U8). | 13 |
 | T-6 | **Decided in doc 13 (TC-VE-30, D105).** The BR-88 count can be exceeded by one with two parallel submissions (§5.4). Accepted; doc 13 should not assert a hard limit under concurrency. | 13 |
-| B-1 | `application.properties`: `spring.web.error.*` (§6.4), `spring.messages.*` (§8.1), `spring.mvc.problemdetails.enabled=false`; never the old `server.error.*` names. | 14 |
-| B-2 | Logback: pattern with `%X{ref:-}`, application log retention 90 days (doc 11 §10.4); support guide: how to find a reference id in the log. | 14 |
-| B-3 | Copy `messages.properties.draft` to `src/main/resources/messages.properties` unchanged (UTF-8, no BOM) and `common-passwords.txt` to `common/validation/`. | 14 |
+| B-1 | ~~Properties.~~ **Done in doc 14 §5.1.** `application.properties`: `spring.web.error.*` (§6.4), `spring.messages.*` (§8.1), `spring.mvc.problemdetails.enabled=false`; never the old `server.error.*` names. | 14 |
+| B-2 | ~~Logback.~~ **Done in doc 14 §5.8 and §9.6 step 1 (D116).** Logback: pattern with `%X{ref:-}`, application log retention 90 days (doc 11 §10.4); support guide: how to find a reference id in the log. | 14 |
+| B-3 | ~~Copies.~~ **Done in doc 14 §3.3 (D128):** byte-identical copies checked by CI; `docs/specs/common-passwords.txt.draft` (34 entries) created. Copy `messages.properties.draft` to `src/main/resources/messages.properties` unchanged (UTF-8, no BOM) and `common-passwords.txt` to `common/validation/`. | 14 |
 
 ## Change log
 | Date | Change |
 |---|---|
 | 2026-11-23 | Initial draft: validation layers, field catalogue for every form, custom validators, exception hierarchy and mapping, error pages with reference id, flash and form-error conventions with the field id scheme, message catalogue (`messages.properties.draft`, 182 keys), logging rules, traceability; K8, U3, U4, U5, K-S1, K-S2 decided (D77–D91); verified with a prototype (20 tests) and `check-12-messages.py` |
 | 2026-11-23 | Doc 13 alignment: T-1 … T-6 decided (D99, D101, D105) |
+| 2026-11-23 | Doc 14 alignment: B-1, B-2, B-3 done; `common-passwords.txt.draft` added (D128) |

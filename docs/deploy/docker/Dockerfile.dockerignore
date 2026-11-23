@@ -1,0 +1,3 @@
+# BuildKit reads this file for docs/deploy/docker/Dockerfile: send only the JAR to the builder
+*
+!target/smart-grievance.jar

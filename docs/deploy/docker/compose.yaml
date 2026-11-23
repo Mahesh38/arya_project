@@ -1,0 +1,65 @@
+# =====================================================================
+# OPTIONAL (doc 14 §8.3): the app + MySQL 8.4 LTS on one machine with Docker Compose.
+# 1. ./mvnw clean verify            (in app/, builds target/smart-grievance.jar)
+# 2. cp .env.example .env           (in this folder) and set every password
+# 3. docker compose up -d --build   (in this folder)
+# 4. open http://localhost:8080/    (log in as ADMIN_EMAIL / ADMIN_PASSWORD)
+# Data lives in the named volumes db-data, uploads and logs (back up db-data + uploads together).
+# =====================================================================
+name: smart-grievance
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: grievance
+      # read by mysql-init/10-users.sh to create the two least-privilege users (doc 14 §6.1)
+      APP_DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      OWNER_DB_PASSWORD: ${DB_MIGRATION_PASSWORD:?set DB_MIGRATION_PASSWORD in .env}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    # no "ports:" on purpose: MySQL is reachable only from the app container
+
+  app:
+    build:
+      context: ../../../app
+      dockerfile: ../docs/deploy/docker/Dockerfile
+    image: smart-grievance:${APP_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://db:3306/grievance?connectionTimeZone=%2B05:30&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8
+      DB_USERNAME: grievance_app
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_MIGRATION_USERNAME: grievance_owner
+      DB_MIGRATION_PASSWORD: ${DB_MIGRATION_PASSWORD}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      # plain HTTP on a lab machine: false; behind HTTPS: true (doc 11 §4.8)
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      FORWARD_HEADERS_STRATEGY: ${FORWARD_HEADERS_STRATEGY:-none}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - uploads:/app/uploads
+      - logs:/app/logs
+
+volumes:
+  db-data:
+  uploads:
+  logs:

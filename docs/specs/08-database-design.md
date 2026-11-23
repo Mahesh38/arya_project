@@ -466,7 +466,7 @@ Rules:
 
 Why Java and not Flyway for demo data: demo rows must never reach `prod`, their dates must be relative to "now", and passwords must be BCrypt-hashed. Flyway scripts are static and run in every profile.
 
-The demo attachments point to small sample files copied from `classpath:seed/files/` into `app.upload.dir` by the seeder (details in doc 14).
+The demo attachments point to small sample files copied from `classpath:seed/files/` into `app.upload.dir` by the seeder: two photos for GRV-…-000003, stored with the BR-24 naming and deleted again if the seeder's transaction fails (doc 14 §6.6, D127).
 
 ---
 
@@ -800,7 +800,7 @@ UPDATE mobile_otp SET used = TRUE WHERE id = :id AND used = FALSE;
 | Transactions | Managed by Spring; no `START TRANSACTION` in SQL files (H2 rejects that statement) | ✅ |
 | NULL ordering | Never `ORDER BY` a nullable column (the two databases may place NULLs differently); use `COALESCE` if needed | — |
 | Case sensitivity | Searches use `LOWER(…)` on both sides | ✅ |
-| Connection | MySQL URL adds `connectionTimeZone=Asia/Kolkata&forceConnectionTimeZoneToSession=true` so that the server session matches the app (doc 14) | — |
+| Connection | MySQL URL adds `connectionTimeZone=%2B05:30&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8` so that the server session matches the app. **Not** `Asia/Kolkata`: without MySQL's time-zone tables (not loaded by the Ubuntu and Windows installers) the driver's `SET time_zone='Asia/Kolkata'` fails with error 1298 (doc 14 §6.2, D111) | ✅ (doc 14 §12) |
 
 ---
 
@@ -827,7 +827,7 @@ The database and the `uploads/` folder must be backed up **together** (ADR-06), 
 |---|---|
 | Database dump (consistent, no locks on InnoDB) | `mysqldump --single-transaction --set-gtid-purged=OFF grievance > grievance-YYYYMMDD.sql` |
 | Files | `zip -r uploads-YYYYMMDD.zip uploads/` (taken right after the dump) |
-| Restore | Create the empty database with utf8mb4 (P8), load the dump (it includes `flyway_schema_history`, so Flyway sees the schema as current), unzip the files to `app.upload.dir`, start the app. |
+| Restore | Create the empty database with utf8mb4 (doc 14 §6.1), load the dump (it includes `flyway_schema_history`, so Flyway sees the schema as current), unzip the files to `app.upload.dir`, start the app. |
 | Frequency (suggested) | Daily, keep 7 daily and 4 weekly copies. For the college demo, a manual dump before each demo is enough. |
 
 A file written to disk whose transaction later failed is deleted by BR-25. A file whose row exists but the file is missing gives a 404 and an error log (SD-06).
@@ -916,8 +916,8 @@ The ER diagram in §2 was rendered with `@mermaid-js/mermaid-cli` without errors
 | O1 | ~~The Department Queue default filter.~~ **Decided in doc 09 §10 (D34):** `ASSIGNED`, `IN_PROGRESS`, `REOPENED`, `RESOLVED`, as in Q06. | — |
 | O2 | ~~Officer name or role label for citizens.~~ **Decided in doc 10 §7.3 (D48):** citizens see the department or "Grievance Cell"; staff see names. Q14 is unchanged (it returns both). | — |
 | O3 | Anonymising personal data of long-inactive citizens is not covered (complaints are kept forever). | Future scope |
-| O4 | `HousekeepingJob` (notification and OTP purge) is a Could item; the cron (e.g. daily 02:30) is to be fixed in doc 14. | 14 |
-| O5 | MySQL connection URL options, database creation with utf8mb4, and the demo sample files for attachments. | 14 |
+| O4 | ~~Housekeeping cron.~~ **Decided in doc 14 §9.4 (D115):** `app.housekeeping.cron=0 30 2 * * *` (02:30 IST, `zone = app.timezone`), `-` in tests; retention days and batch size are settings (`app.housekeeping.*`). | — |
+| O5 | ~~URL, charset, sample files.~~ **Decided in doc 14 §6 (D111, D114, D127):** URL with `connectionTimeZone=%2B05:30`, databases and least-privilege users created with `utf8mb4_0900_ai_ci` (`docs/deploy/db/*.sql`), two demo photos in `seed/files/`. Doc 14 §12 also re-ran this document's verification scripts on **MySQL 8.4.13**: identical results. | — |
 
 ## Change log
 | Date | Change |
@@ -926,3 +926,4 @@ The ER diagram in §2 was rendered with `@mermaid-js/mermaid-cli` without errors
 | 2026-11-22 | Doc 09 alignment: Q07 status filter is `IN (:statuses)` for status groups, plus optional "not assigned" and overdue lines (D35); O1 decided (D34). The tested Q07 in `verify/key-queries.sql` uses the single-status form, which is the one-element case of the same fragment |
 | 2026-11-22 | O2 decided in doc 10 (D48) |
 | 2026-11-22 | Doc 11 alignment: `app_user.version` incremented by every update (BR-89); `otp_hash` is an HMAC; OTP attempt reserved before comparing (§5.12) |
+| 2026-11-23 | Doc 14 alignment: O4 and O5 decided (D111, D115, D127); connection URL uses `+05:30`; verification repeated on MySQL 8.4.13 (doc 14 §12 V6) |

@@ -1,0 +1,31 @@
+# =====================================================================
+# prod profile: everything secret or site-specific comes from the environment
+# (doc 14 §5.3 and the environment table §5.6; doc 11 §9.1)
+# A missing DB_URL / DB_USERNAME / DB_PASSWORD stops the start-up.
+# =====================================================================
+spring.datasource.url=${DB_URL}
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
+# Flyway runs as the schema owner; the pool user has no DDL rights (D114). Defaults to the pool user.
+spring.flyway.user=${DB_MIGRATION_USERNAME:${DB_USERNAME}}
+spring.flyway.password=${DB_MIGRATION_PASSWORD:${DB_PASSWORD}}
+
+server.port=${SERVER_PORT:8080}
+server.address=${SERVER_ADDRESS:0.0.0.0}
+server.servlet.session.cookie.secure=${COOKIE_SECURE:true}
+# native = trust X-Forwarded-* from the proxies below only (doc 14 §8.2)
+server.forward-headers-strategy=${FORWARD_HEADERS_STRATEGY:none}
+server.tomcat.remoteip.internal-proxies=${TRUSTED_PROXIES:127\\.0\\.0\\.1|0:0:0:0:0:0:0:1}
+
+spring.thymeleaf.cache=true
+logging.file.path=${LOG_DIR:logs}
+logging.level.com.smartgrievance=INFO
+logging.threshold.console=${LOG_CONSOLE_THRESHOLD:WARN}
+
+app.upload.dir=${UPLOAD_DIR:./uploads}
+app.otp.sender=${OTP_SENDER:demo}
+app.admin.email=${ADMIN_EMAIL:admin@example.com}
+# empty default: ProdSafetyCheck P-2 refuses to start while no admin exists (doc 11 §9.2)
+app.admin.password=${ADMIN_PASSWORD:}
+app.admin.name=${ADMIN_NAME:System Administrator}
+app.admin.mobile=${ADMIN_MOBILE:9000000000}
