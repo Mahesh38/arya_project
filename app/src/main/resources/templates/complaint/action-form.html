@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head><title th:text="${#fields.hasErrors('${form.*}') ? #messages.msg('form.errors.pageTitle', 'Withdraw complaint') : 'Withdraw complaint'}">Withdraw complaint</title></head>
+<body>
+<nav layout:fragment="breadcrumb" aria-label="Breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a th:href="@{/citizen/complaints}">My Complaints</a></li>
+        <li class="breadcrumb-item"><a class="font-monospace" th:href="@{${cancelUrl}}" th:text="${complaint.complaintNo}"></a></li>
+        <li class="breadcrumb-item active" aria-current="page">Withdraw</li>
+    </ol>
+</nav>
+<section layout:fragment="content" class="complaint-edit-form">
+    <h1 class="h3">Withdraw complaint</h1>
+    <div th:replace="~{fragments/complaint-summary :: box(${complaint})}"></div>
+    <p>Give a reason for withdrawing this complaint.</p>
+    <form method="post" th:object="${form}" th:action="@{${postUrl}}" data-submit-text="Saving…">
+        <div th:replace="~{fragments/form :: errorSummary(${ {'remark'} })}"></div>
+        <p class="small text-body-secondary">* required</p>
+        <div th:replace="~{fragments/form :: textarea('remark', 'Reason for withdrawal', 4, 500, null, true)}"></div>
+        <input type="hidden" th:field="*{version}">
+        <button type="submit" class="btn btn-danger"><i class="bi bi-arrow-return-left" aria-hidden="true"></i> <span data-submit-label>Withdraw complaint</span></button>
+        <a class="btn btn-link" th:href="@{${cancelUrl}}">Cancel</a>
+    </form>
+</section>
+</body>
+</html>

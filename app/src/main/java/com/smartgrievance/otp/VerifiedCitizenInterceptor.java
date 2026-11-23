@@ -18,6 +18,8 @@ public class VerifiedCitizenInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        if ((request.getContextPath() + "/citizen/complaints").equals(request.getRequestURI())
+                && !"POST".equals(request.getMethod())) return true;
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof CurrentUser user
                 && !user.mobileVerified()) {

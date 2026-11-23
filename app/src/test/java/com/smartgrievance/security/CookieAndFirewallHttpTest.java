@@ -3,7 +3,6 @@ package com.smartgrievance.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.http.HttpRequest;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.smartgrievance.testsupport.Html;
@@ -82,15 +81,8 @@ class CookieAndFirewallHttpTest extends HttpTestBase {
     @Test
     @DisplayName("TC-VE-18 a multipart body above the configured limit is rejected")
     void multipartLimit() throws Exception {
-        String boundary = "foundation-test-boundary";
-        byte[] prefix = ("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"sample.txt\""
-                + "\r\nContent-Type: text/plain\r\n\r\n").getBytes(StandardCharsets.UTF_8);
-        byte[] suffix = ("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8);
-        var body = HttpRequest.BodyPublishers.concat(HttpRequest.BodyPublishers.ofByteArray(prefix),
-                HttpRequest.BodyPublishers.ofByteArray(new byte[27 * 1024 * 1024]),
-                HttpRequest.BodyPublishers.ofByteArray(suffix));
-        var request = http.request("/login").header("Content-Type", "multipart/form-data; boundary=" + boundary)
-                .POST(body).build();
+        var request = http.multipart("/login", java.util.Map.of(), "sample.txt", "text/plain",
+                new byte[27 * 1024 * 1024]).build();
         var response = http.send(request);
         assertThat(response.statusCode()).isEqualTo(413);
         assertThat(Html.of(response.body()).text("h1")).isEqualTo("Request too large");

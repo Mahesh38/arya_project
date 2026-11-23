@@ -51,7 +51,10 @@
     <div class="form-text js-only" th:id="${field + '-counter'}"></div>
     <th:block th:replace="~{:: helpText(${field}, ${help})}"></th:block>
 </div>
-<div class="mb-3" th:fragment="select(field, label, options, emptyLabel, required)">
+<th:block th:fragment="lookupSelect(field, label, options, emptyLabel, required)">
+    <div th:replace="~{:: choiceControl(${field}, ${label}, ${options}, ${emptyLabel}, ${required}, ' (inactive)')}"></div>
+</th:block>
+<div class="mb-3" th:fragment="choiceControl(field, label, options, emptyLabel, required, inactiveSuffix)">
     <label class="form-label" th:for="${field}">
         <span th:text="${label}"></span><span th:if="${required}" aria-hidden="true"> *</span>
     </label>
@@ -60,7 +63,7 @@
                      aria-describedby=${#fields.hasErrors(field) ? field + '-error' : null}">
         <option value="" th:if="${emptyLabel != null}" th:text="${emptyLabel}"></option>
         <option th:each="option : ${options}" th:value="${option.id}"
-                th:text="${option.active ? option.name : option.name + ' (inactive)'}"></option>
+                th:text="${option.active ? option.name : option.name + inactiveSuffix}"></option>
     </select>
     <th:block th:replace="~{:: helpText(${field}, null)}"></th:block>
 </div>

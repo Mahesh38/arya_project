@@ -52,11 +52,6 @@ public class LoginController {
         return "auth/role-home";
     }
 
-    @GetMapping("/citizen/complaints/new")
-    String newComplaintPlaceholder() {
-        return "redirect:/citizen/complaints";
-    }
-
     @GetMapping("/notifications/unread-count")
     @ResponseBody
     Map<String, Integer> sessionActivity(jakarta.servlet.http.HttpServletResponse response) {

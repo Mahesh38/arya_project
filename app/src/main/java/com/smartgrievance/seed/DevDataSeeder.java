@@ -12,8 +12,16 @@ import org.springframework.stereotype.Component;
 class DevDataSeeder implements ApplicationRunner {
     private final DemoData data;
 
-    DevDataSeeder(DemoData data) { this.data = data; }
+    private final ComplaintDemoData complaints;
+
+    DevDataSeeder(DemoData data, ComplaintDemoData complaints) {
+        this.data = data;
+        this.complaints = complaints;
+    }
 
     @Override
-    public void run(ApplicationArguments args) { data.seedUsers(); }
+    public void run(ApplicationArguments args) {
+        data.seedUsers();
+        complaints.seed();
+    }
 }

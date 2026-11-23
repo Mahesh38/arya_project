@@ -141,3 +141,25 @@ form.is-submitting [type=submit] { pointer-events: none; opacity: .65; }
 .admin-edit-form {
     max-width: 38rem;
 }
+
+.complaint-edit-form {
+    max-width: 46rem;
+}
+
+.complaint-confirmation {
+    max-width: 38rem;
+}
+
+.breadcrumb a,
+.btn-link {
+    color: #084298;
+}
+
+#error-summary a {
+    color: inherit;
+}
+
+.invalid-feedback,
+[data-upload-summary] .text-danger {
+    color: #a52834 !important;
+}
