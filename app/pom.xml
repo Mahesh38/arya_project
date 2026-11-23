@@ -17,7 +17,7 @@
 
     <groupId>com.smartgrievance</groupId>
     <artifactId>smart-grievance</artifactId>
-    <version>0.6.0-SNAPSHOT</version>
+    <version>0.7.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Smart Grievance</name>
     <description>Smart Public Grievance and Complaint Management System (MCA project)</description>
@@ -39,7 +39,7 @@
         <dependency-check.version>13.0.0</dependency-check.version>
 
         <!-- coverage gate (doc 13 §6.1, D102): "later" rules switch on after milestone M7 (doc 14 §11) -->
-        <coverage.later.skip>true</coverage.later.skip>
+        <coverage.later.skip>false</coverage.later.skip>
 
         <!-- e2e profile (doc 13 §3.8, D99) -->
         <e2e.port>8090</e2e.port>

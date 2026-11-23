@@ -4,6 +4,7 @@
 
 ### Added
 
+- In-app notifications, unread counts, and scheduled housekeeping.
 - Staff can link duplicate complaints, and citizens can manage updates for complaints they follow.
 - Complaint workflow actions, officer queues, and administrative complaint filters.
 - Complaint tracking lists, role-scoped detail and history, and private attachment downloads.

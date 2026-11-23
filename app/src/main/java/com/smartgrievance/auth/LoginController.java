@@ -1,7 +1,5 @@
 package com.smartgrievance.auth;
 
-import java.util.Map;
-
 import com.smartgrievance.config.AppProperties;
 import com.smartgrievance.security.WebAuthentication;
 import com.smartgrievance.user.CurrentUser;
@@ -10,7 +8,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class LoginController {
@@ -52,10 +49,4 @@ public class LoginController {
         return "auth/role-home";
     }
 
-    @GetMapping("/notifications/unread-count")
-    @ResponseBody
-    Map<String, Integer> sessionActivity(jakarta.servlet.http.HttpServletResponse response) {
-        response.setHeader("Cache-Control", "no-store");
-        return Map.of("unread", 0);
-    }
 }
