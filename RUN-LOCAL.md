@@ -148,6 +148,28 @@ cd arya_project/app
 ./run-local.sh --build        # Windows: run-local.bat --build   (clean build with all tests, then start)
 ```
 
+### Windows: one double-click (Java 25 only, no Maven)
+
+**Maven does not have to be installed.** The project contains the Maven Wrapper (`app\mvnw.cmd`), which downloads Maven 3.9.16 by itself on the first build (internet needed once; it is kept in `%USERPROFILE%\.m2\wrapper`).
+
+In the cloned `arya_project` folder, double-click **`build-and-run-windows.bat`** (or run it in a Command Prompt). It:
+
+1. checks Java (`java -version` must be 25 or newer); if Java is missing it offers `winget install --id EclipseAdoptium.Temurin.25.JDK -e`,
+2. checks Maven through the wrapper (`app\mvnw.cmd -v`, downloads Maven the first time),
+3. builds the JAR: `app\mvnw.cmd -B clean package -DskipTests`,
+4. copies it to `dist\smart-grievance.jar`, writes `dist\run-local.bat`, and starts the app with the local profile:
+   `java -jar smart-grievance.jar --spring.profiles.active=local`.
+
+| Option | Effect |
+|---|---|
+| `build-and-run-windows.bat --test` | build with all tests (`clean verify`, a few minutes) |
+| `build-and-run-windows.bat --no-run` | only build the JAR, do not start it |
+| `build-and-run-windows.bat --reset` | start with fresh demo data (deletes `dist\local-data`) |
+
+The JAR is the same for every profile; `--spring.profiles.active=local` chooses the H2 setup when it starts. Later starts: double-click `dist\run-local.bat` (the `dist` folder can be copied to another computer with Java 25).
+
+### macOS / Linux (or the scripts in `app/`)
+
 `./run-local.sh` starts the built JAR, `./run-local.sh --reset` deletes `app/local-data` for fresh demo data. In IntelliJ IDEA open the project and use the run configuration **Smart Grievance (local H2)**. The built JAR is `app/target/smart-grievance.jar`.
 
 ---

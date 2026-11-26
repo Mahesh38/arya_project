@@ -30,3 +30,6 @@ Thumbs.db
 # local profile data (H2 database, uploads, logs)
 app/local-data/
 local-data/
+
+# output of build-and-run-windows.bat
+dist/

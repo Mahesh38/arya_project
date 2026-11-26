@@ -6,7 +6,7 @@ A Spring Boot MVC application for citizens to submit and track public grievances
 
 **Step-by-step guide: [RUN-LOCAL.md](RUN-LOCAL.md)** — prerequisites, downloading the JAR, the run command and the H2 console (`http://localhost:8080/h2-console`, admin / admin).
 
-Install JDK 25 only. From `app/`:
+Install JDK 25 only (Maven is not needed: the Maven Wrapper downloads it). On Windows just double-click **`build-and-run-windows.bat`** in the repository folder: it checks Java, builds `dist\smart-grievance.jar` and starts it with the local profile. From `app/`:
 
 ```sh
 ./run-local.sh            # Windows: run-local.bat   (builds the JAR if needed, then starts it)

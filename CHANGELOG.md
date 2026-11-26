@@ -5,6 +5,7 @@
 ## [1.0.1] — 26-Nov-2026
 
 ### Added
+- `build-and-run-windows.bat` (repository root): on Windows with only Java 25 it checks Java (offers a winget install), gets Maven through the Maven Wrapper (no Maven install), builds `dist\smart-grievance.jar` and starts it with the local profile; exercised by the Windows CI job.
 
 - Local run without a database server: the `local` profile runs the JAR on an embedded H2 file database with the demo data, keeping data, uploads and logs in `local-data/` (`run-local.sh` / `run-local.bat`, IntelliJ run configurations in `.run/`).
 - H2 web console on the local run at `http://localhost:8080/h2-console` (database login admin / admin, this computer only) and the guide `RUN-LOCAL.md`: prerequisites, download, run command, console, troubleshooting.

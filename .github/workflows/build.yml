@@ -81,6 +81,14 @@ jobs:
       - name: Build and test with the Windows wrapper
         shell: cmd
         run: mvnw.cmd -B -ntp clean verify
+      - name: Build the JAR with build-and-run-windows.bat
+        shell: cmd
+        working-directory: .
+        run: |
+          call build-and-run-windows.bat --no-run --no-pause || exit /b 1
+          if not exist dist\smart-grievance.jar exit /b 1
+          if not exist dist\run-local.bat exit /b 1
+          type dist\run-local.bat
       - name: Upload test and coverage reports
         if: always()
         uses: actions/upload-artifact@v7
