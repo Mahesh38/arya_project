@@ -7,12 +7,13 @@
 ### Added
 
 - Local run without a database server: the `local` profile runs the JAR on an embedded H2 file database with the demo data, keeping data, uploads and logs in `local-data/` (`run-local.sh` / `run-local.bat`, IntelliJ run configurations in `.run/`).
+- H2 web console on the local run at `http://localhost:8080/h2-console` (database login admin / admin, this computer only) and the guide `RUN-LOCAL.md`: prerequisites, download, run command, console, troubleshooting.
 - Release workflow: pushing a `v*` tag builds and tests that commit and publishes the JAR on the GitHub Releases page.
 - Independent validation: an end-to-end walkthrough of all 30 use cases, the error pages and every screen at 360 and 1280 px against the demo data on MySQL, with its report and screenshots in `docs/validation/`.
 
 ### Security
 
-- Production refuses to start on the embedded H2 database (P-8) or with the local profile (P-1).
+- Production refuses to start on the embedded H2 database or with the H2 console enabled (P-8), or with the local profile (P-1).
 
 ### Fixed
 

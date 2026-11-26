@@ -4,6 +4,8 @@ A Spring Boot MVC application for citizens to submit and track public grievances
 
 ## Run locally without MySQL (quickest)
 
+**Step-by-step guide: [RUN-LOCAL.md](RUN-LOCAL.md)** — prerequisites, downloading the JAR, the run command and the H2 console (`http://localhost:8080/h2-console`, admin / admin).
+
 Install JDK 25 only. From `app/`:
 
 ```sh

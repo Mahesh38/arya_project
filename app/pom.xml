@@ -145,6 +145,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <!-- H2 web console for the local profile (D131); off unless spring.h2.console.enabled=true, refused in prod (P-8) -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-h2console</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <!-- runtime, not test: the local profile runs the JAR on an H2 file database (D130); prod refuses H2 (P-8) -->

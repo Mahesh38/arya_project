@@ -39,6 +39,7 @@ jobs:
           for i in $(seq 1 60); do curl -fs -o /dev/null http://localhost:18080/login && break; sleep 1; done
           curl -fs -o /dev/null http://localhost:18080/login
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:18080/)" = "302"
+          curl -fs http://localhost:18080/h2-console/ | grep -q "H2 Console"
           kill "$app_pid"
       - name: Publish the release with the JAR
         env:
@@ -46,8 +47,9 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           cp target/smart-grievance.jar "smart-grievance-${version}.jar"
-          sha256sum "smart-grievance-${version}.jar" > SHA256SUMS.txt
+          cp target/smart-grievance.jar smart-grievance.jar
+          sha256sum "smart-grievance-${version}.jar" smart-grievance.jar > SHA256SUMS.txt
           awk -v v="$version" '$0 ~ "^## \\[" v "\\]" {p=1; next} p && /^## \[/ {exit} p' ../CHANGELOG.md > notes.md
-          printf '\n## Run it\n\n`java -jar smart-grievance-%s.jar --spring.profiles.active=local` then open http://localhost:8080 (JDK 25, no database server needed; demo logins in the README).\n' "$version" >> notes.md
-          gh release create "${GITHUB_REF_NAME}" "smart-grievance-${version}.jar" SHA256SUMS.txt \
+          printf '\n## Run it\n\n`java -jar smart-grievance.jar --spring.profiles.active=local`, then open http://localhost:8080 (Java 25, no database server needed). H2 console: http://localhost:8080/h2-console (admin / admin). Full guide: [RUN-LOCAL.md](https://github.com/%s/blob/%s/RUN-LOCAL.md)\n' "${GITHUB_REPOSITORY}" "${GITHUB_REF_NAME}" >> notes.md
+          gh release create "${GITHUB_REF_NAME}" "smart-grievance-${version}.jar" smart-grievance.jar SHA256SUMS.txt \
             --title "Smart Grievance ${version}" --notes-file notes.md --verify-tag
