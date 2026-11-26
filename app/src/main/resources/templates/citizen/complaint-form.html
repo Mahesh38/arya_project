@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head>
+    <title th:with="pageTitle=${mode == 'EDIT' ? 'Edit ' + complaint.complaintNo : 'New complaint'}"
+           th:text="${#fields.hasErrors('${form.*}') ? #messages.msg('form.errors.pageTitle', pageTitle) : pageTitle}">New complaint</title>
+</head>
+<body>
+<nav layout:fragment="breadcrumb" aria-label="Breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a th:href="@{/citizen/complaints}">My Complaints</a></li>
+        <li class="breadcrumb-item" th:if="${mode == 'EDIT'}">
+            <a class="font-monospace" th:href="@{/complaints/{no}(no=${complaint.complaintNo})}"
+               th:text="${complaint.complaintNo}"></a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page" th:text="${mode == 'EDIT' ? 'Edit' : 'New complaint'}"></li>
+    </ol>
+</nav>
+<section layout:fragment="content" th:with="editing=${mode == 'EDIT'},
+         detailUrl=${editing ? '/complaints/' + complaint.complaintNo : '/citizen/complaints'},
+         existing=${editing ? currentAttachments.size() : 0}">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="h3 mb-0" th:text="${editing ? 'Edit ' + complaint.complaintNo : 'New complaint'}"></h1>
+        <th:block th:if="${editing}">
+            <span th:replace="~{fragments/status-badge :: badge(${complaint.status})}"></span>
+        </th:block>
+    </div>
+    <form class="complaint-edit-form" method="post" enctype="multipart/form-data" th:object="${form}"
+          th:action="@{${editing ? '/citizen/complaints/' + complaint.complaintNo + '/edit' : '/citizen/complaints'}}"
+          data-submit-text="Uploading…">
+        <div th:replace="~{fragments/form :: errorSummary(${ editing ? {'categoryId', 'areaId', 'title', 'description', 'address', 'files', 'changeReason'} : {'categoryId', 'areaId', 'title', 'description', 'address', 'files'} })}"></div>
+        <p class="small text-body-secondary">* required</p>
+        <div class="row">
+            <div class="col-md-6">
+                <div th:replace="~{fragments/form :: choiceControl('categoryId', 'Category', ${categories}, 'Select a category', true, ' (no longer offered)')}"></div>
+            </div>
+            <div class="col-md-6">
+                <div th:replace="~{fragments/form :: choiceControl('areaId', 'Area', ${areas}, 'Select an area', true, ' (no longer offered)')}"></div>
+            </div>
+        </div>
+        <div th:replace="~{fragments/form :: accountField('title', 'Title', 'text', '5–100 characters', true, null, 100, null)}"></div>
+        <p class="small text-body-secondary">
+            Do not include personal details you do not want to share. If other citizens report the same problem,
+            they may see this complaint, its address and photos (but not your name).
+        </p>
+        <div th:replace="~{fragments/form :: textarea('description', 'Description', 6, 2000, 'What is the problem, since when, and how it affects people (20–2000 characters)', true)}"></div>
+        <div th:replace="~{fragments/form :: accountField('address', 'Address', 'text', 'Street, landmark or building, e.g. FC Road, near Fergusson College', true, null, 255, null)}"></div>
+        <th:block th:if="${editing}">
+            <section th:replace="~{fragments/attachments :: removeList(${currentAttachments}, ${maxFiles})}"></section>
+        </th:block>
+        <div th:replace="~{fragments/attachments :: picker(${maxFiles}, ${maxFileSizeMb}, ${#fields.hasAnyErrors()}, ${existing}, ${editing})}"></div>
+        <th:block th:if="${editing}">
+            <input type="hidden" th:field="*{version}">
+            <div th:replace="~{fragments/form :: textarea('changeReason', 'Reason for change (optional)', 3, 500, null, false)}"></div>
+        </th:block>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg" aria-hidden="true"></i>
+            <span data-submit-label th:text="${editing ? 'Save changes' : 'Submit complaint'}"></span>
+        </button>
+        <a class="btn btn-link" th:href="@{${detailUrl}}">Cancel</a>
+    </form>
+</section>
+</body>
+</html>

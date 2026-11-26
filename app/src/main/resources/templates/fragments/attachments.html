@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="removeList(items, maxFiles)" th:unless="${items.isEmpty()}" class="border rounded p-3 mb-3">
+    <h2 class="h6" th:text="|Current attachments (${items.size()} of ${maxFiles})|"></h2>
+    <ul class="list-unstyled mb-0">
+        <li th:each="file : ${items}" class="d-flex flex-wrap align-items-center justify-content-between column-gap-3 py-1">
+            <span>
+                <i class="bi" th:classappend="${file.image ? 'bi-image' : 'bi-file-earmark-pdf'}" aria-hidden="true"></i>
+                <span th:text="${file.originalName}"></span>
+                <small class="text-body-secondary" th:text="${file.sizeLabel}"></small>
+            </span>
+            <span class="form-check">
+                <input type="checkbox" class="form-check-input" th:field="*{removeAttachmentIds}"
+                       th:value="${file.id}" data-remove-upload>
+                <label class="form-check-label" th:for="${#ids.prev('removeAttachmentIds')}">Remove
+                    <span class="visually-hidden" th:text="${file.originalName}"></span>
+                </label>
+            </span>
+        </li>
+    </ul>
+</section>
+<div th:fragment="picker(maxFiles, maxFileSizeMb, hadErrors, activeCount, editing)" class="mb-3"
+     th:attr="data-upload-limit=${maxFiles}, data-upload-size-mib=${maxFileSizeMb}, data-upload-existing=${activeCount}">
+    <div th:if="${hadErrors}" class="alert alert-warning" role="region" aria-label="Choose files again">
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        <span th:text="#{form.files.chooseAgain}"></span>
+    </div>
+    <label class="form-label" for="files">Photos or documents (optional)</label>
+    <input type="file" class="form-control" id="files" name="files" multiple accept=".jpg,.jpeg,.png,.pdf"
+           th:classappend="${#fields.hasErrors('files') ? 'is-invalid' : null}"
+           th:attr="aria-invalid=${#fields.hasErrors('files') ? 'true' : null},
+                    aria-describedby=${#fields.hasErrors('files') ? 'files-help files-error' : 'files-help'}">
+    <div id="files-help" class="form-text" th:text="|Up to ${maxFiles} files in total · JPG, PNG or PDF · max ${maxFileSizeMb} MB each|"></div>
+    <div id="files-error" class="invalid-feedback d-block" th:if="${#fields.hasErrors('files')}">
+        <div th:each="message : ${#fields.errors('files')}" th:text="${message}"></div>
+    </div>
+    <div class="form-text" th:if="${editing}" data-upload-slots aria-live="polite"
+         th:text="|You can add ${maxFiles - activeCount} more.|"></div>
+    <ul class="small list-unstyled mt-2 mb-0 js-only" data-upload-summary aria-live="polite"></ul>
+</div>
+<ul th:fragment="downloadList(items)" th:unless="${items.isEmpty()}" class="list-unstyled d-flex flex-wrap gap-3 mb-0">
+    <li th:each="file : ${items}" class="attachment-card border rounded p-2" th:classappend="${file.deleted ? 'bg-light' : null}">
+        <a th:href="@{/attachments/{id}(id=${file.id})}" class="d-block">
+            <img th:if="${file.image}" class="attachment-thumbnail rounded d-block mb-2" loading="lazy" alt=""
+                 th:src="@{/attachments/{id}(id=${file.id})}">
+            <i th:unless="${file.image}" class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+            <span th:text="${file.originalName}"></span>
+        </a>
+        <div class="small d-flex gap-2 flex-wrap">
+            <span class="text-body-secondary" th:text="${file.sizeLabel}"></span>
+            <a th:href="@{/attachments/{id}(id=${file.id},download=true)}"
+               th:attr="aria-label=|Download ${file.originalName}|">Download</a>
+        </div>
+        <small th:if="${file.deleted}" class="text-body-secondary" th:text="|Removed on ${@fmt.date(file.deletedAt.toLocalDate())}|"></small>
+    </li>
+</ul>
+</body>
+</html>

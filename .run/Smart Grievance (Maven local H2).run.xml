@@ -1,0 +1,21 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- IntelliJ IDEA: same as run-local.sh, through Maven: ./mvnw spring-boot:run with the local profile -->
+  <configuration default="false" name="Smart Grievance (Maven local H2)" type="MavenRunConfiguration" factoryName="Maven">
+    <MavenSettings>
+      <option name="myGeneralSettings" />
+      <option name="myRunnerSettings" />
+      <option name="myRunnerParameters">
+        <MavenRunnerParameters>
+          <option name="cmdOptions" value="-Dspring-boot.run.profiles=local" />
+          <option name="goals">
+            <list>
+              <option value="spring-boot:run" />
+            </list>
+          </option>
+          <option name="workingDirPath" value="$PROJECT_DIR$/app" />
+        </MavenRunnerParameters>
+      </option>
+    </MavenSettings>
+    <method v="2" />
+  </configuration>
+</component>

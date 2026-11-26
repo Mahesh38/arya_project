@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head><title>Dashboard</title></head>
+<body>
+<section layout:fragment="content">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+        <div>
+            <h1 class="h3 mb-0">Dashboard</h1>
+            <div class="small text-body-secondary" th:text="|As of ${@fmt.dateTime(dash.asOf)}|">As of</div>
+        </div>
+        <a class="btn btn-sm btn-outline-primary" th:href="@{/admin/complaints}">
+            <i class="bi bi-list-ul" aria-hidden="true"></i> All complaints</a>
+    </div>
+
+    <section aria-label="Summary" class="mb-3">
+        <ul class="list-unstyled row row-cols-2 row-cols-sm-3 row-cols-lg-6 g-2 mb-0">
+            <li class="col" th:each="card : ${dash.cards}">
+                <a class="card-summary" th:href="@{${card.url}}" th:classappend="${card.style == 'badge-overdue'} ? 'card-overdue'"
+                   th:attr="aria-label=|${card.label}: ${card.count}|">
+                    <div class="card"><div class="card-body p-2">
+                        <div class="small" th:switch="${card.style}">
+                            <span th:case="'card-total'" class="text-body-secondary" th:text="${card.label}">Total</span>
+                            <span th:case="'badge-overdue'" class="text-danger-emphasis fw-semibold">
+                                <i class="bi bi-alarm" aria-hidden="true"></i> <th:block th:text="${card.label}">Overdue</th:block></span>
+                            <span th:case="*" class="badge-status" th:classappend="${card.style}" th:text="${card.label}">Status</span>
+                        </div>
+                        <div class="count mt-1" th:text="${card.count}">0</div>
+                    </div></div>
+                </a>
+            </li>
+        </ul>
+    </section>
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <section class="card mb-3 js-only" aria-labelledby="h-chart">
+                <div class="card-body">
+                    <h2 id="h-chart" class="h6 text-uppercase text-body-secondary">Open and closed by department</h2>
+                    <div class="chart-box" id="chart-data" th:attr="data-chart=${dash.chartJson}">
+                        <canvas id="department-chart" role="img"
+                                aria-label="Bar chart of open and closed complaints by department. The same numbers are in the By department table."></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card mb-3" aria-labelledby="h-overdue">
+                <div class="card-body pb-1 d-flex justify-content-between align-items-baseline">
+                    <h2 id="h-overdue" class="h6 text-uppercase text-body-secondary">Overdue (top 10)</h2>
+                    <a class="small" th:if="${dash.overdueTotal > 0}" th:href="@{/admin/complaints(overdue=true)}"
+                       th:text="|View all ${dash.overdueTotal}|">View all</a>
+                </div>
+                <p class="card-body pt-0 mb-0 text-body-secondary" th:if="${dash.overdue.isEmpty()}">No overdue complaints.</p>
+                <div class="table-responsive" th:unless="${dash.overdue.isEmpty()}">
+                    <table class="table table-sm mb-0 table-complaints table-stack">
+                        <thead class="table-light"><tr>
+                            <th scope="col">Complaint</th>
+                            <th scope="col">Department</th>
+                            <th scope="col">Status</th>
+                            <th scope="col" class="text-end"><abbr title="Days since submission / SLA days">Days / SLA</abbr></th>
+                        </tr></thead>
+                        <tbody>
+                        <tr th:each="item : ${dash.overdue}">
+                            <td><a class="complaint-no" th:href="@{/complaints/{no}(no=${item.complaintNo})}" th:text="${item.complaintNo}">GRV</a>
+                                <div class="small text-body-secondary" th:text="${item.title}">Title</div></td>
+                            <td data-label="Department">
+                                <span th:if="${item.departmentName != null}" th:text="${item.departmentName}">Department</span>
+                                <em th:unless="${item.departmentName != null}">Not assigned</em></td>
+                            <td data-label="Status"><span th:replace="~{fragments/status-badge :: badge(${item.status})}"></span></td>
+                            <td class="text-end" data-label="Days / SLA"><span class="badge-status badge-overdue"
+                                    th:text="|${item.daysElapsed} / ${item.slaDays}|"
+                                    th:title="|${item.daysOverdue} days overdue|">0 / 0</span></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-5">
+            <th:block th:each="table : ${ {{'h-dept', 'By department', 'Department', dash.byDepartment},
+                                            {'h-cat', 'By category', 'Category', dash.byCategory},
+                                            {'h-area', 'By area', 'Area', dash.byArea}} }">
+                <section class="card mb-3" th:attr="aria-labelledby=${table[0]}">
+                    <div class="card-body pb-1"><h2 th:id="${table[0]}" class="h6 text-uppercase text-body-secondary"
+                                                    th:text="${table[1]}">By</h2></div>
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light"><tr>
+                            <th scope="col" th:text="${table[2]}">Name</th>
+                            <th scope="col" class="text-end">Open</th>
+                            <th scope="col" class="text-end">Closed</th>
+                        </tr></thead>
+                        <tbody>
+                        <tr th:each="row : ${table[3]}">
+                            <th scope="row" class="fw-normal">
+                                <span th:if="${row.id != null}" th:text="${row.name}">Name</span>
+                                <em th:unless="${row.id != null}">Not assigned</em></th>
+                            <td class="text-end"><a th:href="@{${row.openUrl}}" th:text="${row.open}"
+                                                    th:attr="aria-label=|${row.name}: ${row.open} open|">0</a></td>
+                            <td class="text-end"><a th:href="@{${row.closedUrl}}" th:text="${row.closed}"
+                                                    th:attr="aria-label=|${row.name}: ${row.closed} closed|">0</a></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </th:block>
+            <p class="small text-body-secondary">"Open" means not finished, including Resolved complaints waiting for the
+                citizen. "Closed" means Closed, Rejected, Duplicate or Withdrawn.</p>
+        </div>
+    </div>
+</section>
+<th:block layout:fragment="scripts">
+    <script th:src="@{/webjars/chart.js/dist/chart.umd.min.js}" defer></script>
+</th:block>
+</body>
+</html>

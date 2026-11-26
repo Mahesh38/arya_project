@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head><title>Department Queue</title></head>
+<body>
+<section layout:fragment="content">
+    <h1 class="h3">Department Queue</h1>
+    <p th:if="${departmentName == null}" class="alert alert-danger" role="alert" th:text="#{error.officer.noDepartment}"></p>
+    <th:block th:if="${departmentName != null}">
+        <p class="text-body-secondary" th:text="|${departmentName} · complaints your department is responsible for|"></p>
+        <ul class="list-unstyled row row-cols-2 row-cols-md-3 row-cols-xl-5 g-2 mb-3" aria-label="Queue summary">
+            <li class="col" th:each="card : ${summary.cards}">
+                <a class="card card-body h-100 p-2 text-decoration-none" th:href="@{${card.url}}">
+                    <span class="badge align-self-start" th:classappend="${card.style}" th:text="${card.label}"></span>
+                    <strong class="fs-4 mt-1" th:text="${card.count}"></strong>
+                </a>
+            </li>
+        </ul>
+        <div th:replace="~{fragments/staff-complaint-list :: staffList(false)}"></div>
+    </th:block>
+</section>
+</body>
+</html>

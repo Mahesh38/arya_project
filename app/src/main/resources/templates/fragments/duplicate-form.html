@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="duplicateSteps">
+    <th:block th:unless="${duplicateConfirm}">
+        <h1 class="h3">Mark as duplicate</h1>
+        <p>Enter the number of the original complaint that is already being handled.</p>
+        <div th:replace="~{fragments/complaint-summary :: box(${complaint})}"></div>
+        <form method="get" th:action="@{${postUrl}}" th:object="${form}">
+            <div th:replace="~{fragments/form :: errorSummary(${ {'originalNo'} })}"></div>
+            <div class="mb-3">
+                <label class="form-label" for="originalNo">Original complaint number <span aria-hidden="true">*</span></label>
+                <input class="form-control" th:classappend="${#fields.hasErrors('originalNo') ? 'is-invalid' : null}"
+                       id="originalNo" name="original" type="text" maxlength="24" placeholder="GRV-2026-______" required
+                       th:value="${form.originalNo}" th:attr="aria-invalid=${#fields.hasErrors('originalNo') ? 'true' : null},
+                              aria-describedby=${#fields.hasErrors('originalNo') ? 'originalNo-help originalNo-error' : 'originalNo-help'}">
+                <div th:replace="~{fragments/form :: helpText('originalNo', 'Enter a complaint number such as GRV-2026-000001.')}"></div>
+            </div>
+            <button type="submit" class="btn btn-primary">Find complaint</button>
+            <a class="btn btn-link" th:href="@{${cancelUrl}}">Cancel</a>
+        </form>
+    </th:block>
+    <th:block th:if="${duplicateConfirm}">
+        <h1 class="h3">Is this the same problem?</h1>
+        <p>Check that both complaints describe the same problem.</p>
+        <div class="row g-2">
+            <div class="col-md-6"><h2 class="h6">Complaint to link</h2>
+                <div th:replace="~{fragments/complaint-summary :: box(${complaint})}"></div>
+            </div>
+            <div class="col-md-6" th:if="${original != null}"><h2 class="h6">Original complaint</h2>
+                <div th:replace="~{fragments/complaint-summary :: box(${original})}"></div>
+            </div>
+        </div>
+        <form method="post" th:action="@{${postUrl}}" th:object="${form}" data-submit-text="Saving…">
+            <div th:replace="~{fragments/form :: errorSummary(${ {'remark'} })}"></div>
+            <p class="small text-body-secondary">* required</p>
+            <input type="hidden" th:field="*{version}">
+            <input type="hidden" th:field="*{originalNo}">
+            <div th:replace="~{fragments/form :: textarea('remark', 'Note to the citizen', 4, 500, ${'The citizen who filed ' + complaint.complaintNo + ' will see this note and will follow the original from now on.'}, true)}"></div>
+            <button type="submit" class="btn btn-primary"><span data-submit-label>Link as duplicate</span></button>
+            <a class="btn btn-link" th:href="@{${postUrl}}">Choose a different complaint</a>
+            <a class="btn btn-link" th:href="@{${cancelUrl}}">Cancel</a>
+        </form>
+    </th:block>
+</div>
+</body>
+</html>

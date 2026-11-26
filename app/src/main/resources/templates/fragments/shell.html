@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<th:block th:fragment="assets">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" th:href="@{/favicon.ico}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/js/early.js}"></script>
+</th:block>
+</head>
+<body>
+<a th:fragment="skipLink" class="skip-link" href="#main">Skip to main content</a>
+<footer th:fragment="footer" class="border-top py-3 mt-auto text-body-secondary">
+    <div class="container-lg small">Smart Grievance · Times are shown in IST (Asia/Kolkata)</div>
+</footer>
+<th:block th:fragment="scripts">
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}" defer></script>
+    <script th:src="@{/js/app.js}" defer></script>
+</th:block>
+</body>
+</html>

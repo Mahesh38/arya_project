@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head><title th:text="${#fields.hasErrors('${form.*}') ? #messages.msg('form.errors.pageTitle', 'Area') : (mode == 'EDIT' ? 'Edit area' : 'Add area')}">Area</title></head>
+<body>
+<section layout:fragment="content">
+    <section th:replace="~{fragments/admin-master :: masterForm('Areas', 'area', '/admin/areas')}"></section>
+</section>
+</body>
+</html>

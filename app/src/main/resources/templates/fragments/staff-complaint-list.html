@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="staffList(admin)" th:with="url=${admin ? '/admin/complaints' : '/officer/queue'},
+     filtered=${(admin ? filter.status != 'ALL' : filter.status != 'ACTIVE') or filter.categoryId != null
+     or filter.departmentId != null or filter.unassigned or filter.areaId != null or filter.from != null
+     or filter.to != null or filter.overdue or filter.q != null}">
+    <form method="get" th:action="@{${url}}" class="row g-2 mb-3 align-items-end">
+        <div class="col-6 col-md-auto">
+            <label class="form-label" for="status-filter">Status</label>
+            <select class="form-select" id="status-filter" name="status">
+                <option th:each="option : ${statusOptions}" th:value="${option.value}"
+                        th:selected="${option.value == filter.status}" th:text="${option.label}"></option>
+            </select>
+        </div>
+        <div th:replace="~{:: lookupFilter('categoryId', 'Category', ${categories}, ${filter.categoryId}, false)}"></div>
+        <th:block th:if="${admin}">
+            <div th:replace="~{:: lookupFilter('departmentId', 'Department', ${departments}, ${filter.departmentId}, ${filter.unassigned})}"></div>
+        </th:block>
+        <div th:replace="~{:: lookupFilter('areaId', 'Area', ${areas}, ${filter.areaId}, false)}"></div>
+        <th:block th:if="${admin}">
+            <div class="col-6 col-md-auto">
+                <label class="form-label" for="from">From</label>
+                <input class="form-control" type="date" id="from" name="from" th:value="${filter.from}">
+            </div>
+            <div class="col-6 col-md-auto">
+                <label class="form-label" for="to">To</label>
+                <input class="form-control" type="date" id="to" name="to" th:value="${filter.to}">
+            </div>
+        </th:block>
+        <div class="col-12 col-md-auto">
+            <label class="form-label" for="search">Search</label>
+            <input id="search" name="q" type="search" class="form-control" maxlength="100"
+                   th:value="${filter.q}" placeholder="GRV number or title">
+        </div>
+        <div class="col-12 col-md-auto py-2">
+            <div class="form-check mb-0">
+                <input type="checkbox" class="form-check-input" id="overdue" name="overdue" value="true" th:checked="${filter.overdue}">
+                <label class="form-check-label" for="overdue">Overdue only</label>
+            </div>
+        </div>
+        <input th:if="${page.size != 10}" type="hidden" name="size" th:value="${page.size}">
+        <div th:replace="~{fragments/admin-controls :: filterButtons(${url})}"></div>
+    </form>
+    <p th:if="${filter.invalidDateRange()}" class="alert alert-warning" role="alert" th:text="#{validation.filter.dateRange}"></p>
+    <div th:replace="~{fragments/admin-controls :: count(${page})}"></div>
+    <p th:if="${!admin and !page.items.isEmpty()}" class="small text-body-secondary">Overdue first, then oldest first</p>
+    <div th:if="${page.items.isEmpty()}" class="card p-4 text-center">
+        <h2 class="h5" th:text="${filtered ? 'No complaints match this filter.' : (admin ? 'No complaints have been filed yet.' : 'Nothing waiting. Your department has no active complaints.')}"></h2>
+        <a th:if="${filtered}" class="btn btn-link" th:href="@{${url}}">Clear filter</a>
+    </div>
+    <div th:unless="${page.items.isEmpty()}" class="card mb-3">
+        <table class="table complaint-list align-middle mb-0">
+            <caption class="visually-hidden" th:text="${admin ? 'All complaints' : 'Department complaints'}"></caption>
+            <thead><tr>
+                <th scope="col">Complaint</th><th scope="col">Title</th><th scope="col">Category</th>
+                <th scope="col" th:if="${admin}">Department</th><th scope="col">Area</th>
+                <th scope="col">Status</th><th scope="col">Submitted</th><th th:unless="${admin}" scope="col">Due</th>
+            </tr></thead>
+            <tbody>
+                <tr th:each="item : ${page.items}" th:classappend="${item.overdue ? 'row-overdue' : null}">
+                    <th scope="row"><a class="complaint-no" th:href="@{/complaints/{no}(no=${item.complaintNo})}" th:text="${item.complaintNo}"></a></th>
+                    <td class="fw-semibold" th:text="${item.title}"></td>
+                    <td th:text="${item.categoryName}"></td>
+                    <td th:if="${admin}" th:text="${item.departmentName ?: 'Not assigned'}"></td>
+                    <td th:text="${item.areaName}"></td>
+                    <td><span th:replace="~{fragments/status-badge :: badge(${item.status})}"></span></td>
+                    <td th:text="${@fmt.date(item.createdAt.toLocalDate())}"></td>
+                    <td th:unless="${admin}">
+                        <span th:if="${item.overdue}" class="badge badge-overdue" th:text="|Overdue ${item.daysOverdue} days|"></span>
+                        <span th:if="${item.reviewDeadline != null}" class="badge badge-awaiting"
+                              th:text="|Awaiting citizen until ${@fmt.date(item.reviewDeadline.toLocalDate())}|"></span>
+                        <span th:if="${!item.overdue and item.reviewDeadline == null}" th:text="${@fmt.date(item.dueAt.toLocalDate())}"></span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <nav th:replace="~{fragments/admin-controls :: pager(${page}, ${pageLinks})}"></nav>
+</div>
+<div th:fragment="lookupFilter(field, label, options, current, unassigned)" class="col-6 col-md-auto">
+    <label class="form-label" th:for="${field}" th:text="${label}"></label>
+    <select class="form-select" th:id="${field}" th:name="${field}">
+        <option value="">All</option>
+        <option th:if="${field == 'departmentId'}" value="NONE" th:selected="${unassigned}">Not assigned</option>
+        <option th:each="option : ${options}" th:value="${option.id}" th:selected="${option.id == current}"
+                th:text="${option.active ? option.name : option.name + ' (inactive)'}"></option>
+    </select>
+</div>
+</body>
+</html>

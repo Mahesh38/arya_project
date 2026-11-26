@@ -370,7 +370,7 @@ Spring Boot's dependency management (the parent BOM) pins every version it knows
 | `webjars-locator-lite` | compile | managed (1.1.5) | version-free WebJar URLs |
 | `spring-boot-devtools` | runtime, **optional** | managed | restart in `dev`; never in the JAR (checked, §12) |
 | `spring-boot-starter-webmvc-test`, `-security-test`, `-jdbc-test` | test | managed (JUnit 6.1.3, AssertJ, Mockito) | doc 13 §2.1 |
-| `com.h2database:h2` | test | managed (2.5.252) | tests and `-Pe2e` only, never in the JAR |
+| `com.h2database:h2` | runtime | managed (2.5.252) | tests, `-Pe2e` and the `local` profile (D130); refused in `prod` (P-8) |
 | `org.jsoup:jsoup` | test | **pinned 1.24.1** | HTML assertions (doc 13 §2.1) |
 
 Templates link the libraries as `@{/webjars/bootstrap/css/bootstrap.min.css}`, `@{/webjars/bootstrap/js/bootstrap.bundle.min.js}`, `@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}` and `@{/webjars/chart.js/dist/chart.umd.min.js}` (the Bootstrap CSS, the icon CSS and Chart.js answered `200` in the verification, §12). The `/vendor/**` permit rule of doc 11 §4.2 stays harmless but unused.
@@ -2487,6 +2487,18 @@ updates:
 Spring Boot minor releases get about 12 months of open-source support (doc 00 §3). Plan one upgrade per semester: change the parent version, read the release notes ("deprecated" properties and plugin parameters — as `useTestClasspath` in 4.2, §4.3), run `./mvnw clean verify -Pmysql,e2e`, fix, release as a MINOR version. The JDK stays on 25 (LTS) for the project's life. Pinned versions (§4.1) are updated through Dependabot pull requests.
 
 ---
+
+### 10.5 Local run without MySQL and release JARs (D130, 26-Nov-2026)
+
+| | |
+|---|---|
+| Profile | `local` (`application-local.properties`): H2 file database `jdbc:h2:file:${LOCAL_DATA_DIR:./local-data}/db/smart-grievance;MODE=MySQL;DATABASE_TO_LOWER=TRUE`, demo data on the first start (`DevDataSeeder` runs for `dev` and `local`), uploads and logs under `local-data/`, demo OTP, auto-close every 5 minutes |
+| Start | `app/run-local.sh` / `app/run-local.bat` (`--build` = clean verify first, `--reset` = fresh demo data); IntelliJ: `.run/Smart Grievance (local H2)`; Maven: `./mvnw spring-boot:run -Dspring-boot.run.profiles=local`; any JAR: `java -jar smart-grievance.jar --spring.profiles.active=local` |
+| H2 console | `http://localhost:8080/h2-console`, JDBC URL as above, user/password `admin`/`admin` (D131); localhost only; separate filter chain |
+| Safety | `prod` refuses an H2 URL or an enabled H2 console (P-8) and the `local` profile (P-1) |
+| User guide | `RUN-LOCAL.md` (prerequisites, download, run command, console, troubleshooting) |
+| Release | push tag `vX.Y.Z` (must equal the pom version) → `.github/workflows/release.yml`: `clean verify`, a smoke start with `local`, then a GitHub Release with `smart-grievance-X.Y.Z.jar`, `SHA256SUMS.txt` and the CHANGELOG section as notes |
+| Verified | 26-Nov-2026: clean verify 1,404 tests; JAR started with `run-local.sh --reset` on H2 (no MySQL running) in 4.4 s; walkthrough 94/94; restart kept all data and did not seed twice; `-Pmysql` 117 and `-Pe2e` 81 passed; `prod` on H2 refused with P-8 |
 
 ## 11. Implementation milestone plan (the roadmap)
 

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head><title th:text="${#fields.hasErrors('${form.*}') ? #messages.msg('form.errors.pageTitle', 'Officer') : (mode == 'EDIT' ? 'Edit officer' : 'Add officer')}">Officer</title></head>
+<body>
+<nav layout:fragment="breadcrumb" aria-label="Breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a th:href="@{/admin/officers}">Officers</a></li>
+        <li class="breadcrumb-item active" aria-current="page"
+            th:text="${mode == 'EDIT' ? 'Edit ' + officer.fullName : 'Add officer'}"></li>
+    </ol>
+</nav>
+<section layout:fragment="content" th:with="editing=${mode == 'EDIT'}">
+    <h1 class="h3 mb-3" th:text="${editing ? 'Edit officer' : 'Add officer'}"></h1>
+    <form class="admin-edit-form" method="post" th:object="${form}"
+          th:action="@{${editing ? '/admin/officers/' + officer.id : '/admin/officers'}}">
+        <div th:replace="~{fragments/form :: errorSummary(${ editing ? {'fullName', 'mobile', 'departmentId'} : {'fullName', 'email', 'mobile', 'departmentId', 'password', 'confirmPassword'} })}"></div>
+        <p class="small text-body-secondary">* required</p>
+        <div th:replace="~{fragments/form :: accountField('fullName', 'Full name', 'text', null, true, 'name', 100, null)}"></div>
+        <div th:if="${editing}" class="mb-3">
+            <label for="officer-email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="officer-email" th:value="${officer.email}" readonly>
+        </div>
+        <th:block th:unless="${editing}">
+            <div th:replace="~{fragments/form :: accountField('email', 'Email', 'email', null, true, 'email', 254, null)}"></div>
+        </th:block>
+        <div th:replace="~{fragments/form :: accountField('mobile', 'Mobile number', 'tel', '10 digits, starting with 6–9', true, 'tel-national', null, 'numeric')}"></div>
+        <div th:replace="~{fragments/form :: lookupSelect('departmentId', 'Department', ${departments}, 'Select a department', true)}"></div>
+        <th:block th:unless="${editing}">
+            <div th:replace="~{fragments/form :: password('password', 'Initial password', 'At least 8 characters with a letter and a digit', 'new-password')}"></div>
+            <div th:replace="~{fragments/form :: password('confirmPassword', 'Confirm password', null, 'new-password')}"></div>
+            <p class="small text-body-secondary">Give this password to the officer. They can change it after logging in.</p>
+        </th:block>
+        <input th:if="${editing}" type="hidden" th:field="*{version}">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg" aria-hidden="true"></i> Save</button>
+        <a class="btn btn-link" th:href="@{/admin/officers}">Cancel</a>
+    </form>
+</section>
+</body>
+</html>

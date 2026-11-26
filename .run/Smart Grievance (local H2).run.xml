@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- IntelliJ IDEA: runs the app on the embedded H2 database (local profile, D130). Open http://localhost:8080 -->
+  <configuration default="false" name="Smart Grievance (local H2)" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.smartgrievance.SmartGrievanceApplication" />
+    <module name="smart-grievance" />
+    <option name="PROGRAM_PARAMETERS" value="--spring.profiles.active=local" />
+    <option name="VM_PARAMETERS" value="-Xmx512m" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/app" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/main}">
+<head><title>Categories</title></head>
+<body>
+<section layout:fragment="content">
+    <section th:replace="~{fragments/admin-master :: masterList('Categories', 'category', '/admin/categories')}"></section>
+</section>
+</body>
+</html>
