@@ -7,7 +7,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("dev")
+@Profile({"dev", "local"})
 @Order(2)
 class DevDataSeeder implements ApplicationRunner {
     private final DemoData data;

@@ -2,15 +2,23 @@
 
 ## [Unreleased]
 
+## [1.0.1] — 26-Nov-2026
+
+### Added
+
+- Local run without a database server: the `local` profile runs the JAR on an embedded H2 file database with the demo data, keeping data, uploads and logs in `local-data/` (`run-local.sh` / `run-local.bat`, IntelliJ run configurations in `.run/`).
+- Release workflow: pushing a `v*` tag builds and tests that commit and publishes the JAR on the GitHub Releases page.
+- Independent validation: an end-to-end walkthrough of all 30 use cases, the error pages and every screen at 360 and 1280 px against the demo data on MySQL, with its report and screenshots in `docs/validation/`.
+
+### Security
+
+- Production refuses to start on the embedded H2 database (P-8) or with the local profile (P-1).
+
 ### Fixed
 
 - The complaint timeline now lists every edited field with its old and new value; the edit entry was empty before (FR-17).
 - An encoded slash in the URL now gets the application's own 400 page instead of the server's plain one.
 - Admin lists (officers, citizens, departments, categories, areas) and the dashboard's overdue list stack as labelled cards on phones, so every column and action button stays on screen.
-
-### Added
-
-- Independent validation: an end-to-end walkthrough of all 30 use cases, the error pages and every screen at 360 and 1280 px against the demo data on MySQL, with its report and screenshots in `docs/validation/`.
 
 ## [1.0.0] — 23-Nov-2026 (M9)
 

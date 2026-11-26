@@ -1,0 +1,53 @@
+name: release
+
+# Pushing a tag such as v1.0.1 builds and tests that exact commit and publishes a GitHub Release with the runnable JAR
+# (doc 14 §10, D130). The JAR runs anywhere with JDK 25:
+#   java -jar smart-grievance-1.0.1.jar --spring.profiles.active=local     (embedded H2, demo data, no MySQL)
+#   java -jar smart-grievance-1.0.1.jar --spring.profiles.active=prod      (MySQL, environment variables of doc 14 §5.6)
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Tag matches the project version
+        run: |
+          version=$(./mvnw -B -q -ntp help:evaluate -Dexpression=project.version -DforceStdout)
+          test "v${version}" = "${GITHUB_REF_NAME}" || { echo "Tag ${GITHUB_REF_NAME} does not match pom version ${version}"; exit 1; }
+      - name: Build and test
+        run: ./mvnw -B -ntp clean verify
+      - name: Smoke-test the JAR with the local profile
+        run: |
+          java -jar target/smart-grievance.jar --spring.profiles.active=local --server.port=18080 > smoke.log 2>&1 &
+          app_pid=$!
+          for i in $(seq 1 60); do curl -fs -o /dev/null http://localhost:18080/login && break; sleep 1; done
+          curl -fs -o /dev/null http://localhost:18080/login
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:18080/)" = "302"
+          kill "$app_pid"
+      - name: Publish the release with the JAR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          cp target/smart-grievance.jar "smart-grievance-${version}.jar"
+          sha256sum "smart-grievance-${version}.jar" > SHA256SUMS.txt
+          awk -v v="$version" '$0 ~ "^## \\[" v "\\]" {p=1; next} p && /^## \[/ {exit} p' ../CHANGELOG.md > notes.md
+          printf '\n## Run it\n\n`java -jar smart-grievance-%s.jar --spring.profiles.active=local` then open http://localhost:8080 (JDK 25, no database server needed; demo logins in the README).\n' "$version" >> notes.md
+          gh release create "${GITHUB_REF_NAME}" "smart-grievance-${version}.jar" SHA256SUMS.txt \
+            --title "Smart Grievance ${version}" --notes-file notes.md --verify-tag

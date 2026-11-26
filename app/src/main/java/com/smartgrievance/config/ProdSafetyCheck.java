@@ -28,7 +28,7 @@ public class ProdSafetyCheck implements ApplicationRunner {
     public record Finding(String check, Level level, String message) {}
     public record Inputs(boolean devProfileActive, boolean adminExists, String adminEmail, String adminPassword,
                          String adminMobile, String datasourcePassword, boolean cookieSecure, String otpSender,
-                         int bcryptStrength) {}
+                         int bcryptStrength, String datasourceUrl) {}
 
     private final AppProperties properties;
     private final Environment environment;
@@ -42,11 +42,12 @@ public class ProdSafetyCheck implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        var inputs = new Inputs(environment.matchesProfiles("dev"), users.adminExists(), properties.admin().email(),
+        var inputs = new Inputs(environment.matchesProfiles("dev") || environment.matchesProfiles("local"), users.adminExists(), properties.admin().email(),
                 properties.admin().password(), properties.admin().mobile(),
                 environment.getProperty("spring.datasource.password"),
                 environment.getProperty("server.servlet.session.cookie.secure", Boolean.class, false),
-                properties.otp().sender(), properties.security().bcryptStrength());
+                properties.otp().sender(), properties.security().bcryptStrength(),
+                environment.getProperty("spring.datasource.url"));
         enforce(evaluate(inputs));
     }
 
@@ -54,7 +55,7 @@ public class ProdSafetyCheck implements ApplicationRunner {
     public static List<Finding> evaluate(Inputs in) {
         var findings = new ArrayList<Finding>();
         if (in.devProfileActive()) {
-            findings.add(new Finding("P-1", Level.REFUSE, "the dev and prod profiles must not be combined"));
+            findings.add(new Finding("P-1", Level.REFUSE, "the dev or local profile must not be combined with prod"));
         }
         String password = in.adminPassword();
         if (!in.adminExists() && (password == null || password.isBlank() || DEFAULT_ADMIN_PASSWORD.equals(password)
@@ -79,6 +80,10 @@ public class ProdSafetyCheck implements ApplicationRunner {
         if (in.bcryptStrength() < MIN_BCRYPT_STRENGTH) {
             findings.add(new Finding("P-7", Level.REFUSE,
                     "app.security.bcrypt-strength must be at least " + MIN_BCRYPT_STRENGTH));
+        }
+        if (in.datasourceUrl() != null && in.datasourceUrl().startsWith("jdbc:h2:")) {
+            findings.add(new Finding("P-8", Level.REFUSE,
+                    "the embedded H2 database is for the local profile only; use MySQL in production (D130)"));
         }
         return List.copyOf(findings);
     }

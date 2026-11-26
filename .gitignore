@@ -26,3 +26,7 @@ Thumbs.db
 
 # JVM attach markers
 .attach_pid*
+
+# local profile data (H2 database, uploads, logs)
+app/local-data/
+local-data/

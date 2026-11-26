@@ -28,8 +28,8 @@ public class ProdEnvironmentCheck implements EnvironmentPostProcessor, Ordered {
         if (!env.matchesProfiles("prod")) {
             return;
         }
-        if (env.matchesProfiles("dev")) {
-            throw new IllegalStateException("P-1: the dev and prod profiles must not be combined");
+        if (env.matchesProfiles("dev") || env.matchesProfiles("local")) {
+            throw new IllegalStateException("P-1: the dev or local profile must not be combined with prod");
         }
         List<String> missing = new ArrayList<>();
         REQUIRED.forEach((property, variable) -> {

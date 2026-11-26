@@ -17,7 +17,7 @@
 
     <groupId>com.smartgrievance</groupId>
     <artifactId>smart-grievance</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
     <name>Smart Grievance</name>
     <description>Smart Public Grievance and Complaint Management System (MCA project)</description>
@@ -147,7 +147,8 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <!-- runtime, not test: the local profile runs the JAR on an H2 file database (D130); prod refuses H2 (P-8) -->
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>

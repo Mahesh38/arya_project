@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 @Tag("unit")
 class ProdSafetyCheckTest {
     private static final Inputs SAFE = new Inputs(false, false, "grievance.cell@pmc.example.in", "Grv#Cell!2027x",
-            "9123456780", "db-secret", true, "sms", 12);
+            "9123456780", "db-secret", true, "sms", 12, "jdbc:mysql://localhost:3306/grievance");
 
     @Test
     @DisplayName("TC-SEC-53 a safe production configuration passes without findings")
@@ -43,9 +43,18 @@ class ProdSafetyCheckTest {
     }
 
     @Test
+    @DisplayName("TC-SEC-53 the embedded H2 database of the local profile is refused in production (P-8)")
+    void h2IsRefusedInProduction() {
+        var inputs = new Inputs(false, true, SAFE.adminEmail(), null, null, "db-secret", true, "sms", 12,
+                "jdbc:h2:file:./local-data/db/smart-grievance;MODE=MySQL");
+        assertThat(checks(inputs)).containsExactly("P-8");
+        assertThatThrownBy(() -> ProdSafetyCheck.enforce(ProdSafetyCheck.evaluate(inputs))).hasMessageContaining("P-8");
+    }
+
+    @Test
     @DisplayName("TC-SEC-53 insecure but tolerable settings only warn (P-4, P-5, P-6)")
     void warnings() {
-        var inputs = new Inputs(false, true, "admin@example.com", null, null, "db-secret", false, "demo", 12);
+        var inputs = new Inputs(false, true, "admin@example.com", null, null, "db-secret", false, "demo", 12, SAFE.datasourceUrl());
         var findings = ProdSafetyCheck.evaluate(inputs);
         assertThat(findings).extracting(Finding::check).containsExactly("P-4", "P-5", "P-6");
         assertThat(findings).extracting(Finding::level).containsOnly(Level.WARN);
@@ -53,7 +62,8 @@ class ProdSafetyCheckTest {
     }
 
     private static Inputs with(boolean dev, boolean adminExists, String password, String dbPassword, int strength) {
-        return new Inputs(dev, adminExists, SAFE.adminEmail(), password, SAFE.adminMobile(), dbPassword, true, "sms", strength);
+        return new Inputs(dev, adminExists, SAFE.adminEmail(), password, SAFE.adminMobile(), dbPassword, true, "sms", strength,
+                SAFE.datasourceUrl());
     }
 
     private static List<String> checks(Inputs inputs) {
