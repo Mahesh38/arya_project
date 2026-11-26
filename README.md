@@ -2,7 +2,23 @@
 
 A Spring Boot MVC application for citizens to submit and track public grievances and for staff to assign and resolve them. The application uses Thymeleaf, Spring Security, Spring JDBC, and MySQL.
 
-## Run locally
+## Run locally without MySQL (quickest)
+
+**Step-by-step guide: [RUN-LOCAL.md](RUN-LOCAL.md)** — prerequisites, downloading the JAR, the run command and the H2 console (`http://localhost:8080/h2-console`, admin / admin).
+
+Install JDK 25 only. From `app/`:
+
+```sh
+./run-local.sh            # Windows: run-local.bat   (builds the JAR if needed, then starts it)
+./run-local.sh --build    # clean build with all tests first
+./run-local.sh --reset    # start again with fresh demo data
+```
+
+Or download `smart-grievance-<version>.jar` from the [Releases](../../releases) page and run `java -jar smart-grievance-<version>.jar --spring.profiles.active=local`.
+
+Open `http://localhost:8080` and log in with a demo account below. The `local` profile uses an embedded H2 database file, loads the demo data on the first start and keeps everything (database, uploads, logs) in `local-data/`; nothing else needs to be installed. In IntelliJ IDEA use the shared run configuration **Smart Grievance (local H2)**. The local profile is for development and demos only; production refuses to start with it.
+
+## Run locally with MySQL
 
 Install JDK 25 and MySQL 8.4. From the repository root, provision the local development and test databases using the scripts in the build specification.
 
