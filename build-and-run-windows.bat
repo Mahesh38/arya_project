@@ -48,7 +48,7 @@ java -version 2>&1 | findstr /i /c:" version "
 rem A JAVA_HOME that points at an older JDK would make Maven compile with it: use the Java on PATH instead.
 if defined JAVA_HOME (
   if exist "%JAVA_HOME%\bin\java.exe" (
-    "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /c:"version \"2" >nul || (
+    "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /r /c:"version .2[5-9]" /c:"version .[3-9][0-9]" >nul || (
       echo       JAVA_HOME=%JAVA_HOME% is not Java 25 - ignoring it for this build.
       set "JAVA_HOME="
     )

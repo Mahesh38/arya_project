@@ -85,7 +85,12 @@ jobs:
         shell: cmd
         working-directory: .
         run: |
-          call build-and-run-windows.bat --no-run --no-pause || exit /b 1
+          call build-and-run-windows.bat --no-run --no-pause > bat.log 2>&1
+          set BAT_EXIT=%ERRORLEVEL%
+          type bat.log
+          if not "%BAT_EXIT%"=="0" exit /b 1
+          rem the JAVA_HOME of setup-java is Java 25: the script must accept it without errors
+          findstr /c:"FINDSTR:" /c:"is not Java 25" bat.log && exit /b 1
           if not exist dist\smart-grievance.jar exit /b 1
           if not exist dist\run-local.bat exit /b 1
           type dist\run-local.bat
